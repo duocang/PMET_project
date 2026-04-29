@@ -115,8 +115,8 @@ def _read_fimohits(db_dir: Path) -> tuple[int, list[str]]:
 async def list_indexing():
     """List available pre-computed indexing databases.
 
-    Scans data/app/indexing/<species>/<motif_db>/ and returns one entry per
-    (species, motif_db) pair so the submit page can populate the
+    Scans data/precomputed_indexes/<species>/<motif_db>/ and returns one entry
+    per (species, motif_db) pair so the submit page can populate the
     pre-computed database dropdown without hard-coding.
     """
     root = config.PRECOMPUTED_INDEXING_DIR
@@ -128,7 +128,7 @@ async def list_indexing():
     for species_dir in sorted(p for p in root.iterdir() if p.is_dir()):
         for db_dir in sorted(p for p in species_dir.iterdir()
                              if p.is_dir() and p.name not in _NON_DB_NAMES):
-            rel = f"data/app/indexing/{species_dir.name}/{db_dir.name}"
+            rel = f"data/precomputed_indexes/{species_dir.name}/{db_dir.name}"
             entries.append({
                 "value": rel,
                 "species": species_dir.name,

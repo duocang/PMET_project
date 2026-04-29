@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
 # Fetch the files the full-promoters analysis expects to find:
-#   - data/reference/TAIR10.fasta    (Ensembl Plants release 56, Arabidopsis thaliana)
-#   - data/reference/TAIR10.gff3     (matching annotation)
-#   - data/app/indexing/<species>/   (pre-computed PMET indexing archives served
-#                                     to the web app; kept apart from CLI/core
-#                                     demo and bench data under data/cli/)
+#   - data/reference/TAIR10.fasta            (Ensembl Plants release 56, Arabidopsis thaliana)
+#   - data/reference/TAIR10.gff3             (matching annotation)
+#   - data/precomputed_indexes/<species>/    (pre-computed PMET indexes; reusable
+#                                             by both the web app and CLI's
+#                                             pair_only.sh; kept apart from
+#                                             demo / bench data under data/demos/)
 #
 # Safe to re-run; anything already present is skipped.
 
@@ -14,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 REF_DIR="data/reference"
-INDEX_DIR="data/app/indexing"
+INDEX_DIR="data/precomputed_indexes"
 mkdir -p "$REF_DIR" "$INDEX_DIR"
 
 log() { printf '\n>>> %s\n' "$*"; }

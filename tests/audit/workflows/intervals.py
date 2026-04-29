@@ -18,9 +18,9 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     log_path = runs_dir / "run.log"
     cmd = [
         "bash", "pipeline/workflows/intervals.sh",
-        "-s", "data/demos/intervals/intervals.fa",
-        "-m", "data/demos/intervals/motif.meme",
-        "-g", "data/demos/intervals/peaks.txt",
+        "-s", "data/demos/intervals/indexing/intervals.fa",
+        "-m", "data/demos/intervals/indexing/motif.meme",
+        "-g", "data/demos/intervals/indexing/peaks.txt",
         "-o", str(out_idx),
         "-x", str(out_pair),
         "-t", "4",
@@ -58,7 +58,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
 
 
 def checks(data: dict) -> list[Check]:
-    n_motifs_in_meme = 10  # data/demos/intervals/motif.meme
+    n_motifs_in_meme = 10  # data/demos/intervals/indexing/motif.meme
     r_checks, _ = r_invocation_checks(data["_plot_dir"])
     return [
         equal_check("script exit code", 0, data["returncode"]),

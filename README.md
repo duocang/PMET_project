@@ -31,14 +31,20 @@ Co-occurrence suggests two TFs may physically cooperate to regulate the same gen
 
 ```bash
 make build       # compile C/C++ engines into ./build/
-make demo        # run indexing + pairing on the bundled demo data (data/*/demo)
+make demo        # run indexing + pairing on the bundled demo data (data/demos/)
 make baseline    # capture regression fingerprints into tests/baseline/fingerprints.txt
 ```
 
-Before the first real run, you may need to fetch public datasets (e.g. TAIR10):
+Real runs (anything beyond the bundled demo) need public datasets. Two tiers, fetch what you need:
 
 ```bash
-bash pipeline/workflows/cli/00_env_check.sh   # check tools, download TAIR10 if missing
+# Tier 1 — TAIR10 reference only (~250 MB, needed by promoter.sh / elements.sh):
+bash pipeline/workflows/cli/00_env_check.sh    # also checks tool versions
+
+# Tier 2 — TAIR10 + 21-species pre-computed indexes (~16 GB, run ONCE):
+make fetch-data                                # needed by pair_only.sh against canonical
+                                               # species and by the web app's
+                                               # promoters_pre mode
 ```
 
 The R heatmap stage needs `Rscript` plus the packages listed in [`pipeline/r/install_packages.R`](pipeline/r/install_packages.R); without R the `motif_output.txt` is still produced — only the heatmap step is skipped.
@@ -76,9 +82,9 @@ Use this when your unit of analysis is not "the promoter of a gene" but ATAC/ChI
 
 ```bash
 bash pipeline/workflows/intervals.sh \
-    -s data/demos/intervals/intervals.fa \
-    -m data/demos/intervals/motif.meme \
-    -g data/demos/intervals/peaks.txt
+    -s data/demos/intervals/indexing/intervals.fa \
+    -m data/demos/intervals/indexing/motif.meme \
+    -g data/demos/intervals/indexing/peaks.txt
 ```
 
 ### 4.3 Genomic elements — `elements.sh` &nbsp;[details](docs/workflows/elements.md)
@@ -238,13 +244,7 @@ The frontend image is baked at build time (no bind mount); frontend edits requir
 
 ### First-time data setup
 
-The pre-computed per-species indexes (GBs) are not shipped in the repo. Run once on the host:
-
-```bash
-cd deploy && make fetch-data
-```
-
-This downloads TAIR10 into `data/` and per-species indexes into `data/app/indexing/` (16 GB if you grab everything). The `data/app/` namespace keeps web-app inputs separate from CLI/core demo data in `data/indexing/{demo,bench}/`.
+The web app's `promoters_pre` mode reads pre-computed per-species indexes that are not shipped in the repo. Run `make fetch-data` once on the host before bringing the stack up — see [Quick Start §2](#en-2) for what it downloads and what it's needed for.
 
 ### Email notifications
 
@@ -298,14 +298,20 @@ PMET 回答一个问题：
 
 ```bash
 make build       # 编译 C/C++ 引擎到 ./build/
-make demo        # 跑 indexing + pairing 的 demo（data/*/demo 数据）
+make demo        # 跑 indexing + pairing 的 demo（data/demos/ 数据）
 make baseline    # 抓取回归 fingerprint 到 tests/baseline/fingerprints.txt
 ```
 
-第一次跑前可能需要拉 TAIR10 等公共数据：
+要跑真实数据（非 bundle 的 demo）需要拉公共数据。两档，按需选：
 
 ```bash
-bash pipeline/workflows/cli/00_env_check.sh   # 检查依赖工具，如缺则下载 TAIR10
+# Tier 1 — 只拉 TAIR10 参考（~250 MB，promoter.sh / elements.sh 够用）：
+bash pipeline/workflows/cli/00_env_check.sh    # 顺带检查工具版本
+
+# Tier 2 — TAIR10 + 21 物种预计算索引（~16 GB，跑一次就够）：
+make fetch-data                                # pair_only.sh 跑 canonical 物种、
+                                               # 以及 web app 的 promoters_pre 模式
+                                               # 都依赖这个
 ```
 
 R heatmap 阶段需要 `Rscript` 和 [`pipeline/r/install_packages.R`](pipeline/r/install_packages.R) 列出的包；缺 R 不影响 motif_output.txt 的产出，只跳过 heatmap。
@@ -343,9 +349,9 @@ bash pipeline/workflows/promoter.sh -s my_genome.fa -a my_annot.gff3   # 换物�
 
 ```bash
 bash pipeline/workflows/intervals.sh \
-    -s data/demos/intervals/intervals.fa \
-    -m data/demos/intervals/motif.meme \
-    -g data/demos/intervals/peaks.txt
+    -s data/demos/intervals/indexing/intervals.fa \
+    -m data/demos/intervals/indexing/motif.meme \
+    -g data/demos/intervals/indexing/peaks.txt
 ```
 
 ### 4.3 基因组元素 — `elements.sh` &nbsp;[详细](docs/workflows/elements.md)
@@ -511,13 +517,7 @@ make rebuild     # 改了代码后重建
 
 ### 首次数据准备
 
-预计算的物种索引（GB 级）不随 repo 走。host 上跑一次：
-
-```bash
-cd deploy && make fetch-data
-```
-
-TAIR10 下载到 `data/`，per-species 索引下载到 `data/app/indexing/`（全要 16 GB）。`data/app/` 命名空间用来把 Web 应用的输入和 CLI / core 的 demo / bench 数据（位于 `data/indexing/{demo,bench}/`）分开。
+Web app 的 `promoters_pre` 模式依赖预计算的物种索引，repo 不带。起 stack 之前在 host 上跑一次 `make fetch-data` —— 它下载什么、为什么要它，看 [Quick Start §2](#cn-2)。
 
 ### 邮件通知
 

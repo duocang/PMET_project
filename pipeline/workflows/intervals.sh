@@ -62,9 +62,9 @@ usage() {
 USAGE: intervals.sh [options] [<genome> <memefile>]
 
 Data (also settable as positional args in this order):
-  -s <genome>          interval FASTA            (default: data/demos/intervals/intervals.fa)
-  -m <memefile>        MEME motif file           (default: data/demos/intervals/motif_more.meme)
-  -g <gene_file>       interval/gene list        (default: data/demos/intervals/peaks.txt)
+  -s <genome>          interval FASTA            (default: data/demos/intervals/indexing/intervals.fa)
+  -m <memefile>        MEME motif file           (default: data/demos/intervals/indexing/motif_more.meme)
+  -g <gene_file>       interval/gene list        (default: data/demos/intervals/indexing/peaks.txt)
 
 Indexing parameters:
   -n <topn>            top n hits per motif      (default: 5000)
@@ -91,9 +91,9 @@ EOF
 
 # ==================== Defaults ====================
 
-genome=data/demos/intervals/intervals.fa
-meme=data/demos/intervals/motif_more.meme
-gene_input_file=data/demos/intervals/peaks.txt
+genome=data/demos/intervals/indexing/intervals.fa
+meme=data/demos/intervals/indexing/motif_more.meme
+gene_input_file=data/demos/intervals/indexing/peaks.txt
 
 topn=5000
 maxk=5

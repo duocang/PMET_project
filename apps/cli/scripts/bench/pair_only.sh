@@ -14,7 +14,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 PROJECT_ROOT="$REPO_ROOT"
 INDEX_DIR="${2:-$PROJECT_ROOT/results/bench/baseline/indexing}"
 
-DATA_DIR="$PROJECT_ROOT/data/cli/indexing/bench"
+DATA_DIR="$PROJECT_ROOT/data/demos/promoters/indexing/bench"
 OUT_ROOT="$PROJECT_ROOT/results/bench/pair-only/$LABEL"
 PAIR_INPUT="$OUT_ROOT/in"
 PAIR_OUT="$OUT_ROOT/out"

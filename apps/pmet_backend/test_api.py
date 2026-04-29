@@ -54,7 +54,7 @@ def test_task_model():
             max_match=5,
             promoter_num=5000,
             fimo_threshold=0.05,
-            premade_index="data/app/indexing/Arabidopsis_thaliana/Jaspar_plants_non_redundant_2022"
+            premade_index="data/precomputed_indexes/Arabidopsis_thaliana/Jaspar_plants_non_redundant_2022"
         )
         print(f"   - Created task for {task.email}")
         print(f"   - Mode: {task.mode}")
@@ -109,7 +109,7 @@ def test_executor_command_building():
             "promoter_num": 5000,
             "fimo_threshold": 0.05,
             "genes_file": "result/test/0.txt",
-            "premade_index": "data/app/indexing/Arabidopsis_thaliana/Jaspar_plants",
+            "premade_index": "data/precomputed_indexes/Arabidopsis_thaliana/Jaspar_plants",
             "result_link": "http://example.com/results/test.zip"
         }
 

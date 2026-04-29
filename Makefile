@@ -2,7 +2,7 @@
 # Thin entry point — delegates to per-module scripts.
 
 .PHONY: help build build-core demo demo-indexing demo-pairing baseline clean \
-        up down logs ps rebuild
+        fetch-data up down logs ps rebuild
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD := $(ROOT)/build
@@ -14,6 +14,7 @@ help:
 	@echo "    build        - build all C/C++ engines into ./build/"
 	@echo "    demo         - run demo indexing + pairing against data/"
 	@echo "    baseline     - capture fingerprints to tests/baseline/fingerprints.txt"
+	@echo "    fetch-data   - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
 	@echo "    clean        - remove ./build/"
 	@echo ""
 	@echo "  Web app (docker-compose, exposes nginx on http://localhost:5960)"
@@ -43,6 +44,9 @@ demo-pairing:
 baseline:
 	@bash tests/baseline/capture.sh > tests/baseline/fingerprints.txt
 	@echo "wrote tests/baseline/fingerprints.txt"
+
+fetch-data:
+	@bash pipeline/data/download_pmet_data.sh
 
 clean:
 	@rm -rf $(BUILD)

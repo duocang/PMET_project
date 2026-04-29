@@ -13,7 +13,7 @@ PROJECT_ROOT="$(cd "$PROJECT_DIR/../../.." && pwd)"
 EXECUTABLE="$PROJECT_ROOT/build/index_c"
 
 # Default data paths (can be overridden via environment variables)
-DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/cli/indexing/demo}"
+DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/demos/promoters/indexing/demo}"
 OUTPUT_DIR="${OUTPUT_DIR:-$PROJECT_DIR/result/pmetindex}"
 
 # Parameters

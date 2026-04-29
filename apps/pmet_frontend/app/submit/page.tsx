@@ -112,7 +112,7 @@ function SubmitPageContent() {
   }, [urlMode, setMode]);
 
   // Populate the pre-computed database dropdown from whatever is actually
-  // installed under data/app/indexing/ on the server.
+  // installed under data/precomputed_indexes/ on the server.
   useEffect(() => {
     if (mode !== 'promoters_pre') return;
     indexingApi.list()
@@ -382,7 +382,7 @@ function SubmitPageContent() {
             <p className="mt-2 text-sm text-slate-500">
               {t('submit.db.empty.before')}
               <code className="mx-1 px-1 bg-slate-100 rounded">make fetch-data</code>
-              {t('submit.db.empty.after')} <code className="px-1 bg-slate-100 rounded">data/app/indexing/</code>.
+              {t('submit.db.empty.after')} <code className="px-1 bg-slate-100 rounded">data/precomputed_indexes/</code>.
             </p>
           )}
 
@@ -589,7 +589,7 @@ function SubmitPageContent() {
               currentFile={files.meme?.name}
               required
               demoUrl={`/api/demo/${mode}/meme`}
-              demoFilename={mode === 'intervals' ? 'motif.meme' : 'example_motif.meme'}
+              demoFilename={mode === 'intervals' ? 'motif.meme' : 'Franco-Zorrilla_et_al_2014.meme'}
             />
           )}
 
@@ -603,7 +603,7 @@ function SubmitPageContent() {
               helpText={t('submit.upload.help.gene_list')}
               required
               demoUrl={`/api/demo/${mode}/genes`}
-              demoFilename={mode === 'intervals' ? 'peaks.txt' : 'example_genes.txt'}
+              demoFilename={mode === 'intervals' ? 'peaks.txt' : 'genes_cell_type_treatment.txt'}
             />
           </div>
         </div>

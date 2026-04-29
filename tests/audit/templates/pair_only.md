@@ -38,7 +38,7 @@ records every position in every promoter where `m` was found, along with:
 - `fimohits/<MOTIF>.{txt,bin}` — the per-motif hit list. Modern indexes
   produced by `index_fimo_fused` are PMETBN01 binary (`.bin`); older
   text-format indexes (`.txt`) are still accepted by `pair_parallel`,
-  and the bundled `data/cli/pairing/demo` fixture uses text.
+  and the bundled `data/demos/promoters/pairing/demo` fixture uses text.
 - `promoter_lengths.txt`, `universe.txt` — universe metadata.
 
 The schema is defined in [`docs/methods/homotypic-contract.md`](../methods/homotypic-contract.md).
@@ -54,7 +54,7 @@ optional cluster label in column 1) and produces one row per
 | # | Stage | What runs | Why |
 |---|---|---|---|
 | 1 | Argument + binary preflight | locate `build/pair_parallel`, validate `-d` dir | Fail fast if the binary or index is missing — much clearer than pair_parallel's own missing-file errors |
-| 2 | Index validation | check `<index>/{universe,promoter_lengths,binomial_thresholds,IC,fimohits/}.txt` | Ensures the supplied dir is a complete homotypic index. **Note**: the script intentionally does NOT invoke `check_homotypic_contract.py` here — the canonical demo `data/cli/pairing/demo` ships only 6 fimohits files for ~110 thresholds, which is valid for that fixture but would fail the strict contract |
+| 2 | Index validation | check `<index>/{universe,promoter_lengths,binomial_thresholds,IC,fimohits/}.txt` | Ensures the supplied dir is a complete homotypic index. **Note**: the script intentionally does NOT invoke `check_homotypic_contract.py` here — the canonical demo `data/demos/promoters/pairing/demo` ships only 6 fimohits files for ~110 thresholds, which is valid for that fixture but would fail the strict contract |
 | 3 | Gene-list filter | `grep -wFf universe.txt <gene_list>` → `genes_used_PMET.txt` + `genes_not_found.txt` | Word-boundary `-w` defends against substring collisions (e.g. AT1G01010 ⊂ AT1G010100). Records both kept and dropped genes for diagnostics |
 | 4 | Heterotypic pair test | `build/pair_parallel -d <index> -g <kept_genes> -i <ic_thr> ...` | The actual binomial-vs-hypergeometric pair test. Produces per-thread `temp*.txt` shards |
 | 5 | Shard aggregation | `cat temp*.txt > motif_output.txt` then `rm temp*.txt` | pair_parallel doesn't unify shards itself; the script does it |
@@ -103,7 +103,7 @@ python3 tests/audit/generate.py pair_only
 ```
 
 The verification anchor `motif_output.txt` sha is captured against
-`data/cli/pairing/demo` on this machine. It will only change if the fixture
+`data/demos/promoters/pairing/demo` on this machine. It will only change if the fixture
 itself changes (motif set or gene list). If pair_parallel's
 implementation drifts (or its sort order does) the sha will differ —
 that's exactly the regression signal this audit catches.

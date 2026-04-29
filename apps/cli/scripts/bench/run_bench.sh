@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 PROJECT_ROOT="$REPO_ROOT"
 
-DATA_DIR="$PROJECT_ROOT/data/cli/indexing/bench"
+DATA_DIR="$PROJECT_ROOT/data/demos/promoters/indexing/bench"
 OUT_ROOT="$PROJECT_ROOT/results/bench/$LABEL"
 INDEX_OUT="$OUT_ROOT/indexing"
 PAIR_INPUT="$OUT_ROOT/pairing_input"

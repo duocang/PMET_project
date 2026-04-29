@@ -67,7 +67,7 @@ are restored to `:` — **binary fimohits stay sanitised internally**.
 This audit just ran:
 
 ```
-bash pipeline/workflows/intervals.sh -s data/demos/intervals/intervals.fa -m data/demos/intervals/motif.meme -g data/demos/intervals/peaks.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/tests/audit/runs/intervals/02_pairing -t 4
+bash pipeline/workflows/intervals.sh -s data/demos/intervals/indexing/intervals.fa -m data/demos/intervals/indexing/motif.meme -g data/demos/intervals/indexing/peaks.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/tests/audit/runs/intervals/02_pairing -t 4
 ```
 
 Indexing landed at `tests/audit/runs/intervals/01_indexing/`, pairing at `tests/audit/runs/intervals/02_pairing/`.

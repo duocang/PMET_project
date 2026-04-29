@@ -11,14 +11,14 @@ router = APIRouter(prefix="/demo", tags=["demo"])
 # what they've loaded (e.g. TAIR10.fasta, peaks.txt) rather than a generic
 # `example_*` placeholder.
 DEMO_FILES: dict[tuple[str, str], tuple[str, str]] = {
-    ("promoters_pre", "genes"): ("demos/promoters/example_genes.txt", "example_genes.txt"),
-    ("promoters", "genes"):     ("demos/promoters/example_genes.txt", "example_genes.txt"),
-    ("promoters", "fasta"):     ("reference/TAIR10.fasta",            "TAIR10.fasta"),
-    ("promoters", "gff3"):      ("reference/TAIR10.gff3",             "TAIR10.gff3"),
-    ("promoters", "meme"):      ("demos/promoters/example_motif.meme", "example_motif.meme"),
-    ("intervals", "genes"):     ("demos/intervals/peaks.txt",         "peaks.txt"),
-    ("intervals", "fasta"):     ("demos/intervals/intervals.fa",      "intervals.fa"),
-    ("intervals", "meme"):      ("demos/intervals/motif.meme",        "motif.meme"),
+    ("promoters_pre", "genes"): ("genes/genes_cell_type_treatment.txt",      "genes_cell_type_treatment.txt"),
+    ("promoters", "genes"):     ("genes/genes_cell_type_treatment.txt",      "genes_cell_type_treatment.txt"),
+    ("promoters", "fasta"):     ("reference/TAIR10.fasta",                   "TAIR10.fasta"),
+    ("promoters", "gff3"):      ("reference/TAIR10.gff3",                    "TAIR10.gff3"),
+    ("promoters", "meme"):      ("motifs/Franco-Zorrilla_et_al_2014.meme",   "Franco-Zorrilla_et_al_2014.meme"),
+    ("intervals", "genes"):     ("demos/intervals/indexing/peaks.txt",       "peaks.txt"),
+    ("intervals", "fasta"):     ("demos/intervals/indexing/intervals.fa",    "intervals.fa"),
+    ("intervals", "meme"):      ("demos/intervals/indexing/motif.meme",      "motif.meme"),
 }
 
 

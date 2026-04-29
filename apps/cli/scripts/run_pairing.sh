@@ -36,7 +36,7 @@ print_error() {
 }
 
 # Default configuration
-DATA_DIR="$PROJECT_ROOT/data/cli/pairing/demo"
+DATA_DIR="$PROJECT_ROOT/data/demos/promoters/pairing/demo"
 RESULT_DIR="$PROJECT_ROOT/results/demo/pairing"
 IC_THRESHOLD=4
 NUM_THREADS=2
@@ -64,7 +64,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
-            echo "  -d, --data DIR           Data directory (default: data/cli/pairing/demo)"
+            echo "  -d, --data DIR           Data directory (default: data/demos/promoters/pairing/demo)"
             echo "  -o, --output DIR         Output directory (default: results/demo/pairing)"
             echo "  -i, --ic-threshold VAL   IC threshold (default: 4)"
             echo "  -t, --threads NUM        Number of threads (default: 2)"

@@ -25,9 +25,10 @@ class Config:
     RESULT_DIR: Path = PROJECT_ROOT / "result"
     # Read-only catalog of pre-computed species/motif databases, populated by
     # pipeline/data/download_pmet_data.sh. Layout: <species>/<motif_db>/.
-    # Lives under data/app/ to keep web-app inputs separate from CLI/core demo
-    # and bench data in data/indexing/{demo,bench}/.
-    PRECOMPUTED_INDEXING_DIR: Path = PROJECT_ROOT / "data" / "app" / "indexing"
+    # Top-level: the indexes are reusable scientific resources (CLI's
+    # pair_only.sh can target them too), not web-only. The two JSON sidecars
+    # under data/app/ describe display labels for the submit form.
+    PRECOMPUTED_INDEXING_DIR: Path = PROJECT_ROOT / "data" / "precomputed_indexes"
     PRECOMPUTED_INDEXING_METADATA: Path = PROJECT_ROOT / "data" / "app" / "indexing_metadata.json"
     GENOME_METADATA: Path = PROJECT_ROOT / "data" / "app" / "genome_n_annotation.json"
     TASKS_DIR: Path = PROJECT_ROOT / "result" / "tasks"

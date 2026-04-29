@@ -37,7 +37,7 @@ print_error() {
 
 # Default configuration
 VERSION="c"  # c, cpp, or fused
-DATA_DIR="$PROJECT_ROOT/data/cli/indexing/demo"
+DATA_DIR="$PROJECT_ROOT/data/demos/promoters/indexing/demo"
 RESULT_DIR="$PROJECT_ROOT/results/demo/indexing"
 
 # Parse arguments
@@ -60,7 +60,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  -v, --version VERSION  Indexing version to run: c, cpp, or fused (default: c)"
-            echo "  -d, --data DIR         Data directory (default: data/cli/indexing/demo)"
+            echo "  -d, --data DIR         Data directory (default: data/demos/promoters/indexing/demo)"
             echo "  -o, --output DIR       Output directory (default: results/demo/indexing)"
             echo "  -h, --help             Show this help message"
             exit 0

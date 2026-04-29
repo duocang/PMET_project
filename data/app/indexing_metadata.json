@@ -1,5 +1,5 @@
 {
-  "_note": "Parameters the pre-computed PMET indexes were built with. Keys are species directory names under data/app/indexing/. Values are shown as read-only 'Fixed parameters' in the submit form. Edit freely; changes are picked up on the next page load (no restart needed). Defaults below assume the Zenodo 8435321 build pipeline — verify and override if you rebuild an index with different settings. Optional nested key 'by_motif_db' lets you override per motif database.",
+  "_note": "Parameters the pre-computed PMET indexes were built with. Keys are species directory names under data/precomputed_indexes/. Values are shown as read-only 'Fixed parameters' in the submit form. Edit freely; changes are picked up on the next page load (no restart needed). Defaults below assume the Zenodo 8435321 build pipeline — verify and override if you rebuild an index with different settings. Optional nested key 'by_motif_db' lets you override per motif database.",
   "_fields": {
     "promoter_length": "int (bp used when extracting promoter sequences)",
     "promoter_num": "int (size of the promoter universe used by FIMO)",
