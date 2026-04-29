@@ -18,8 +18,8 @@ set -uo pipefail
 repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)
 cd "$repo_root"
 
-genome=data/TAIR10.fasta
-anno=data/TAIR10.gff3
+genome=data/reference/TAIR10.fasta
+anno=data/reference/TAIR10.gff3
 length=200
 
 if [[ ! -s "$genome" || ! -s "$anno" ]]; then

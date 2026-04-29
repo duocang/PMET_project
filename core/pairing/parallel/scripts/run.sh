@@ -21,7 +21,7 @@ if [ ! -f "$EXECUTABLE" ]; then
 fi
 
 # Default data paths
-DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/pairing/demo}"
+DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/cli/pairing/demo}"
 OUTPUT_DIR="${OUTPUT_DIR:-$PROJECT_DIR/result}"
 
 # Input files

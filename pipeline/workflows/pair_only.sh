@@ -146,7 +146,7 @@ check_file "$genefile" "Gene list"
 # Note: a strict homotypic contract validator
 # (pipeline/python/check_homotypic_contract.py) lives separately. It is
 # intentionally NOT invoked here because it rejects the canonical
-# data/pairing/demo fixture (which ships a partial fimohits set on
+# data/cli/pairing/demo fixture (which ships a partial fimohits set on
 # purpose). pair_parallel itself produces clear errors on malformed
 # indexes; opt into the strict check by running the python helper
 # manually before invoking pair_only.sh.

@@ -25,9 +25,11 @@ class Config:
     RESULT_DIR: Path = PROJECT_ROOT / "result"
     # Read-only catalog of pre-computed species/motif databases, populated by
     # pipeline/data/download_pmet_data.sh. Layout: <species>/<motif_db>/.
-    PRECOMPUTED_INDEXING_DIR: Path = PROJECT_ROOT / "data" / "indexing"
-    PRECOMPUTED_INDEXING_METADATA: Path = PROJECT_ROOT / "data" / "indexing_metadata.json"
-    GENOME_METADATA: Path = PROJECT_ROOT / "data" / "genome_n_annotation.json"
+    # Lives under data/app/ to keep web-app inputs separate from CLI/core demo
+    # and bench data in data/indexing/{demo,bench}/.
+    PRECOMPUTED_INDEXING_DIR: Path = PROJECT_ROOT / "data" / "app" / "indexing"
+    PRECOMPUTED_INDEXING_METADATA: Path = PROJECT_ROOT / "data" / "app" / "indexing_metadata.json"
+    GENOME_METADATA: Path = PROJECT_ROOT / "data" / "app" / "genome_n_annotation.json"
     TASKS_DIR: Path = PROJECT_ROOT / "result" / "tasks"
     # Workflows + helpers (bash + python + R) live under pipeline/.
     # The "-r" flag the indexer takes equals str(SCRIPTS_DIR).

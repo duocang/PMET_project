@@ -59,7 +59,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
 
 
 def checks(data: dict) -> list[Check]:
-    n_motifs_in_meme = 113  # data/Franco-Zorrilla_et_al_2014.meme
+    n_motifs_in_meme = 113  # data/motifs/Franco-Zorrilla_et_al_2014.meme
     r_checks, _ = r_invocation_checks(data["_plot_dir"])
     return [
         equal_check("script exit code", 0, data["returncode"]),

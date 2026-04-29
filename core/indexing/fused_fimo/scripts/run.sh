@@ -13,7 +13,7 @@ PROJECT_ROOT="$(cd "$PROJECT_DIR/../../.." && pwd)"
 EXECUTABLE="$PROJECT_ROOT/build/index_fimo_fused"
 
 # Default data paths
-DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/indexing/demo}"
+DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/cli/indexing/demo}"
 OUTPUT_DIR="${OUTPUT_DIR:-$PROJECT_DIR/result}"
 
 # Parameters

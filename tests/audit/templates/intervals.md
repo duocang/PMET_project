@@ -104,6 +104,6 @@ Total enriched pair rows: **<<MOTIF_OUTPUT_LINES>>**.
 python3 tests/audit/generate.py intervals
 ```
 
-The motif_output.txt sha is anchored to `data/demo_intervals` on this
+The motif_output.txt sha is anchored to `data/demos/intervals` on this
 machine. Both the demo data and pair_parallel's output are
 deterministic — any sha drift is a real regression signal.

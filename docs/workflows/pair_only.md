@@ -38,7 +38,7 @@ records every position in every promoter where `m` was found, along with:
 - `fimohits/<MOTIF>.{txt,bin}` — the per-motif hit list. Modern indexes
   produced by `index_fimo_fused` are PMETBN01 binary (`.bin`); older
   text-format indexes (`.txt`) are still accepted by `pair_parallel`,
-  and the bundled `data/pairing/demo` fixture uses text.
+  and the bundled `data/cli/pairing/demo` fixture uses text.
 - `promoter_lengths.txt`, `universe.txt` — universe metadata.
 
 The schema is defined in [`docs/methods/homotypic-contract.md`](../methods/homotypic-contract.md).
@@ -54,7 +54,7 @@ optional cluster label in column 1) and produces one row per
 | # | Stage | What runs | Why |
 |---|---|---|---|
 | 1 | Argument + binary preflight | locate `build/pair_parallel`, validate `-d` dir | Fail fast if the binary or index is missing — much clearer than pair_parallel's own missing-file errors |
-| 2 | Index validation | check `<index>/{universe,promoter_lengths,binomial_thresholds,IC,fimohits/}.txt` | Ensures the supplied dir is a complete homotypic index. **Note**: the script intentionally does NOT invoke `check_homotypic_contract.py` here — the canonical demo `data/pairing/demo` ships only 6 fimohits files for ~110 thresholds, which is valid for that fixture but would fail the strict contract |
+| 2 | Index validation | check `<index>/{universe,promoter_lengths,binomial_thresholds,IC,fimohits/}.txt` | Ensures the supplied dir is a complete homotypic index. **Note**: the script intentionally does NOT invoke `check_homotypic_contract.py` here — the canonical demo `data/cli/pairing/demo` ships only 6 fimohits files for ~110 thresholds, which is valid for that fixture but would fail the strict contract |
 | 3 | Gene-list filter | `grep -wFf universe.txt <gene_list>` → `genes_used_PMET.txt` + `genes_not_found.txt` | Word-boundary `-w` defends against substring collisions (e.g. AT1G01010 ⊂ AT1G010100). Records both kept and dropped genes for diagnostics |
 | 4 | Heterotypic pair test | `build/pair_parallel -d <index> -g <kept_genes> -i <ic_thr> ...` | The actual binomial-vs-hypergeometric pair test. Produces per-thread `temp*.txt` shards |
 | 5 | Shard aggregation | `cat temp*.txt > motif_output.txt` then `rm temp*.txt` | pair_parallel doesn't unify shards itself; the script does it |
@@ -65,7 +65,7 @@ optional cluster label in column 1) and produces one row per
 This audit just ran:
 
 ```
-bash pipeline/workflows/pair_only.sh -d data/pairing/demo -g data/pairing/demo/gene.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/pair_only/out -i 4 -t 4
+bash pipeline/workflows/pair_only.sh -d data/cli/pairing/demo -g data/cli/pairing/demo/gene.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/pair_only/out -i 4 -t 4
 ```
 
 into `tests/audit/runs/pair_only/out/`. Outputs landed at:
@@ -100,7 +100,7 @@ enrichment, lower p-values.
 |---|---|---|---|---|
 | 1 | script exit code | `0` | `0` | ✅ PASS |
 | 2 | motif_output.txt non-empty | `>= 1` | `46` | ✅ PASS — rows = enriched motif pairs after pair_parallel filtering |
-| 3 | motif_output deterministic vs anchor | `0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f` | `0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f` | ✅ PASS — captured against data/pairing/demo on this host; will differ if the fixture changes |
+| 3 | motif_output deterministic vs anchor | `0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f` | `0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f` | ✅ PASS — captured against data/cli/pairing/demo on this host; will differ if the fixture changes |
 | 4 | genes_used_PMET.txt non-empty | `>= 1` | `1347` | ✅ PASS — genes from -g that survived the universe filter |
 | 5 | pmet.log non-empty | `>= 1` | `32` | ✅ PASS |
 | 6 | input index contract: binomial == IC motifs | `set equal` | `|both|=113` | ✅ PASS |
@@ -114,7 +114,7 @@ python3 tests/audit/generate.py pair_only
 ```
 
 The verification anchor `motif_output.txt` sha is captured against
-`data/pairing/demo` on this machine. It will only change if the fixture
+`data/cli/pairing/demo` on this machine. It will only change if the fixture
 itself changes (motif set or gene list). If pair_parallel's
 implementation drifts (or its sort order does) the sha will differ —
 that's exactly the regression signal this audit catches.

@@ -13,7 +13,7 @@ PROJECT_ROOT="$(cd "$PROJECT_DIR/../../.." && pwd)"
 EXECUTABLE="$PROJECT_ROOT/build/pair_original"
 
 # Default data paths
-DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/pairing/demo}"
+DATA_DIR="${DATA_DIR:-$PROJECT_ROOT/data/cli/pairing/demo}"
 OUTPUT_DIR="${OUTPUT_DIR:-$PROJECT_DIR/result}"
 
 # Input files

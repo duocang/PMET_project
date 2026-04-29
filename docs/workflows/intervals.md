@@ -67,7 +67,7 @@ are restored to `:` — **binary fimohits stay sanitised internally**.
 This audit just ran:
 
 ```
-bash pipeline/workflows/intervals.sh -s data/demo_intervals/intervals.fa -m data/demo_intervals/motif.meme -g data/demo_intervals/peaks.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/tests/audit/runs/intervals/02_pairing -t 4
+bash pipeline/workflows/intervals.sh -s data/demos/intervals/intervals.fa -m data/demos/intervals/motif.meme -g data/demos/intervals/peaks.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/tests/audit/runs/intervals/02_pairing -t 4
 ```
 
 Indexing landed at `tests/audit/runs/intervals/01_indexing/`, pairing at `tests/audit/runs/intervals/02_pairing/`.
@@ -120,6 +120,6 @@ Total enriched pair rows: **46**.
 python3 tests/audit/generate.py intervals
 ```
 
-The motif_output.txt sha is anchored to `data/demo_intervals` on this
+The motif_output.txt sha is anchored to `data/demos/intervals` on this
 machine. Both the demo data and pair_parallel's output are
 deterministic — any sha drift is a real regression signal.

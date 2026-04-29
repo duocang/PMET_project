@@ -14,12 +14,20 @@ source pipeline/lib/print_colors.sh
 # ==================== Configuration ====================
 
 output=results/01_perf_cpu
-indexoutput=data/homotypic_promoters
+# Pre-built homotypic promoter index. Default to the standard output path of
+# pipeline/workflows/promoter.sh; run that once before this benchmark.
+indexoutput=${PMET_HOMOTYPIC_INDEX:-results/promoter/01_homotypic}
 # Use a real, project-tracked gene list for the benchmark. The legacy
 # `data/gene.txt` referenced here was removed; the benchmark only cares that
 # the list intersects the precomputed homotypic universe, so we reuse the
 # canonical task list that pipeline/03 also defaults to.
 gene_input_file=data/genes/genes_cell_type_treatment.txt
+
+if [[ ! -d "$indexoutput" ]]; then
+    echo "error: homotypic index not found at $indexoutput" >&2
+    echo "       run pipeline/workflows/promoter.sh first, or set PMET_HOMOTYPIC_INDEX" >&2
+    exit 1
+fi
 
 parallel_threads=2
 icthresh=4

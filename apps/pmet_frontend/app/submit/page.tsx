@@ -112,7 +112,7 @@ function SubmitPageContent() {
   }, [urlMode, setMode]);
 
   // Populate the pre-computed database dropdown from whatever is actually
-  // installed under data/indexing/ on the server.
+  // installed under data/app/indexing/ on the server.
   useEffect(() => {
     if (mode !== 'promoters_pre') return;
     indexingApi.list()
@@ -382,7 +382,7 @@ function SubmitPageContent() {
             <p className="mt-2 text-sm text-slate-500">
               {t('submit.db.empty.before')}
               <code className="mx-1 px-1 bg-slate-100 rounded">make fetch-data</code>
-              {t('submit.db.empty.after')} <code className="px-1 bg-slate-100 rounded">data/indexing/</code>.
+              {t('submit.db.empty.after')} <code className="px-1 bg-slate-100 rounded">data/app/indexing/</code>.
             </p>
           )}
 

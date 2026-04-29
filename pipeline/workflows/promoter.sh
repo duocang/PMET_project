@@ -61,9 +61,9 @@ usage() {
 USAGE: promoter.sh [options] [<genome> <gff3> <memefile> <gene_input_file>]
 
 Data (also settable as positional args in this order):
-  -s <genome>            FASTA genome             (default: data/TAIR10.fasta)
-  -a <gff3>              GFF3 annotation          (default: data/TAIR10.gff3)
-  -m <memefile>          MEME motif file          (default: data/Franco-Zorrilla_et_al_2014.meme)
+  -s <genome>            FASTA genome             (default: data/reference/TAIR10.fasta)
+  -a <gff3>              GFF3 annotation          (default: data/reference/TAIR10.gff3)
+  -m <memefile>          MEME motif file          (default: data/motifs/Franco-Zorrilla_et_al_2014.meme)
   -g <gene_list>         user gene list           (default: data/genes/genes_cell_type_treatment.txt)
 
 Homotypic parameters:
@@ -98,9 +98,9 @@ EOF
 
 # ==================== Defaults ====================
 
-genome=data/TAIR10.fasta
-anno=data/TAIR10.gff3
-meme=data/Franco-Zorrilla_et_al_2014.meme
+genome=data/reference/TAIR10.fasta
+anno=data/reference/TAIR10.gff3
+meme=data/motifs/Franco-Zorrilla_et_al_2014.meme
 
 task=genes_cell_type_treatment
 gene_input_file=data/genes/$task.txt

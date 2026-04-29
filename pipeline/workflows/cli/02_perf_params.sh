@@ -26,9 +26,9 @@ source pipeline/lib/timer.sh
 # ==================== Configuration ====================
 
 # Data
-genome=data/TAIR10.fasta
-anno=data/TAIR10.gff3
-meme=data/Franco-Zorrilla_et_al_2014.meme
+genome=data/reference/TAIR10.fasta
+anno=data/reference/TAIR10.gff3
+meme=data/motifs/Franco-Zorrilla_et_al_2014.meme
 
 # Biology parameters
 overlap=Yes              # Yes / NoOverlap (NoOverlap = subtract gene bodies)

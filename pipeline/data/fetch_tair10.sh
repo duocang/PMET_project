@@ -3,12 +3,12 @@
 set -euo pipefail
 
 script_dir=$(cd -- "$(dirname "$0")" && pwd)
-data_dir="$script_dir/../data"
+ref_dir="$script_dir/../../data/reference"
 
-mkdir -p "$data_dir"
+mkdir -p "$ref_dir"
 
-fasta="$data_dir/TAIR10.fasta"
-gff3="$data_dir/TAIR10.gff3"
+fasta="$ref_dir/TAIR10.fasta"
+gff3="$ref_dir/TAIR10.gff3"
 
 fetch_if_missing() {
     local url="$1"

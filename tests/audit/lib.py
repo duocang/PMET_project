@@ -209,7 +209,7 @@ def contract_invariant_checks(
       "fail" — emit a FAIL check (use for indexing workflows that own
                the invariant — promoter, intervals, elements).
       "warn" — emit a WARN (use for fixtures that are known partial,
-               e.g. data/pairing/demo which only ships 6 fimohits).
+               e.g. data/cli/pairing/demo which only ships 6 fimohits).
     """
     bin_motifs = _read_threshold_motifs(index_dir / "binomial_thresholds.txt")
     ic_motifs = _read_ic_motifs(index_dir / "IC.txt")

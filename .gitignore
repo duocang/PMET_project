@@ -59,8 +59,8 @@ TAIR10.gff3
 pmet_shiny_app/data/indexing/
 
 # Bench-scale data (not demo)
-**/data/indexing/bench/
-**/data/pairing/bench/
+**/data/cli/indexing/bench/
+**/data/cli/pairing/bench/
 
 # Vendored heavy archives (typical in legacy/)
 **/meme-*/

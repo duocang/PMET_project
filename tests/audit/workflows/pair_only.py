@@ -1,6 +1,6 @@
 """Audit spec for pipeline/workflows/pair_only.sh.
 
-Runs against the bundled data/pairing/demo fixture (a partial Arabidopsis
+Runs against the bundled data/cli/pairing/demo fixture (a partial Arabidopsis
 index with 6 fimohits files matching the AHL12/AHL20 motif family). This
 is the same fixture apps/cli/scripts/run_pairing.sh uses, so the audit's
 verification anchors to a deterministic small dataset rather than the
@@ -18,8 +18,8 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     log_path = runs_dir / "run.log"
     cmd = [
         "bash", "pipeline/workflows/pair_only.sh",
-        "-d", "data/pairing/demo",
-        "-g", "data/pairing/demo/gene.txt",
+        "-d", "data/cli/pairing/demo",
+        "-g", "data/cli/pairing/demo/gene.txt",
         "-o", str(out_dir),
         "-i", "4",
         "-t", "4",
@@ -57,14 +57,14 @@ def checks(data: dict) -> list[Check]:
         equal_check("motif_output deterministic vs anchor",
                     "0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f",
                     data["motif_output_sha"],
-                    note="captured against data/pairing/demo on this host; "
+                    note="captured against data/cli/pairing/demo on this host; "
                          "will differ if the fixture changes"),
         at_least_check("genes_used_PMET.txt non-empty",
                        1, data["genes_used_lines"],
                        note="genes from -g that survived the universe filter"),
         at_least_check("pmet.log non-empty",
                        1, data["pmet_log_lines"]),
-        # Cross-file invariant on the INPUT index. data/pairing/demo
+        # Cross-file invariant on the INPUT index. data/cli/pairing/demo
         # intentionally ships only 6 fimohits files for ~110 binomial
         # threshold rows (it's a small fixture, not a full index), so
         # the strict contract validator would FAIL — record as WARN

@@ -76,9 +76,9 @@ Use this when your unit of analysis is not "the promoter of a gene" but ATAC/ChI
 
 ```bash
 bash pipeline/workflows/intervals.sh \
-    -s data/demo_intervals/intervals.fa \
-    -m data/demo_intervals/motif.meme \
-    -g data/demo_intervals/peaks.txt
+    -s data/demos/intervals/intervals.fa \
+    -m data/demos/intervals/motif.meme \
+    -g data/demos/intervals/peaks.txt
 ```
 
 ### 4.3 Genomic elements — `elements.sh` &nbsp;[details](docs/workflows/elements.md)
@@ -244,7 +244,7 @@ The pre-computed per-species indexes (GBs) are not shipped in the repo. Run once
 cd deploy && make fetch-data
 ```
 
-This downloads TAIR10 + per-species indexes into `data/indexing/` (16 GB if you grab everything).
+This downloads TAIR10 into `data/` and per-species indexes into `data/app/indexing/` (16 GB if you grab everything). The `data/app/` namespace keeps web-app inputs separate from CLI/core demo data in `data/indexing/{demo,bench}/`.
 
 ### Email notifications
 
@@ -343,9 +343,9 @@ bash pipeline/workflows/promoter.sh -s my_genome.fa -a my_annot.gff3   # 换物�
 
 ```bash
 bash pipeline/workflows/intervals.sh \
-    -s data/demo_intervals/intervals.fa \
-    -m data/demo_intervals/motif.meme \
-    -g data/demo_intervals/peaks.txt
+    -s data/demos/intervals/intervals.fa \
+    -m data/demos/intervals/motif.meme \
+    -g data/demos/intervals/peaks.txt
 ```
 
 ### 4.3 基因组元素 — `elements.sh` &nbsp;[详细](docs/workflows/elements.md)
@@ -517,7 +517,7 @@ make rebuild     # 改了代码后重建
 cd deploy && make fetch-data
 ```
 
-下载 TAIR10 + per-species 索引到 `data/indexing/`（全要 16 GB）。
+TAIR10 下载到 `data/`，per-species 索引下载到 `data/app/indexing/`（全要 16 GB）。`data/app/` 命名空间用来把 Web 应用的输入和 CLI / core 的 demo / bench 数据（位于 `data/indexing/{demo,bench}/`）分开。
 
 ### 邮件通知
 

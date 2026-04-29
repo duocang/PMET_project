@@ -117,7 +117,7 @@ done
 
 # Download genome/annotation if missing
 print_orange "\nChecking genome data..."
-if [[ ! -s data/TAIR10.fasta || ! -s data/TAIR10.gff3 ]]; then
+if [[ ! -s data/reference/TAIR10.fasta || ! -s data/reference/TAIR10.gff3 ]]; then
     print_orange "Downloading genome and annotation..."
     bash pipeline/data/fetch_tair10.sh
 else

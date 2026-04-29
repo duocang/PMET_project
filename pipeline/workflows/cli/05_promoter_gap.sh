@@ -23,9 +23,9 @@ source pipeline/lib/timer.sh
 # ==================== Configuration ====================
 
 # Data
-genome=data/TAIR10.fasta
-anno=data/TAIR10.gff3
-meme=data/Franco-Zorrilla_et_al_2014.meme
+genome=data/reference/TAIR10.fasta
+anno=data/reference/TAIR10.gff3
+meme=data/motifs/Franco-Zorrilla_et_al_2014.meme
 
 task=genes_cell_type_treatment
 gene_input_file=data/genes/$task.txt

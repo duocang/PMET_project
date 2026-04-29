@@ -8,8 +8,8 @@ Captured before the monorepo refactor at commit `123a39b` on `refactor/monorepo`
 
 - **binaries** — sha256 of every `*/build/{index_c,index_cpp,index_fimo_fused,pair_original,pair_parallel}`. The three subdirs share identical binaries; this is verified.
 - **core_demo_indexing_existing_outputs** — sha256 of `PMET_project/results/demo/fimo_official/*` reference outputs.
-- **core_demo_run_indexing_{c,cpp,fused}** — runs `PMET_project/scripts/run_indexing.sh -v <ver>` against `data/indexing/demo` and hashes every produced file.
-- **core_demo_run_pairing** — runs `PMET_project/scripts/run_pairing.sh` against `data/pairing/demo` and hashes outputs.
+- **core_demo_run_indexing_{c,cpp,fused}** — runs `PMET_project/scripts/run_indexing.sh -v <ver>` against `data/cli/indexing/demo` and hashes every produced file.
+- **core_demo_run_pairing** — runs `PMET_project/scripts/run_pairing.sh` against `data/cli/pairing/demo` and hashes outputs.
 - **analysis_smoke** — runs `pmet_analysis_pipeline/scripts/pipeline/00_requirements.sh` (tool presence check).
 - **backend_pytest** — runs `pmet_shiny_app/pmet_backend/test_api.py`.
 

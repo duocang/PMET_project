@@ -74,8 +74,8 @@ The anchors currently committed:
 
 | workflow | anchor file | sha (first 16) |
 |---|---|---|
-| pair_only | `data/pairing/demo` → `motif_output.txt` | `0af5b936606fd3` |
-| intervals | `data/demo_intervals` → `motif_output.txt` | `4858412a091983` |
+| pair_only | `data/cli/pairing/demo` → `motif_output.txt` | `0af5b936606fd3` |
+| intervals | `data/demos/intervals` → `motif_output.txt` | `4858412a091983` |
 | promoter | TAIR10 + Franco-Zorrilla → `motif_output.txt` | `4b24906abfe55e` |
 | elements | per-task `motif_output.txt` (one anchor per `data/genes/*.txt`) | see `TASK_ANCHORS` in `workflows/elements.py` |
 
@@ -105,7 +105,7 @@ FAIL rows. The three checks emitted:
   - binomial_thresholds.txt motifs == fimohits/ basenames
   - IC.txt motifs == fimohits/ basenames
 
-For pair_only the input index is `data/pairing/demo`, which
+For pair_only the input index is `data/cli/pairing/demo`, which
 intentionally ships only 6 fimohits files for ~110 binomial threshold
 rows. The same three checks run there but at WARN severity (a real
 mismatch you should know about, not a regression you should fix).

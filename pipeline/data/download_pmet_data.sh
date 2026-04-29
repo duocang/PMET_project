@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 #
 # Fetch the files the full-promoters analysis expects to find:
-#   - data/TAIR10.fasta              (Ensembl Plants release 56, Arabidopsis thaliana)
-#   - data/TAIR10.gff3               (matching annotation)
-#   - data/indexing/<species>/       (pre-computed PMET indexing archives)
+#   - data/reference/TAIR10.fasta    (Ensembl Plants release 56, Arabidopsis thaliana)
+#   - data/reference/TAIR10.gff3     (matching annotation)
+#   - data/app/indexing/<species>/   (pre-computed PMET indexing archives served
+#                                     to the web app; kept apart from CLI/core
+#                                     demo and bench data under data/cli/)
 #
 # Safe to re-run; anything already present is skipped.
 
@@ -11,9 +13,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-DATA_DIR="data"
-INDEX_DIR="data/indexing"
-mkdir -p "$DATA_DIR" "$INDEX_DIR"
+REF_DIR="data/reference"
+INDEX_DIR="data/app/indexing"
+mkdir -p "$REF_DIR" "$INDEX_DIR"
 
 log() { printf '\n>>> %s\n' "$*"; }
 
@@ -32,11 +34,11 @@ download_gz() {
 # ---- TAIR10 reference (Arabidopsis thaliana) ----
 download_gz \
     "https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-56/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz" \
-    "$DATA_DIR/TAIR10.fasta"
+    "$REF_DIR/TAIR10.fasta"
 
 download_gz \
     "https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-56/gff3/arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.56.gff3.gz" \
-    "$DATA_DIR/TAIR10.gff3"
+    "$REF_DIR/TAIR10.gff3"
 
 # ---- Pre-computed PMET indexing archives (Zenodo) ----
 urls=(
@@ -92,8 +94,8 @@ done
 
 if (( ${#failed[@]} > 0 )); then
     log "Done with errors. Failed species: ${failed[*]}"
-    log "Re-run the script to retry. Files under $DATA_DIR/ and $INDEX_DIR/"
+    log "Re-run the script to retry. Files under $REF_DIR/ and $INDEX_DIR/"
     exit 1
 fi
 
-log "Done. Files under $DATA_DIR/ and $INDEX_DIR/"
+log "Done. Files under $REF_DIR/ and $INDEX_DIR/"
