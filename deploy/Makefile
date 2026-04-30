@@ -3,7 +3,7 @@
 .PHONY: help start stop build-images rebuild rebuild-frontend rebuild-backend \
         restart restart-worker restart-nginx clean logs \
         api worker frontend test install-frontend install-backend init \
-        fetch-data
+        fetch-data _warn-running-tasks
 
 # PMET binaries are built from the in-repo core/ sources during
 # `docker build` (apps/pmet_backend/Dockerfile copies core/ and builds
@@ -61,8 +61,28 @@ logs:
 # Rebuild / restart helpers (use these after editing code)
 # -------------------------------------------------------------------------
 
+# Bail out (with a useful message) if any task is mid-flight. Override with
+# FORCE=1 — the worker container is SIGKILLed on rebuild and any in-flight
+# task will die without a chance to write its final status, leaving its JSON
+# stuck on "running" forever.
+_warn-running-tasks:
+	@count=$$(grep -l '"status": "running"' ../results/app/tasks/*.json 2>/dev/null | wc -l | tr -d ' '); \
+	if [ "$$count" -gt 0 ] && [ -z "$$FORCE" ]; then \
+		echo ""; \
+		echo "  ⚠  $$count task(s) currently in 'running' state."; \
+		echo "     Continuing will SIGKILL the worker; the task(s) below will be"; \
+		echo "     stuck on 'running' afterwards (no automatic status fix-up)."; \
+		echo ""; \
+		grep -l '"status": "running"' ../results/app/tasks/*.json 2>/dev/null \
+			| xargs -n1 basename | sed 's/\.json$$//' | sed 's|^|       |'; \
+		echo ""; \
+		echo "     Pass FORCE=1 to override, or wait for them to finish."; \
+		echo ""; \
+		exit 1; \
+	fi
+
 # Rebuild and restart everything. Always correct, just slower.
-rebuild:
+rebuild: _warn-running-tasks
 	@echo "Building images from local core/"
 	docker-compose build
 	docker-compose up -d
@@ -78,7 +98,7 @@ rebuild-frontend:
 # Rebuild and restart only the backend image (shared by api + worker).
 # Only needed when pmet_backend/Dockerfile or requirements.txt change.
 # For normal Python edits use restart-worker (or nothing, for api).
-rebuild-backend:
+rebuild-backend: _warn-running-tasks
 	@echo "Building images from local core/"
 	docker-compose build api
 	docker-compose up -d api worker
@@ -86,7 +106,7 @@ rebuild-backend:
 # Restart the celery worker so it picks up edited Python code.
 # The backend source is bind-mounted into the container, so no rebuild
 # is needed — but celery does not auto-reload, hence the explicit restart.
-restart-worker:
+restart-worker: _warn-running-tasks
 	docker-compose restart worker
 
 # Restart nginx after editing nginx/nginx.conf (the file is mounted, so
