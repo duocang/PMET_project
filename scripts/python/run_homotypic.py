@@ -122,7 +122,7 @@ def main() -> int:
     parser.add_argument(
         "--gff3sort",
         type=Path,
-        default=REPO_ROOT / "pipeline" / "third_party" / "gff3sort" / "gff3sort.pl",
+        default=REPO_ROOT / "scripts" / "third_party" / "gff3sort" / "gff3sort.pl",
     )
     args = parser.parse_args()
 
