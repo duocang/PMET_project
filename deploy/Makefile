@@ -18,7 +18,7 @@ help:
 	@echo "    make build-images       - Build all docker images (5-10 min first time)"
 	@echo "    make start              - Start all services in the background"
 	@echo "    make stop               - Stop all services"
-	@echo "    make clean              - Stop services, remove volumes, wipe result/"
+	@echo "    make clean              - Stop services, remove volumes, wipe ../results/app/"
 	@echo ""
 	@echo "  After changing code (most common)"
 	@echo "    make rebuild-frontend   - Rebuild + restart ONLY the frontend container"
@@ -52,7 +52,7 @@ build-images:
 
 clean:
 	docker-compose down -v
-	rm -rf result/*
+	rm -rf ../results/app/*
 
 logs:
 	docker-compose logs -f

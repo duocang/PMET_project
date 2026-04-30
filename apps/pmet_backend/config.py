@@ -1,5 +1,14 @@
+import os
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+# Subdir of PROJECT_ROOT where task outputs land. Default keeps the
+# host-side namespace separate from CLI output (results/app vs results/cli).
+# Inside docker the host dir is bind-mounted directly onto /app/results, so
+# the container has no use for the trailing /app/ — set PMET_RESULT_DIR_REL
+# to "results" in docker-compose to drop it.
+_DEFAULT_RESULT_DIR_REL = "results/app"
 
 
 def _detect_project_root() -> Path:
@@ -22,10 +31,15 @@ def _detect_project_root() -> Path:
 @dataclass
 class Config:
     PROJECT_ROOT: Path = _detect_project_root()
-    # Web-app task outputs land here. CLI / pipeline outputs go to
-    # results/cli/<workflow>/. Splitting under one results/ root avoids
-    # the previous result/ vs results/ singular/plural confusion.
-    RESULT_DIR: Path = PROJECT_ROOT / "results" / "app"
+    # Web-app task outputs. Override via PMET_RESULT_DIR_REL (relative to
+    # PROJECT_ROOT). Default = results/app on host so app and CLI outputs are
+    # siblings under results/. Docker-compose sets it to "results" because
+    # the host's results/app/ is mounted directly onto /app/results/, making
+    # the trailing /app/ redundant inside the container.
+    RESULT_DIR: Path = field(
+        default_factory=lambda: _detect_project_root()
+        / os.environ.get("PMET_RESULT_DIR_REL", _DEFAULT_RESULT_DIR_REL)
+    )
     # Read-only catalog of pre-computed species/motif databases, populated by
     # pipeline/data/download_pmet_data.sh. Layout: <species>/<motif_db>/.
     # Top-level: the indexes are reusable scientific resources (CLI's
@@ -34,7 +48,9 @@ class Config:
     PRECOMPUTED_INDEXING_DIR: Path = PROJECT_ROOT / "data" / "precomputed_indexes"
     PRECOMPUTED_INDEXING_METADATA: Path = PROJECT_ROOT / "data" / "app" / "indexing_metadata.json"
     GENOME_METADATA: Path = PROJECT_ROOT / "data" / "app" / "genome_n_annotation.json"
-    TASKS_DIR: Path = PROJECT_ROOT / "results" / "app" / "tasks"
+    # TASKS_DIR is derived from RESULT_DIR in __post_init__ so the env override
+    # propagates without each call site re-reading the env.
+    TASKS_DIR: Path = field(init=False)
     # Workflows + helpers (bash + python + R) live under pipeline/.
     # The "-r" flag the indexer takes equals str(SCRIPTS_DIR).
     SCRIPTS_DIR: Path = PROJECT_ROOT / "pipeline"
@@ -55,6 +71,7 @@ class Config:
     NGINX_LINK: str = ""
 
     def __post_init__(self):
+        self.TASKS_DIR = self.RESULT_DIR / "tasks"
         self.RESULT_DIR.mkdir(parents=True, exist_ok=True)
         self.TASKS_DIR.mkdir(parents=True, exist_ok=True)
         self._load_configs()

@@ -18,17 +18,19 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - PMET_WORKERS=2
+      # Container has only app outputs, so drop the trailing /app/ — host's
+      # results/app/ is mounted directly onto /app/results/.
+      - PMET_RESULT_DIR_REL=results
     volumes:
       # Dev-only mounts. pmet_backend/ is mounted for uvicorn --reload and
-      # celery restart-without-rebuild. data/ and result/ (host) → results/app/
-      # (container) are runtime volumes
-      # (GB-scale inputs / job outputs) that must stay on the host. Everything
-      # else — scripts/, nginx/, compiled PMET binaries — is baked into the
-      # image so the container is self-contained.
+      # celery restart-without-rebuild. data/ and results/app/ are runtime
+      # volumes (GB-scale inputs / job outputs) that must stay on the host;
+      # everything else — pipeline scripts, nginx config, compiled PMET
+      # binaries — is baked into the image so the container is self-contained.
       - ../apps/pmet_backend:/app/pmet_backend
       - ../pipeline:/app/pipeline
       - ../data:/app/data
-      - ./result:/app/results/app
+      - ../results/app:/app/results
     depends_on:
       redis:
         condition: service_healthy
@@ -43,11 +45,12 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - PMET_WORKERS=2
+      - PMET_RESULT_DIR_REL=results
     volumes:
       - ../apps/pmet_backend:/app/pmet_backend
       - ../pipeline:/app/pipeline
       - ../data:/app/data
-      - ./result:/app/results/app
+      - ../results/app:/app/results
     depends_on:
       redis:
         condition: service_healthy
@@ -66,7 +69,7 @@ services:
       - '5960:80'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./result:/var/www/result:ro
+      - ../results/app:/var/www/result:ro
     depends_on:
       - api
       - frontend

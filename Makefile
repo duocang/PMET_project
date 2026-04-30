@@ -1,6 +1,7 @@
 # PMET monorepo top-level Makefile
 
 .PHONY: help build build-core clean-core-binaries build-indexing build-pairing demo demo-indexing demo-pairing baseline clean \
+        clean-results clean-results-app clean-results-cli \
         fetch-data build-app up down logs ps rebuild
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -15,7 +16,10 @@ help:
 	@echo "    demo         - run demo indexing + pairing against data/"
 	@echo "    baseline     - capture fingerprints to tests/baseline/fingerprints.txt"
 	@echo "    fetch-data   - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
-	@echo "    clean        - remove ./build/"
+	@echo "    clean        - remove ./build/ (compiled core binaries)"
+	@echo "    clean-results-app - wipe results/app/ (web-app task outputs)"
+	@echo "    clean-results-cli - wipe results/cli/ (CLI / pipeline outputs)"
+	@echo "    clean-results     - both of the above"
 	@echo ""
 	@echo "  Web app stack — docker-compose, exposes nginx on http://localhost:5960"
 	@echo "    build-app    - build the docker images only (api + worker + frontend)"
@@ -71,6 +75,16 @@ fetch-data:
 
 clean:
 	@rm -rf $(BUILD)
+
+clean-results-app:
+	@rm -rf $(ROOT)/results/app/*
+	@echo "wiped results/app/"
+
+clean-results-cli:
+	@rm -rf $(ROOT)/results/cli/*
+	@echo "wiped results/cli/"
+
+clean-results: clean-results-app clean-results-cli
 
 # ---- Web app (proxies into deploy/) ----
 # These shortcuts run docker-compose from deploy/ so you don't need to cd.

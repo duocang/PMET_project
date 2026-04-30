@@ -238,7 +238,7 @@ When `make up` finishes, open **http://localhost:5960** — nginx fronts the fro
 - `apps/pmet_backend/` → `/app/pmet_backend` (uvicorn auto-reloads; worker needs `make restart-worker`)
 - `pipeline/` → `/app/pipeline`
 - `data/` → `/app/data`
-- `deploy/result/` → `/app/results/app` (host dir name kept short; container side reflects the unified `results/{app,cli}/` layout)
+- `results/app/` → `/app/results` (single canonical location for web-app task outputs; same path whether the backend runs in docker or locally)
 
 The frontend image is baked at build time (no bind mount); frontend edits require `make rebuild` (or `cd deploy && make rebuild-frontend` for just the frontend).
 
@@ -511,7 +511,7 @@ make rebuild     # 改了代码后重建
 - `apps/pmet_backend/` → `/app/pmet_backend`（uvicorn 自动 reload；worker 需 `make restart-worker`）
 - `pipeline/` → `/app/pipeline`
 - `data/` → `/app/data`
-- `deploy/result/` → `/app/results/app`（host 端目录名保持短；容器侧对齐统一的 `results/{app,cli}/` 布局）
+- `results/app/` → `/app/results`（web app 任务输出的唯一规范位置；docker 和本地模式 host 路径相同）
 
 前端镜像在 build 时 baked，不挂载 — 改前端代码要 `make rebuild`（或 `cd deploy && make rebuild-frontend` 只重建前端）。
 
