@@ -11,10 +11,10 @@ docs/
 │   ├── naming-conventions.md   how workflow / output filenames are structured
 │   └── homotypic-contract.md   on-disk schema every indexer must produce
 ├── workflows/                  per-workflow audit (purpose + steps + verification)
-│   ├── promoter.md             pipeline/workflows/promoter.sh
-│   ├── intervals.md            pipeline/workflows/intervals.sh
-│   ├── elements.md             pipeline/workflows/elements.sh
-│   └── pair_only.md            pipeline/workflows/pair_only.sh
+│   ├── promoter.md             scripts/workflows/promoter.sh
+│   ├── intervals.md            scripts/workflows/intervals.sh
+│   ├── elements.md             scripts/workflows/elements.sh
+│   └── pair_only.md            scripts/workflows/pair_only.sh
 ├── figures/                    SVG flowcharts and example outputs
 └── archive/                    pre-monorepo material kept for historical reference
     ├── pre-monorepo-pipeline-story/   the 03..07 audit docs that workflows/ replaces

@@ -1,0 +1,133 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - link "PMET home" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img "PMET" [ref=e6]
+        - generic [ref=e7]: Paired Motif Enrichment Tool
+      - generic [ref=e8]:
+        - link "Home" [ref=e9] [cursor=pointer]:
+          - /url: /
+        - link "Analysis" [ref=e10] [cursor=pointer]:
+          - /url: /submit
+        - link "My Tasks" [ref=e11] [cursor=pointer]:
+          - /url: /tasks
+        - link "Visualize" [ref=e12] [cursor=pointer]:
+          - /url: /visualize
+        - link "Data" [ref=e13] [cursor=pointer]:
+          - /url: /data
+        - link "About" [ref=e14] [cursor=pointer]:
+          - /url: /about
+        - button "Toggle language" [ref=e15] [cursor=pointer]: 中文
+        - link "View source on GitHub" [ref=e16] [cursor=pointer]:
+          - /url: https://github.com/duocang/PMET_project
+          - img [ref=e17]
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - heading "Submit New Analysis" [level=1] [ref=e21]
+      - generic [ref=e22]:
+        - heading "Analysis Mode" [level=3] [ref=e23]
+        - generic [ref=e24]:
+          - button "Pre-computed Promoters" [ref=e25] [cursor=pointer]
+          - button "Full Promoters" [ref=e26] [cursor=pointer]
+          - button "Intervals" [ref=e27] [cursor=pointer]
+      - generic [ref=e28]:
+        - generic [ref=e29]: Email Address *
+        - textbox "your@email.com" [ref=e30]
+        - paragraph [ref=e31]: Results will be sent to this email
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - heading "Upload Files" [level=3] [ref=e34]
+          - generic [ref=e35]: New here? Use the Use example link on any field to load a sample file.
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]:
+              - generic [ref=e39]: Intervals (FASTA)*
+              - button "Use example" [ref=e40] [cursor=pointer]:
+                - img [ref=e41]
+                - text: Use example
+            - generic [ref=e44] [cursor=pointer]:
+              - button "Choose File" [ref=e45]
+              - generic [ref=e46]:
+                - img [ref=e48]
+                - paragraph [ref=e51]: Drag & drop a file here, or click to select
+                - paragraph [ref=e52]: "Accepted formats: .fasta · .fa · .fasta.gz · .fa.gz"
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - generic [ref=e55]: Motif Database*
+              - button "Use example" [ref=e56] [cursor=pointer]:
+                - img [ref=e57]
+                - text: Use example
+            - generic [ref=e60] [cursor=pointer]:
+              - button "Choose File" [ref=e61]
+              - generic [ref=e62]:
+                - img [ref=e64]
+                - paragraph [ref=e67]: Drag & drop a file here, or click to select
+                - paragraph [ref=e68]: "Accepted formats: .meme"
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72]: Peaks / Intervals List*
+              - button "Use example" [ref=e73] [cursor=pointer]:
+                - img [ref=e74]
+                - text: Use example
+            - generic [ref=e77] [cursor=pointer]:
+              - button "Choose File" [ref=e78]
+              - generic [ref=e79]:
+                - img [ref=e81]
+                - paragraph [ref=e84]: Drag & drop a file here, or click to select
+                - paragraph [ref=e85]: "Accepted formats: .txt · .tsv"
+            - paragraph [ref=e86]: Tab-separated file with cluster and gene/peak columns
+      - generic [ref=e87]:
+        - heading "Parameters" [level=3] [ref=e88]
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: Promoter Length
+            - combobox [ref=e92]:
+              - option "500 bp"
+              - option "1000 bp" [selected]
+              - option "1500 bp"
+              - option "2000 bp"
+          - generic [ref=e93]:
+            - generic [ref=e94]: Max Motif Matches
+            - combobox [ref=e95]:
+              - option "2"
+              - option "3"
+              - option "4"
+              - option "5" [selected]
+              - option "10"
+              - option "15"
+              - option "20"
+          - generic [ref=e96]:
+            - generic [ref=e97]: Number of Selected Promoters
+            - combobox [ref=e98]:
+              - option "2000"
+              - option "3000"
+              - option "4000"
+              - option "5000" [selected]
+              - option "10000"
+          - generic [ref=e99]:
+            - generic [ref=e100]: FIMO Threshold
+            - combobox [ref=e101]:
+              - option "1e-6"
+              - option "1e-5"
+              - option "1e-4"
+              - option "1e-3"
+              - option "0.01"
+              - option "0.05" [selected]
+          - generic [ref=e102]:
+            - generic [ref=e103]: IC Threshold
+            - combobox [ref=e104]:
+              - option "2"
+              - option "4"
+              - option "8"
+              - option "10"
+              - option "16"
+              - option "24" [selected]
+              - option "32"
+      - button "Submit Analysis" [ref=e106] [cursor=pointer]
+  - contentinfo [ref=e107]:
+    - paragraph [ref=e108]:
+      - text: PMET — Paired Motif Enrichment Tool ·
+      - link "GitHub" [ref=e109] [cursor=pointer]:
+        - /url: https://github.com/duocang/PMET_project
+  - alert [ref=e110]

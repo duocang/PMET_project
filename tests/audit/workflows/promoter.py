@@ -1,4 +1,4 @@
-"""Audit spec for pipeline/workflows/promoter.sh.
+"""Audit spec for scripts/workflows/promoter.sh.
 
 Runs the full TAIR10 + Franco-Zorrilla 113-motif index against the
 canonical genes_cell_type_treatment cluster list. ~2 minutes wall.
@@ -20,7 +20,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     plot = reset_dir(runs_dir / "03_plot")
     log_path = runs_dir / "run.log"
     cmd = [
-        "bash", "pipeline/workflows/promoter.sh",
+        "bash", "scripts/workflows/promoter.sh",
         "-o", str(homo),
         "-x", str(het),
         "-y", str(plot),

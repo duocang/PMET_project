@@ -1,4 +1,4 @@
-"""Audit spec for pipeline/workflows/intervals.sh.
+"""Audit spec for scripts/workflows/intervals.sh.
 
 Runs against the bundled data/demos/intervals fixture (10 motifs,
 ~25 MB intervals.fa). Same fixture the web app's "Use example" button
@@ -17,7 +17,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     out_pair = reset_dir(runs_dir / "02_pairing")
     log_path = runs_dir / "run.log"
     cmd = [
-        "bash", "pipeline/workflows/intervals.sh",
+        "bash", "scripts/workflows/intervals.sh",
         "-s", "data/demos/intervals/indexing/intervals.fa",
         "-m", "data/demos/intervals/indexing/motif.meme",
         "-g", "data/demos/intervals/indexing/peaks.txt",

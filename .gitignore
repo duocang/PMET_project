@@ -57,6 +57,7 @@ TAIR10.gff3
 
 # Server-side indexing cache (16G of regenerated species data)
 pmet_shiny_app/data/indexing/
+data/precomputed_indexes/
 
 # Bench-scale data (not demo)
 **/data/demos/promoters/indexing/bench/

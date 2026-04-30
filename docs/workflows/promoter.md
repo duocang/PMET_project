@@ -2,7 +2,7 @@
 
 _Audit refreshed 2026-04-29 13:15:06 UTC on this machine — workflow `promoter`, exit 0, 115.8s_
 
-**Source:** [`pipeline/workflows/promoter.sh`](../../pipeline/workflows/promoter.sh)
+**Source:** [`scripts/workflows/promoter.sh`](../../scripts/workflows/promoter.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs · web `promoters` mode
 
 ## Purpose
@@ -57,30 +57,30 @@ is documented separately in
 | # | Stage | What runs | Why |
 |---|---|---|---|
 | 1 | Argument + binary preflight | locate `build/{index_fimo_fused, pair_parallel}` | Single failure point if either binary is missing |
-| 2 | TAIR10 fetch (if absent) | `bash pipeline/data/fetch_tair10.sh` | One-shot ~220 MB download; subsequent runs find the file and skip |
+| 2 | TAIR10 fetch (if absent) | `bash scripts/fetch_reference.sh` | One-shot ~220 MB download; subsequent runs find the file and skip |
 | 3 | Chromosome-name preflight | compare GFF3 first chrom vs FASTA first header | Catches the `'1'` vs `'Chr1'` mismatch that silently produces empty BED downstream — quick fail beats a 2-minute "everything succeeded but indexed nothing" run |
-| 4 | Homotypic indexing | `pipeline/python/run_homotypic.py` — delegates the 10-step chain below | The expensive scan; produces the universe + per-motif binary fimohits + per-motif binomial thresholds |
-| 4.1 | Sort GFF3 | `pipeline/third_party/gff3sort/gff3sort.pl` | Some downstream tools assume sorted GFF3; this normalises arbitrary input |
-| 4.2 | Build gene BED | `pipeline/python/gff3_to_gene_bed.py` | Pulls the gene-row subset (`feature == 'gene'` or the wider `gene$`-regex set) into a 6-column BED |
-| 4.3 | Chromosome lengths | `pipeline/python/genome_chrom_lengths.py` | `bedtools flank` needs a `<chr> <length>` table to clamp at chromosome ends |
+| 4 | Homotypic indexing | `scripts/python/run_homotypic.py` — delegates the 10-step chain below | The expensive scan; produces the universe + per-motif binary fimohits + per-motif binomial thresholds |
+| 4.1 | Sort GFF3 | `scripts/third_party/gff3sort/gff3sort.pl` | Some downstream tools assume sorted GFF3; this normalises arbitrary input |
+| 4.2 | Build gene BED | `scripts/python/gff3_to_gene_bed.py` | Pulls the gene-row subset (`feature == 'gene'` or the wider `gene$`-regex set) into a 6-column BED |
+| 4.3 | Chromosome lengths | `scripts/python/genome_chrom_lengths.py` | `bedtools flank` needs a `<chr> <length>` table to clamp at chromosome ends |
 | 4.4 | Linearise FASTA + faidx | inline awk + `samtools faidx` | Single-line records make sed/grep predictable; the `.fai` index is consumed by `bedtools getfasta` later |
-| 4.5 | Build promoters | `pipeline/python/build_promoters.py` | The conceptual core — `bedtools flank -l <length> -r 0 -s` → trim against gene bodies → optional 5'-UTR extension → `bedtools getfasta -s` → drop fragments < min length → emit `promoter.fa` + `promoter_lengths.txt` |
-| 4.6 | IC per motif | `pipeline/python/calculateICfrommeme_IC_to_csv.py` | Reads the combined MEME directly (deterministic motif order); upper-cases motif IDs so they line up with what index_fimo_fused writes |
+| 4.5 | Build promoters | `scripts/python/build_promoters.py` | The conceptual core — `bedtools flank -l <length> -r 0 -s` → trim against gene bodies → optional 5'-UTR extension → `bedtools getfasta -s` → drop fragments < min length → emit `promoter.fa` + `promoter_lengths.txt` |
+| 4.6 | IC per motif | `scripts/python/calculateICfrommeme_IC_to_csv.py` | Reads the combined MEME directly (deterministic motif order); upper-cases motif IDs so they line up with what index_fimo_fused writes |
 | 4.7 | MEME header upper-casing | inline (`meme_upper.meme`) | Same case as IC.txt → matches index_fimo_fused's binary fimohits and binomial_thresholds.txt; `pair_parallel` does case-sensitive lookups |
 | 4.8 | FIMO + indexing | `build/index_fimo_fused` (one OpenMP-batched call) | The scan itself; writes `binomial_thresholds.txt` + `fimohits/<MOTIF>.bin` (PMETBN01 binary) |
 | 4.9 | Sanity: file count | inline `find ... -name '*.bin' \| wc -l` | Catches "indexing didn't crash but produced 0 files" early |
-| 4.10 | Contract validation | `pipeline/python/check_homotypic_contract.py` | Asserts the schema in `docs/methods/homotypic-contract.md` (motif sets across binomial / IC / fimohits, type checks) |
+| 4.10 | Contract validation | `scripts/python/check_homotypic_contract.py` | Asserts the schema in `docs/methods/homotypic-contract.md` (motif sets across binomial / IC / fimohits, type checks) |
 | 5 | Heterotypic gene filter | `grep -wFf universe.txt <gene_list>` | Drop user-list genes that aren't in the indexed universe (no promoter passed extraction) |
 | 6 | Pair test | `build/pair_parallel -d <homotypic> -g <kept> ...` → temp shards | Per-cluster hypergeometric pair enrichment, gated by the per-motif binomial pre-filter in `binomial_thresholds.txt` |
 | 7 | Shard aggregation | `cat temp*.txt > motif_output.txt` then `rm temp*.txt` | pair_parallel doesn't unify shards itself |
-| 8 | Heatmaps (optional) | three `Rscript pipeline/r/draw_heatmap.R` calls | Skipped silently if `Rscript` is absent |
+| 8 | Heatmaps (optional) | three `Rscript scripts/r/draw_heatmap.R` calls | Skipped silently if `Rscript` is absent |
 
 ## Run snapshot
 
 This audit just ran:
 
 ```
-bash pipeline/workflows/promoter.sh -o /Users/nuioi/projects/pmet/tests/audit/runs/promoter/01_homotypic -x /Users/nuioi/projects/pmet/tests/audit/runs/promoter/02_heterotypic -y /Users/nuioi/projects/pmet/tests/audit/runs/promoter/03_plot -t 4
+bash scripts/workflows/promoter.sh -o /Users/nuioi/projects/pmet/tests/audit/runs/promoter/01_homotypic -x /Users/nuioi/projects/pmet/tests/audit/runs/promoter/02_heterotypic -y /Users/nuioi/projects/pmet/tests/audit/runs/promoter/03_plot -t 4
 ```
 
 Indexing landed at `tests/audit/runs/promoter/01_homotypic/`,

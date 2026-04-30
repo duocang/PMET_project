@@ -80,7 +80,7 @@ run_one_ic() {
     local t0=$SECONDS
     local rc=0
     rm -rf "$out_dir"
-    bash scripts/pipeline/08_pair_only.sh \
+    bash scripts/scripts/08_pair_only.sh \
         -d "$homotypic" \
         -g "$gene_list" \
         -o "$out_dir" \

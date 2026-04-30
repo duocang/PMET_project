@@ -2,7 +2,7 @@
 
 _Audit refreshed 2026-04-29 13:13:10 UTC on this machine — workflow `intervals`, exit 0, 15.2s_
 
-**Source:** [`pipeline/workflows/intervals.sh`](../../pipeline/workflows/intervals.sh)
+**Source:** [`scripts/workflows/intervals.sh`](../../scripts/workflows/intervals.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs · web `intervals` mode
 
 ## Purpose
@@ -52,22 +52,22 @@ are restored to `:` — **binary fimohits stay sanitised internally**.
 |---|---|---|---|
 | 1 | Argument + binary preflight | locate `build/{index_fimo_fused, pair_parallel}` | Single failure point if either binary is missing |
 | 2 | Interval sanitization | `sed 's/^\(>.*\):/\1__COLON__/g'` over input FASTA | See "biological setup" above — FIMO/binary safety |
-| 3 | Dedupe + lengths | `pipeline/python/deduplicate.py` then `parse_promoter_lengths_from_fasta.py` | Drops duplicate sequences, writes per-interval lengths to `promoter_lengths.txt`, derives `universe.txt` from it |
+| 3 | Dedupe + lengths | `scripts/python/deduplicate.py` then `parse_promoter_lengths_from_fasta.py` | Drops duplicate sequences, writes per-interval lengths to `promoter_lengths.txt`, derives `universe.txt` from it |
 | 4 | Background model | `fasta-get-markov` over the sanitized FASTA | Zero-order Markov base composition; FIMO uses it as the null model so p-values are calibrated against the user's actual interval composition |
-| 5 | IC.txt | `pipeline/python/calculateICfrommeme_IC_to_csv.py` | Per-motif positional information content; pair_parallel uses this as a sanity floor |
+| 5 | IC.txt | `scripts/python/calculateICfrommeme_IC_to_csv.py` | Per-motif positional information content; pair_parallel uses this as a sanity floor |
 | 6 | FIMO + indexing | one `index_fimo_fused` call (OpenMP-batched) | Replaces an older shell-level for-loop that forked one fimo per motif. Writes `binomial_thresholds.txt` + `fimohits/<MOTIF>.bin` (PMETBN01 binary) |
-| 7 | Indexing contract validation | `pipeline/python/check_homotypic_contract.py <indexing_dir>` | Asserts the schema in `docs/methods/homotypic-contract.md` holds — catches motif-id case mismatches and missing files early |
+| 7 | Indexing contract validation | `scripts/python/check_homotypic_contract.py <indexing_dir>` | Asserts the schema in `docs/methods/homotypic-contract.md` holds — catches motif-id case mismatches and missing files early |
 | 8 | Gene-list filter | `sed` colon sanitize → `grep -wFf universe.txt` | Match user's `peaks.txt` against the sanitized index universe |
 | 9 | Heterotypic pair test | `build/pair_parallel -d <index> -g <kept> ...` → temp shards | The actual pair enrichment |
 | 10 | Shard aggregation + colon restore | `cat temp*.txt > motif_output.txt`, then `sed 's/__COLON__/:/g'` over the user-facing text outputs | Final motif_output.txt has the user's original `chr:start-end(strand)` interval names back |
-| 11 | Heatmaps (optional) | three `Rscript pipeline/r/draw_heatmap.R` calls | Skipped silently if `Rscript` is absent |
+| 11 | Heatmaps (optional) | three `Rscript scripts/r/draw_heatmap.R` calls | Skipped silently if `Rscript` is absent |
 
 ## Run snapshot
 
 This audit just ran:
 
 ```
-bash pipeline/workflows/intervals.sh -s data/demos/intervals/indexing/intervals.fa -m data/demos/intervals/indexing/motif.meme -g data/demos/intervals/indexing/peaks.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/tests/audit/runs/intervals/02_pairing -t 4
+bash scripts/workflows/intervals.sh -s data/demos/intervals/indexing/intervals.fa -m data/demos/intervals/indexing/motif.meme -g data/demos/intervals/indexing/peaks.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/tests/audit/runs/intervals/02_pairing -t 4
 ```
 
 Indexing landed at `tests/audit/runs/intervals/01_indexing/`, pairing at `tests/audit/runs/intervals/02_pairing/`.

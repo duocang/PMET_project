@@ -15,11 +15,11 @@ class PMETExecutor:
     ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
     # Paths are relative to PROJECT_ROOT. All three modes run merged
-    # audience-agnostic workflows at pipeline/workflows/.
+    # audience-agnostic workflows at scripts/workflows/.
     SCRIPT_MAP = {
-        "promoters_pre": "pipeline/workflows/pair_only.sh",
-        "promoters": "pipeline/workflows/promoter.sh",
-        "intervals": "pipeline/workflows/intervals.sh",
+        "promoters_pre": "scripts/workflows/pair_only.sh",
+        "promoters": "scripts/workflows/promoter.sh",
+        "intervals": "scripts/workflows/intervals.sh",
     }
 
     ARCH_ALIASES = {

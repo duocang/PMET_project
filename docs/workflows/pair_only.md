@@ -2,7 +2,7 @@
 
 _Audit refreshed 2026-04-29 13:12:55 UTC on this machine — workflow `pair_only`, exit 0, 15.3s_
 
-**Source:** [`pipeline/workflows/pair_only.sh`](../../pipeline/workflows/pair_only.sh)
+**Source:** [`scripts/workflows/pair_only.sh`](../../scripts/workflows/pair_only.sh)
 &nbsp;&nbsp;**Used by:** CLI re-runs · web `promoters_pre` mode (`apps/pmet_backend/services/executor.py` SCRIPT_MAP)
 
 ## Purpose
@@ -58,14 +58,14 @@ optional cluster label in column 1) and produces one row per
 | 3 | Gene-list filter | `grep -wFf universe.txt <gene_list>` → `genes_used_PMET.txt` + `genes_not_found.txt` | Word-boundary `-w` defends against substring collisions (e.g. AT1G01010 ⊂ AT1G010100). Records both kept and dropped genes for diagnostics |
 | 4 | Heterotypic pair test | `build/pair_parallel -d <index> -g <kept_genes> -i <ic_thr> ...` | The actual binomial-vs-hypergeometric pair test. Produces per-thread `temp*.txt` shards |
 | 5 | Shard aggregation | `cat temp*.txt > motif_output.txt` then `rm temp*.txt` | pair_parallel doesn't unify shards itself; the script does it |
-| 6 | Heatmaps (optional) | three `Rscript pipeline/r/draw_heatmap.R` calls (All / Overlap-unique / Overlap-all) | Skipped silently with a warning if `Rscript` is absent |
+| 6 | Heatmaps (optional) | three `Rscript scripts/r/draw_heatmap.R` calls (All / Overlap-unique / Overlap-all) | Skipped silently with a warning if `Rscript` is absent |
 
 ## Run snapshot
 
 This audit just ran:
 
 ```
-bash pipeline/workflows/pair_only.sh -d data/demos/promoters/pairing/demo -g data/demos/promoters/pairing/demo/gene.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/pair_only/out -i 4 -t 4
+bash scripts/workflows/pair_only.sh -d data/demos/promoters/pairing/demo -g data/demos/promoters/pairing/demo/gene.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/pair_only/out -i 4 -t 4
 ```
 
 into `tests/audit/runs/pair_only/out/`. Outputs landed at:

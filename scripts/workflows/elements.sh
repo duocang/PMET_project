@@ -24,8 +24,8 @@ set -euo pipefail
 script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$script_dir"
 
-source pipeline/lib/print_colors.sh
-source pipeline/lib/timer.sh
+source scripts/lib/print_colors.sh
+source scripts/lib/timer.sh
 
 # ==================== Helpers / defaults ====================
 
@@ -164,7 +164,7 @@ print_fluorescent_yellow "Delete temps:    $delete_temp"
 # ==================== Pin the canonical Franco-Zorrilla / TAIR10 inputs ====================
 
 data_dir=data
-fetch_script=pipeline/data/fetch_tair10.sh
+fetch_script=scripts/fetch_reference.sh
 
 if [[ ! -s "$data_dir/TAIR10.fasta" || ! -s "$data_dir/TAIR10.gff3" ]]; then
     print_fluorescent_yellow "Downloading genome and annotation...\n"
@@ -295,7 +295,7 @@ for gene_input_file in "${gene_files[@]}"; do
     # lists) doesn't take down the rest of the for-loop's tasks.
     if command -v Rscript >/dev/null 2>&1; then
         draw() {
-            Rscript pipeline/r/draw_heatmap.R "$@" \
+            Rscript scripts/r/draw_heatmap.R "$@" \
                 || print_orange "    heatmap step failed for $(basename "$1") on $task — continuing"
         }
         draw All     "$plot_output/heatmap.png"                "$heterotypic_output/motif_output.txt" 15 3 6 FALSE

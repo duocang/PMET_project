@@ -15,12 +15,12 @@
 #   EXCLUDE='/pmet.log$|/foo$' scripts/tests/verify_baseline.sh ...
 #
 # Examples:
-#   bash scripts/pipeline/03_promoter.sh
+#   bash scripts/scripts/03_promoter.sh
 #   scripts/tests/verify_baseline.sh \
 #       results/cli/03_promoter \
 #       scripts/tests/baselines/03_baseline.hashes.txt
 #
-#   bash scripts/pipeline/04_intervals.sh
+#   bash scripts/scripts/04_intervals.sh
 #   scripts/tests/verify_baseline.sh \
 #       results/cli/04_intervals \
 #       scripts/tests/baselines/04_baseline.hashes.txt

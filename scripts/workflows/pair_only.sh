@@ -28,17 +28,17 @@ cd "$script_dir"
 # ==================== Helpers ====================
 # Try to source the colored logging helpers; fall back to plain echo so the
 # script also works inside docker containers without the lib mounted.
-if [[ -f pipeline/lib/print_colors.sh ]]; then
+if [[ -f scripts/lib/print_colors.sh ]]; then
     # shellcheck source=/dev/null
-    source pipeline/lib/print_colors.sh
+    source scripts/lib/print_colors.sh
 else
     print_green()  { printf "\033[32m%s\033[0m\n" "$1"; }
     print_red()    { printf "\033[31m%s\033[0m\n" "$1"; }
     print_orange() { printf "\033[33m%s\033[0m\n" "$1"; }
 fi
-if [[ -f pipeline/lib/timer.sh ]]; then
+if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
-    source pipeline/lib/timer.sh
+    source scripts/lib/timer.sh
 else
     print_elapsed_time() {
         local s=$1 e=$SECONDS dt=$((SECONDS - s))
@@ -73,13 +73,13 @@ Optional:
 
 Examples:
   # CLI: re-pair pipeline 03's index with a different gene list
-  bash pipeline/workflows/pair_only.sh \
+  bash scripts/workflows/pair_only.sh \
       -d results/cli/03_promoter/01_homotypic \
       -g data/genes/genes_cell_type_treatment.txt \
       -o results/cli/pair_only/cell_type_treatment_ic4
 
   # Web backend invocation (apps/pmet_backend/services/executor.py builds this)
-  bash pipeline/workflows/pair_only.sh \
+  bash scripts/workflows/pair_only.sh \
       -d <task_index_dir> -g <task_genes> -o <task_output> \
       -i 24 -t 4 -e user@example.com -l https://...
 EOF
@@ -144,7 +144,7 @@ check_file "$pmetindex/IC.txt"                   "Index IC.txt"
 check_file "$genefile" "Gene list"
 
 # Note: a strict homotypic contract validator
-# (pipeline/python/check_homotypic_contract.py) lives separately. It is
+# (scripts/python/check_homotypic_contract.py) lives separately. It is
 # intentionally NOT invoked here because it rejects the canonical
 # data/demos/promoters/pairing/demo fixture (which ships a partial fimohits set on
 # purpose). pair_parallel itself produces clear errors on malformed
@@ -215,7 +215,7 @@ print_green "\n[2/2] Generating heatmaps..."
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
 else
-    draw() { Rscript pipeline/r/draw_heatmap.R "$@"; }
+    draw() { Rscript scripts/r/draw_heatmap.R "$@"; }
     draw All     "$plot_output/heatmap.png"                "$outputdir/motif_output.txt" 5 3 6 FALSE
     draw Overlap "$plot_output/heatmap_overlap_unique.png" "$outputdir/motif_output.txt" 5 3 6 TRUE
     draw Overlap "$plot_output/heatmap_overlap.png"        "$outputdir/motif_output.txt" 5 3 6 FALSE

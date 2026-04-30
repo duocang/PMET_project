@@ -17,11 +17,11 @@ fail()    { printf '  FAIL  %s\n' "$1"; failed=$((failed + 1)); }
 
 # ---------------------------------------------------------------------------
 # Test 1: bedtools getfasta with -s reverse-complements minus-strand entries.
-# This guards against pipeline/02_benchmark_parameters.sh regressing to the
+# This guards against scripts/02_benchmark_parameters.sh regressing to the
 # strand-unaware extraction that produced wrong promoter sequences for
 # minus-strand genes.
 # ---------------------------------------------------------------------------
-section "bedtools getfasta strand-awareness (relevant to pipeline/02 P0 fix)"
+section "bedtools getfasta strand-awareness (relevant to scripts/02 P0 fix)"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT

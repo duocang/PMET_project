@@ -26,7 +26,7 @@ pmet_analysis_pipeline/
 ├── .gitignore
 │
 ├── scripts/                    # All executable / library code
-│   ├── pipeline/               # Top-level pipeline entrypoints
+│   ├── scripts/               # Top-level pipeline entrypoints
 │   ├── tests/                  # Test runners + verifiers + fixtures + baselines
 │   ├── python/                 # Python helpers (parse_*, build_*, check_*, ...)
 │   ├── r/                      # R plotting helpers
@@ -34,7 +34,7 @@ pmet_analysis_pipeline/
 │   ├── indexing/               # Indexer wrappers used by pipelines
 │   ├── gff3sort/               # Vendored Perl tool
 │   ├── archive/                # Retired scripts (kept for reference per repo-guide.md)
-│   ├── fetch_tair10.sh         # One-off data download
+│   ├── fetch_reference.sh         # One-off data download
 │   └── temp/                   # Local scratch (gitignored)
 │
 ├── docs/
@@ -51,11 +51,11 @@ pmet_analysis_pipeline/
 └── results/                    # All run outputs, transient or permanent (gitignored)
 ```
 
-## 2. scripts/pipeline/
+## 2. scripts/
 
 Form: `<NN>_<scope>_<variant>.sh`, where
 
-- `<NN>` is a two-digit identifier that is unique within `scripts/pipeline/`.
+- `<NN>` is a two-digit identifier that is unique within `scripts/`.
   The number is the pipeline's identity — it is referenced in baselines, in
   `run.sh`, and in the verification log. Numbers are not reassigned; if a
   pipeline is retired its number is retired with it.
@@ -81,7 +81,7 @@ Pipeline numbers in flight: `00, 01, 02, 03, 04, 05, 06, 07, 08` (contiguous).
 renumbered to fill the gap; `08` is now the new pair-only entrypoint
 (2026-04-28).
 
-Pipelines must be runnable directly: `bash scripts/pipeline/<NN>_*.sh`. They
+Pipelines must be runnable directly: `bash scripts/<NN>_*.sh`. They
 must also still appear in `run.sh`'s menu.
 
 ## 3. scripts/python/

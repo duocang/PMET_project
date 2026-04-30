@@ -8,14 +8,14 @@
 set -euo pipefail
 
 script_dir=$(cd -- "$(dirname "$0")/../.." && pwd)
-# Top-level merged workflows (post-dedup) live at pipeline/workflows/;
+# Top-level merged workflows (post-dedup) live at scripts/workflows/;
 # numbered ones still live under cli/. Both are surfaced in the menu.
-pipeline_dir="$script_dir/pipeline/workflows/cli"
-top_workflows_dir="$script_dir/pipeline/workflows"
+pipeline_dir="$script_dir/scripts/workflows/cli"
+top_workflows_dir="$script_dir/scripts/workflows"
 
 # Load color helpers
-if [ -f "$script_dir/pipeline/lib/print_colors.sh" ]; then
-    source "$script_dir/pipeline/lib/print_colors.sh"
+if [ -f "$script_dir/scripts/lib/print_colors.sh" ]; then
+    source "$script_dir/scripts/lib/print_colors.sh"
 else
     print_green()  { printf "\033[32m%s\033[0m\n" "$1"; }
     print_orange() { printf "\033[33m%s\033[0m\n" "$1"; }
@@ -98,7 +98,7 @@ run_pipeline() {
     # The merged top-level workflows have sensible defaults for the
     # canonical demo runs, so the launcher just executes them. Override
     # any default by passing flags directly:
-    #   bash pipeline/workflows/promoter.sh -s <fasta> -a <gff3> ...
+    #   bash scripts/workflows/promoter.sh -s <fasta> -a <gff3> ...
     case "$script" in
         pair_only.sh)
             # Reuses promoter.sh's homotypic index and the same canonical
@@ -139,8 +139,8 @@ run_pipeline() {
 # ==============================================================================
 
 # Build the menu by globbing two dirs, in this order:
-#   1) pipeline/workflows/*.sh    — merged top-level workflows (no cli/web split)
-#   2) pipeline/workflows/cli/*.sh — still-numbered research workflows
+#   1) scripts/workflows/*.sh    — merged top-level workflows (no cli/web split)
+#   2) scripts/workflows/cli/*.sh — still-numbered research workflows
 # Each entry stores both the display name and the full path so the
 # dispatcher can locate the script regardless of which dir it lives in.
 # Skip files starting with `_` — library bodies meant for `source`.

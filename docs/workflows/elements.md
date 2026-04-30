@@ -2,8 +2,8 @@
 
 _Audit refreshed 2026-04-29 13:18:10 UTC on this machine — workflow `elements`, exit 0, 183.6s_
 
-**Source:** [`pipeline/workflows/elements.sh`](../../pipeline/workflows/elements.sh)
-&nbsp;&nbsp;**Helper sub-workflow:** [`pipeline/workflows/cli/_pmet_index_element.sh`](../../pipeline/workflows/cli/_pmet_index_element.sh)
+**Source:** [`scripts/workflows/elements.sh`](../../scripts/workflows/elements.sh)
+&nbsp;&nbsp;**Helper sub-workflow:** [`scripts/workflows/cli/_pmet_index_element.sh`](../../scripts/workflows/cli/_pmet_index_element.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs only (no web entry point)
 
 ## Purpose
@@ -58,7 +58,7 @@ sees one row per gene.
 | # | Stage | What runs | Why |
 |---|---|---|---|
 | 1 | Argument + element prompt | `-s longest\|merged`, `-e 3UTR\|5UTR\|mRNA\|CDS\|exon`, optional `-m Yes\|No` | Strategy + element + (mRNA only) full-span flag |
-| 2 | TAIR10 fetch (if absent) | `bash pipeline/data/fetch_tair10.sh` | One-shot download |
+| 2 | TAIR10 fetch (if absent) | `bash scripts/fetch_reference.sh` | One-shot download |
 | 3 | Chromosome-name preflight | GFF3 first chrom vs FASTA first header | Same fail-fast as `promoter.sh` |
 | 4 | Element BED extraction | `_pmet_index_element.sh` step 1 — awk over GFF3 column 3 | Filters rows where `feature == element`; pulls `<key>=<id>` from the attributes column |
 | 5 | Isoform aggregation | `_pmet_index_element.sh` step 2 — `longest` / `merged` branch (and the optional UTR-subtraction sub-step for `-s longest -e mRNA -m No`) | See "biological setup" |
@@ -68,8 +68,8 @@ sees one row per gene.
 | 9 | Markov background | `_pmet_index_element.sh` step 6 — `fasta-get-markov` over the just-extracted promoter set | Zero-order base composition; FIMO uses it as the null model so p-values reflect the local element composition rather than the genome's |
 | 10 | IC.txt | `_pmet_index_element.sh` step 7 — `calculateICfrommeme_IC_to_csv.py` | Per-motif positional information content; `pair_parallel` uses this as a sanity floor (skip motifs less informative than `-i`) |
 | 11 | FIMO + indexing | `_pmet_index_element.sh` step 8 — one `index_fimo_fused` call (OpenMP) | Replaces the older two-step (split MEME → parallel fimo → separate pmet indexer) flow that depended on PMET-patched `--topn`/`--topk` flags absent from upstream MEME's `fimo` (commit `d2663c0`) |
-| 12 | **Gene-level fold** | `_pmet_index_element.sh` step 9 — `pipeline/python/collapse_element_fimohits.py` | Decodes PMETBN01 binary fimohits, strips `__GENE__N` from sequence names, groups hits by gene, keeps top-`maxk` per gene by ascending p-value, filters against the per-motif binomial threshold, re-encodes. Also normalises `binomial_thresholds.txt` motif IDs to upper-case to match IC.txt and the fimohits filenames |
-| 13 | Indexing contract validation | `pipeline/python/check_homotypic_contract.py <homotypic>` | Catches motif-id case mismatches and missing files |
+| 12 | **Gene-level fold** | `_pmet_index_element.sh` step 9 — `scripts/python/collapse_element_fimohits.py` | Decodes PMETBN01 binary fimohits, strips `__GENE__N` from sequence names, groups hits by gene, keeps top-`maxk` per gene by ascending p-value, filters against the per-motif binomial threshold, re-encodes. Also normalises `binomial_thresholds.txt` motif IDs to upper-case to match IC.txt and the fimohits filenames |
+| 13 | Indexing contract validation | `scripts/python/check_homotypic_contract.py <homotypic>` | Catches motif-id case mismatches and missing files |
 | 14 | Heterotypic loop over `data/genes/*.txt` | for each task: filter by universe → `pair_parallel` → optional heatmaps | Per-task `02_heterotypic_<task>/motif_output.txt`. Heatmap failures (e.g. ggsave's 50-inch dimension cap on huge tasks) are non-fatal — the loop continues |
 
 ## Run snapshot
@@ -77,7 +77,7 @@ sees one row per gene.
 This audit just ran:
 
 ```
-bash pipeline/workflows/elements.sh -s longest -e 5UTR -t 4
+bash scripts/workflows/elements.sh -s longest -e 5UTR -t 4
 ```
 
 Output root: `results/cli/elements_longest_five_prime_UTR/`.

@@ -3,7 +3,7 @@
 # Pipeline 02: PMET parameter benchmark on promoters (merged: no wrapper)
 # ==============================================================================
 # Runs the full PMET parameter sweep in one script. Replaces the previous
-# two-script flow that chained pipeline/02 → scripts/indexing/promoters_benchmark.sh.
+# two-script flow that chained scripts/02 → scripts/indexing/promoters_benchmark.sh.
 #
 # Structure:
 #   [A] shared/                — run once: genome strip, faidx, gene BED,
@@ -20,8 +20,8 @@ set -euo pipefail
 
 script_dir=$(cd -- "$(dirname "$0")/../../.." && pwd)
 cd "$script_dir"
-source pipeline/lib/print_colors.sh
-source pipeline/lib/timer.sh
+source scripts/lib/print_colors.sh
+source scripts/lib/timer.sh
 
 # ==================== Configuration ====================
 
@@ -66,7 +66,7 @@ mkdir -p "$shared_dir" "$heterotypic_output" "$plot_output" "$logDir"
 BIN_DIR=build
 BIN_FIMO="$BIN_DIR/fimo"
 BIN_PMET="$BIN_DIR/pair_parallel"
-PY=pipeline/python
+PY=scripts/python
 
 # ==================== Preflight ====================
 
@@ -81,7 +81,7 @@ done
 # Chromosome naming consistency. Without this, a GFF3 using "1" against a
 # FASTA using "Chr1" silently produces an empty gene BED — every downstream
 # step appears to succeed but indexes nothing. Pipelines 03 and 08 already
-# guard for this; pipeline/02 was missing the check.
+# guard for this; scripts/02 was missing the check.
 gff3_chr=$(awk -F'\t' '!/^#/ && NF>=9 {print $1; exit}' "$anno")
 fasta_chr=$(grep '^>' "$genome" | head -1 | sed 's/^>//' | awk '{print $1}')
 if [[ "$gff3_chr" != "$fasta_chr" ]]; then
@@ -90,7 +90,7 @@ if [[ "$gff3_chr" != "$fasta_chr" ]]; then
     exit 1
 fi
 
-chmod a+x "$BIN_FIMO" "$BIN_PMET" pipeline/third_party/gff3sort/gff3sort.pl
+chmod a+x "$BIN_FIMO" "$BIN_PMET" scripts/third_party/gff3sort/gff3sort.pl
 
 # ==================== Helpers ====================
 
@@ -115,7 +115,7 @@ prepare_shared() {
     local t=$SECONDS
 
     # 1. Sort GFF3 so that transcripts follow their parent genes
-    pipeline/third_party/gff3sort/gff3sort.pl "$anno" > "$shared_dir/sorted.gff3"
+    scripts/third_party/gff3sort/gff3sort.pl "$anno" > "$shared_dir/sorted.gff3"
 
     # 2–4. Build gene BED via gff3_to_gene_bed.py (drops the per-step
     #      genelines.gff3 intermediate). The feature regex is selected by

@@ -344,7 +344,7 @@ python3 "$pmetroot/python/calculateICfrommeme_IC_to_csv.py" \
 #    index_fimo_fused has internal OpenMP motif batching + writes
 #    binomial_thresholds.txt at $indexingOutputDir and per-motif binary
 #    fimohits/*.bin (PMETBN01 format). Same call shape as
-#    pipeline/workflows/{intervals,promoter}.sh.
+#    scripts/workflows/{intervals,promoter}.sh.
 nummotifs=$(grep -c '^MOTIF' "$memefile")
 print_fluorescent_yellow "     8. Running FIMO + PMETindex (${nummotifs} motifs, ${threads} thread(s))"
 mkdir -p "$indexingOutputDir/fimohits"

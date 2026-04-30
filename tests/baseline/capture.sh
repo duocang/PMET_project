@@ -66,17 +66,17 @@ rm -rf "$out_dir"
 echo ""
 
 echo "## section:analysis_smoke"
-# Still pre-refactor location until pipeline/ workflows commit.
-if [ -f pmet_analysis_pipeline/scripts/pipeline/00_requirements.sh ]; then
-  if bash pmet_analysis_pipeline/scripts/pipeline/00_requirements.sh >/tmp/baseline_smoke.log 2>&1; then
+# Still pre-refactor location until scripts/ workflows commit.
+if [ -f pmet_analysis_pipeline/scripts/00_requirements.sh ]; then
+  if bash pmet_analysis_pipeline/scripts/00_requirements.sh >/tmp/baseline_smoke.log 2>&1; then
     echo "# SMOKE_OK"
     tail -5 /tmp/baseline_smoke.log | sed 's/^/# /'
   else
     echo "# SMOKE_FAIL exit=$?"
     tail -20 /tmp/baseline_smoke.log | sed 's/^/# /'
   fi
-elif [ -f pipeline/workflows/cli/00_env_check.sh ]; then
-  if bash pipeline/workflows/cli/00_env_check.sh >/tmp/baseline_smoke.log 2>&1; then
+elif [ -f scripts/workflows/cli/00_env_check.sh ]; then
+  if bash scripts/workflows/cli/00_env_check.sh >/tmp/baseline_smoke.log 2>&1; then
     echo "# SMOKE_OK"
     tail -5 /tmp/baseline_smoke.log | sed 's/^/# /'
   else

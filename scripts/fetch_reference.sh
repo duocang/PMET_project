@@ -3,7 +3,7 @@
 set -euo pipefail
 
 script_dir=$(cd -- "$(dirname "$0")" && pwd)
-ref_dir="$script_dir/../../data/reference"
+ref_dir="$script_dir/../data/reference"
 
 mkdir -p "$ref_dir"
 

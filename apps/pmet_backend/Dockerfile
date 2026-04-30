@@ -7,7 +7,7 @@ WORKDIR /app
 # perl runs gff3sort.pl and several MEME helper scripts; curl fetches the
 # MEME tarball; zlib1g-dev is needed by MEME's configure. r-base-core +
 # the libfontconfig/harfbuzz/freetype/etc. dev headers are for the heatmap
-# step in scripts/pipeline/03_promoter.sh — `hrbrthemes`/`ggplot2` build
+# step in scripts/03_promoter.sh — `hrbrthemes`/`ggplot2` build
 # their text/font code against these.
 RUN apt-get update && apt-get install -y \
     gcc g++ cmake make git pkg-config \
@@ -73,9 +73,11 @@ RUN mkdir -p /app/build \
 # Copy application code. data/ is excluded via .dockerignore and mounted
 # at runtime from the host (GB-scale).
 COPY apps/pmet_backend/ ./pmet_backend/
-COPY pipeline/ ./pipeline/
+COPY scripts/ ./scripts/
 
-RUN mkdir -p result result/indexing result/tasks
+# Mountpoint for results — host's <repo>/results/app/ binds onto /app/results
+# at runtime. The mkdir lets the container start even when the mount is empty.
+RUN mkdir -p results results/tasks
 
 EXPOSE 8000
 

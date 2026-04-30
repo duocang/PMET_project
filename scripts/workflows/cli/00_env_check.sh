@@ -13,8 +13,8 @@ script_dir=$(cd -- "$(dirname "$0")/../../.." && pwd)
 cd "$script_dir"
 
 # Load color helpers or use fallback
-if [ -f "$script_dir/pipeline/lib/print_colors.sh" ]; then
-    source "$script_dir/pipeline/lib/print_colors.sh"
+if [ -f "$script_dir/scripts/lib/print_colors.sh" ]; then
+    source "$script_dir/scripts/lib/print_colors.sh"
 else
     print_green() { printf "\033[32m%s\033[0m\n" "$1"; }
     print_orange() { printf "\033[33m%s\033[0m\n" "$1"; }
@@ -101,7 +101,7 @@ done
 print_orange "\nChecking genome data..."
 if [[ ! -s data/reference/TAIR10.fasta || ! -s data/reference/TAIR10.gff3 ]]; then
     print_orange "Downloading genome and annotation..."
-    bash pipeline/data/fetch_tair10.sh
+    bash scripts/fetch_reference.sh
 else
     print_green "[✓] Genome and annotation are ready!"
 fi
@@ -112,7 +112,7 @@ print_list "\nPython packages needed:" "${py_packages[@]}"
 
 print_orange "\n------------------------------------------"
 print_orange "Tips:"
-print_orange "  • Install R packages:      Rscript pipeline/r/install_packages.R"
+print_orange "  • Install R packages:      Rscript scripts/r/install_packages.R"
 print_orange "  • Install Python packages: pip install numpy pandas scipy biopython"
 print_orange "  • Setup PMET binaries:     make build  (or: $0 --setup-pmet)"
 print_orange "------------------------------------------\n"

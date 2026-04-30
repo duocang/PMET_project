@@ -1,4 +1,4 @@
-"""Audit spec for pipeline/workflows/elements.sh.
+"""Audit spec for scripts/workflows/elements.sh.
 
 Runs against the canonical TAIR10 + Franco-Zorrilla, with the smallest
 viable strategy/element pair (longest + 5'UTR — about 30s for indexing,
@@ -8,7 +8,7 @@ keeps roughly 22k of TAIR10's ~30k genes (those that have an annotated
 
 The new element pipeline (see commit d2663c0) does indexing through
 index_fimo_fused (binary fimohits, deterministic) and then a Python
-helper pipeline/python/collapse_element_fimohits.py folds per-interval
+helper scripts/python/collapse_element_fimohits.py folds per-interval
 hits back to per-gene rows. This audit verifies that fold actually
 produced gene-named output, that downstream pair_parallel can read it,
 and that per-task SHAs match recorded anchors (deterministic — the
@@ -57,7 +57,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
 
     log_path = runs_dir / "run.log"
     cmd = [
-        "bash", "pipeline/workflows/elements.sh",
+        "bash", "scripts/workflows/elements.sh",
         "-s", "longest",
         "-e", "5UTR",
         "-t", "4",

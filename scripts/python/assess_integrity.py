@@ -63,7 +63,7 @@ def resolve_split_promoters(infile: str) -> None:
     #
     # The previous implementation only compared adjacent rows after sortBed.
     # That holds on TAIR10 default config (29 824 unique gene names in the
-    # pipeline/03 baseline), but breaks the moment a third gene's promoter
+    # scripts/03 baseline), but breaks the moment a third gene's promoter
     # sorts between two same-gene fragments — e.g. when a small gene falls
     # entirely inside another gene's flanking promoter region. We fix the
     # algorithm to be order-independent at no measurable cost.

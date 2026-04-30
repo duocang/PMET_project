@@ -12,12 +12,10 @@
 
 set -euo pipefail
 
-# Resolve project root robustly: this script lives at pipeline/data/, two
-# levels under the repo root. Bare `cd $(dirname "$0")/..` would only land
-# in pipeline/ — leaving the downloads under pipeline/data/ instead of the
-# project's data/ root.
+# Resolve project root regardless of cwd at invocation; script lives one
+# level under the repo root.
 SCRIPT_DIR=$(cd -- "$(dirname "$0")" && pwd)
-cd "$SCRIPT_DIR/../.."
+cd "$SCRIPT_DIR/.."
 
 REF_DIR="data/reference"
 INDEX_DIR="data/precomputed_indexes"

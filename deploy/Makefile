@@ -129,4 +129,4 @@ init:
 # the host (not inside Docker): data/ is bind-mounted into the api and
 # worker containers, so the downloads appear there without rebuilding.
 fetch-data:
-	bash ../pipeline/data/download_pmet_data.sh
+	bash ../scripts/fetch_data.sh

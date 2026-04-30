@@ -10,7 +10,7 @@ Captured before the monorepo refactor at commit `123a39b` on `refactor/monorepo`
 - **core_demo_indexing_existing_outputs** — sha256 of `PMET_project/results/cli/demo/fimo_official/*` reference outputs.
 - **core_demo_run_indexing_fused** — runs `apps/cli/scripts/run_indexing.sh -v fused` against `data/demos/promoters/indexing/demo` and hashes every produced file.
 - **core_demo_run_pairing** — runs `apps/cli/scripts/run_pairing.sh` against `data/demos/promoters/pairing/demo` and hashes outputs.
-- **analysis_smoke** — runs `pmet_analysis_pipeline/scripts/pipeline/00_requirements.sh` (tool presence check).
+- **analysis_smoke** — runs `pmet_analysis_pipeline/scripts/00_requirements.sh` (tool presence check).
 - **backend_pytest** — runs `pmet_shiny_app/pmet_backend/test_api.py`.
 
 ## Pre-refactor status

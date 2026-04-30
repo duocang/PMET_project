@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run scripts/pipeline/02 with a one-element grid so the post-fix output
+# Run scripts/scripts/02 with a one-element grid so the post-fix output
 # can be captured as a real-data regression baseline. The full grid is
 # 4 tasks × 7 lengths × 9 maxk × 1 topn = 252 combinations; this harness
 # copies the script to a temp file, rewrites the four grid arrays to a
@@ -25,13 +25,13 @@ plen=${PLEN:-200}
 maxk=${MAXK:-5}
 topn=${TOPN:-5000}
 
-src=scripts/pipeline/02_benchmark_parameters.sh
+src=scripts/scripts/02_benchmark_parameters.sh
 
 # The patched copy must live next to the original so its
 # `script_dir=$(cd -- "$(dirname "$0")/../.." && pwd)` resolves to the repo
 # root. /tmp would put script_dir somewhere unrelated and break every
 # relative path. Use a deterministic name and clean up on EXIT.
-patched=scripts/pipeline/.smoke_02_one_combo.sh
+patched=scripts/scripts/.smoke_02_one_combo.sh
 trap 'rm -f "$patched"' EXIT
 
 # Replace the 4 grid arrays with single-point versions, and force

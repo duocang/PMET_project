@@ -34,17 +34,17 @@ cd "$script_dir"
 # ==================== Helpers ====================
 # Source colored logging if present; fall back to plain echo so the
 # script also works in containers / other minimal environments.
-if [[ -f pipeline/lib/print_colors.sh ]]; then
+if [[ -f scripts/lib/print_colors.sh ]]; then
     # shellcheck source=/dev/null
-    source pipeline/lib/print_colors.sh
+    source scripts/lib/print_colors.sh
 else
     print_green()  { printf "\033[32m%s\033[0m\n" "$1"; }
     print_red()    { printf "\033[31m%s\033[0m\n" "$1"; }
     print_orange() { printf "\033[33m%s\033[0m\n" "$1"; }
 fi
-if [[ -f pipeline/lib/timer.sh ]]; then
+if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
-    source pipeline/lib/timer.sh
+    source scripts/lib/timer.sh
 else
     print_elapsed_time() {
         local s=$1 dt=$((SECONDS - s))
@@ -136,7 +136,7 @@ shift $((OPTIND - 1))
 : "${pairing_output:=$res_dir/02_pairing}"
 plot_output="$pairing_output/plot"
 
-PY=pipeline/python
+PY=scripts/python
 
 # ==================== Locate binaries ====================
 
@@ -288,7 +288,7 @@ print_green "\n[3/3] Generating heatmaps..."
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
 else
-    draw() { Rscript pipeline/r/draw_heatmap.R "$@"; }
+    draw() { Rscript scripts/r/draw_heatmap.R "$@"; }
     draw All     "$plot_output/heatmap.png"                "$pairing_output/motif_output.txt" 5 3 6 FALSE
     draw Overlap "$plot_output/heatmap_overlap_unique.png" "$pairing_output/motif_output.txt" 5 3 6 TRUE
     draw Overlap "$plot_output/heatmap_overlap.png"        "$pairing_output/motif_output.txt" 5 3 6 FALSE

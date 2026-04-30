@@ -41,7 +41,7 @@ class Config:
         / os.environ.get("PMET_RESULT_DIR_REL", _DEFAULT_RESULT_DIR_REL)
     )
     # Read-only catalog of pre-computed species/motif databases, populated by
-    # pipeline/data/download_pmet_data.sh. Layout: <species>/<motif_db>/.
+    # scripts/fetch_data.sh. Layout: <species>/<motif_db>/.
     # Top-level: the indexes are reusable scientific resources (CLI's
     # pair_only.sh can target them too), not web-only. The two JSON sidecars
     # under data/app/ describe display labels for the submit form.
@@ -51,9 +51,9 @@ class Config:
     # TASKS_DIR is derived from RESULT_DIR in __post_init__ so the env override
     # propagates without each call site re-reading the env.
     TASKS_DIR: Path = field(init=False)
-    # Workflows + helpers (bash + python + R) live under pipeline/.
+    # Workflows + helpers (bash + python + R) live under scripts/.
     # The "-r" flag the indexer takes equals str(SCRIPTS_DIR).
-    SCRIPTS_DIR: Path = PROJECT_ROOT / "pipeline"
+    SCRIPTS_DIR: Path = PROJECT_ROOT / "scripts"
     # Repo root again — executor uses this for build/ and as the workflow base
     # path. Kept under the existing name to avoid a churn-y rename across the
     # executor and Dockerfile docs.

@@ -95,7 +95,7 @@ applies to a different workflow.)
 ## Cross-file invariants (independent of the script's own validator)
 
 Three of the four workflows (promoter, intervals, elements) call
-`pipeline/python/check_homotypic_contract.py` themselves at the end
+`scripts/python/check_homotypic_contract.py` themselves at the end
 of indexing. The audit ALSO runs an in-process equivalent — see
 `lib.contract_invariant_checks(index_dir)` — so a future change that
 skips or weakens the script-side validator still surfaces as audit
@@ -132,7 +132,7 @@ the audit is the prose explanation of what those fingerprints encode.
 
 ## What's NOT audited here
 
-- `pipeline/workflows/cli/05_promoter_gap.sh` and the perf benchmarks
+- `scripts/workflows/cli/05_promoter_gap.sh` and the perf benchmarks
   (`01_perf_cpu`, `02_perf_params`) — these are research/perf scripts
   with one or two known callers; adding them to the audit is mechanical
   but low-priority.

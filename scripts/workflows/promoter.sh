@@ -12,13 +12,13 @@
 #
 # Stages:
 #   [1] Homotypic — genome/annotation prep -> promoter BED -> FIMO + pmetindex
-#       via build/index_fimo_fused (delegated to pipeline/python/run_homotypic.py)
+#       via build/index_fimo_fused (delegated to scripts/python/run_homotypic.py)
 #   [2] Heterotypic — pair_parallel consumes the index
 #   [3] Heatmaps    — three R-rendered views (skipped if Rscript absent)
 #
 # Merged from cli/03_promoter.sh + web/promoter.sh — same body and same
 # delegation to run_homotypic.py; takes web's better impl (BIN_DIR walker,
-# R fallback, fetch_tair10 fallback) and adds cli's research knobs
+# R fallback, fetch_reference fallback) and adds cli's research knobs
 # (-F gene_features, -P isPoisson, -K keep_intermediate, -y plot_dir,
 # -s/-a/-m named-arg aliases).
 # ==============================================================================
@@ -29,18 +29,18 @@ script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$script_dir"
 
 # ==================== Helpers ====================
-if [[ -f pipeline/lib/print_colors.sh ]]; then
+if [[ -f scripts/lib/print_colors.sh ]]; then
     # shellcheck source=/dev/null
-    source pipeline/lib/print_colors.sh
+    source scripts/lib/print_colors.sh
 else
     print_green()             { printf "\033[32m%s\033[0m\n" "$1"; }
     print_red()               { printf "\033[31m%s\033[0m\n" "$1"; }
     print_orange()            { printf "\033[33m%s\033[0m\n" "$1"; }
     print_fluorescent_yellow(){ printf "\033[93m%s\033[0m\n" "$1"; }
 fi
-if [[ -f pipeline/lib/timer.sh ]]; then
+if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
-    source pipeline/lib/timer.sh
+    source scripts/lib/timer.sh
 else
     print_elapsed_time() {
         local s=$1 dt=$((SECONDS - s))
@@ -179,15 +179,15 @@ done
 BIN_INDEX="$BIN_DIR/index_fimo_fused"
 BIN_PMET="$BIN_DIR/pair_parallel"
 
-PY=pipeline/python
+PY=scripts/python
 
 # ==================== Preflight ====================
 
 # Auto-fetch TAIR10 if missing AND a fetcher is present (CLI convenience).
 if [[ ! -s "$genome" || ! -s "$anno" ]]; then
-    if [[ -f pipeline/data/fetch_tair10.sh ]]; then
+    if [[ -f scripts/fetch_reference.sh ]]; then
         print_green "Downloading genome and annotation..."
-        bash pipeline/data/fetch_tair10.sh
+        bash scripts/fetch_reference.sh
     fi
 fi
 
@@ -294,7 +294,7 @@ print_green "\n[3/3] Generating heatmaps..."
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
 else
-    draw() { Rscript pipeline/r/draw_heatmap.R "$@"; }
+    draw() { Rscript scripts/r/draw_heatmap.R "$@"; }
     draw All     "$plot_output/heatmap.png"                "$heterotypic_output/motif_output.txt" 5 3 6 FALSE
     draw Overlap "$plot_output/heatmap_overlap_unique.png" "$heterotypic_output/motif_output.txt" 5 3 6 TRUE
     draw Overlap "$plot_output/heatmap_overlap.png"        "$heterotypic_output/motif_output.txt" 5 3 6 FALSE

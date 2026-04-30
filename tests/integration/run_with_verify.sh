@@ -38,7 +38,7 @@ baselines_dir="$script_dir/baselines"
 verify="$script_dir/verify_baseline.sh"
 
 # Map <element> shorthand → menu choice fed to the interactive prompt
-# inside scripts/pipeline/_elements_common.sh.
+# inside scripts/scripts/_elements_common.sh.
 case "$element" in
     3utr) elem_choice=1 ;;
     5utr) elem_choice=2 ;;
@@ -58,7 +58,7 @@ case "$nn" in
         exec bash "$script_dir/run_smoke.sh"
         ;;
     01)
-        runner=(bash scripts/pipeline/01_benchmark_cpu.sh)
+        runner=(bash scripts/scripts/01_benchmark_cpu.sh)
         results_dir=results/01_benchmark_cpu
         baseline=$baselines_dir/01_baseline.hashes.txt
         ;;
@@ -68,22 +68,22 @@ case "$nn" in
         baseline=$baselines_dir/02_one_combo_baseline.hashes.txt
         ;;
     03)
-        runner=(bash scripts/pipeline/03_promoter.sh)
+        runner=(bash scripts/scripts/03_promoter.sh)
         results_dir=results/cli/03_promoter
         baseline=$baselines_dir/03_baseline.hashes.txt
         ;;
     04)
-        runner=(bash scripts/pipeline/04_intervals.sh)
+        runner=(bash scripts/scripts/04_intervals.sh)
         results_dir=results/cli/04_intervals
         baseline=$baselines_dir/04_baseline.hashes.txt
         ;;
     05)
-        runner=(bash scripts/pipeline/05_promoter_gap.sh)
+        runner=(bash scripts/scripts/05_promoter_gap.sh)
         results_dir=results/05_promoter_gap
         baseline=$baselines_dir/05_baseline.hashes.txt
         ;;
     06)
-        runner=(bash -c "printf '${elem_choice}\n' | bash scripts/pipeline/06_elements_longest.sh")
+        runner=(bash -c "printf '${elem_choice}\n' | bash scripts/scripts/06_elements_longest.sh")
         results_dir=results/06_elements_longest
         # CDS keeps its existing canonical 06_baseline.* name (most-tested).
         # Other elements use a per-element suffix.
@@ -94,7 +94,7 @@ case "$nn" in
         fi
         ;;
     07)
-        runner=(bash -c "printf '${elem_choice}\n' | bash scripts/pipeline/07_elements_merged.sh")
+        runner=(bash -c "printf '${elem_choice}\n' | bash scripts/scripts/07_elements_merged.sh")
         results_dir=results/07_elements_merged
         if [[ "$element" == "cds" ]]; then
             baseline=$baselines_dir/07_baseline.hashes.txt
@@ -109,7 +109,7 @@ case "$nn" in
             echo "error: 08 needs results/cli/03_promoter/01_homotypic/ — run 'bash scripts/tests/run_with_verify.sh 03' first" >&2
             exit 2
         fi
-        runner=(bash scripts/pipeline/08_pair_only.sh
+        runner=(bash scripts/scripts/08_pair_only.sh
                 -d results/cli/03_promoter/01_homotypic
                 -g data/genes/genes_cell_type_treatment.txt
                 -o results/cli/08_pair_only/cell_type_treatment_ic4

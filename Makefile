@@ -71,7 +71,7 @@ baseline:
 	@echo "wrote tests/baseline/fingerprints.txt"
 
 fetch-data:
-	@bash pipeline/data/download_pmet_data.sh
+	@bash scripts/fetch_data.sh
 
 clean:
 	@rm -rf $(BUILD)

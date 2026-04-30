@@ -28,7 +28,7 @@ services:
       # everything else — pipeline scripts, nginx config, compiled PMET
       # binaries — is baked into the image so the container is self-contained.
       - ../apps/pmet_backend:/app/pmet_backend
-      - ../pipeline:/app/pipeline
+      - ../scripts:/app/scripts
       - ../data:/app/data
       - ../results/app:/app/results
     depends_on:
@@ -48,7 +48,7 @@ services:
       - PMET_RESULT_DIR_REL=results
     volumes:
       - ../apps/pmet_backend:/app/pmet_backend
-      - ../pipeline:/app/pipeline
+      - ../scripts:/app/scripts
       - ../data:/app/data
       - ../results/app:/app/results
     depends_on:

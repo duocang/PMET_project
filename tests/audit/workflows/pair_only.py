@@ -1,4 +1,4 @@
-"""Audit spec for pipeline/workflows/pair_only.sh.
+"""Audit spec for scripts/workflows/pair_only.sh.
 
 Runs against the bundled data/demos/promoters/pairing/demo fixture (a partial Arabidopsis
 index with 6 fimohits files matching the AHL12/AHL20 motif family). This
@@ -17,7 +17,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     out_dir = reset_dir(runs_dir / "out")
     log_path = runs_dir / "run.log"
     cmd = [
-        "bash", "pipeline/workflows/pair_only.sh",
+        "bash", "scripts/workflows/pair_only.sh",
         "-d", "data/demos/promoters/pairing/demo",
         "-g", "data/demos/promoters/pairing/demo/gene.txt",
         "-o", str(out_dir),
