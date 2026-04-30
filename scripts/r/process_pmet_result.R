@@ -184,14 +184,18 @@ PmetHistogramPlot <- function(res            = NULL,
 # 3. split pmet result into different clusters
 # 4. get motifs of PMET result in each cluster
 # 5. get top motifs based on pvalues of PMET result
-ProcessPmetResult <- function(pmet_result       = NULL,
-                              p_adj_limt        = 0.05,
-                              gene_portion      = 0.05,
-                              topn              = 40,
-                              histgram_dir      = NULL,
-                              histgram_ncol     = 2,
-                              histgram_width    = 6,
-                              unique_cmbination = TRUE) {
+ProcessPmetResult <- function(pmet_result        = NULL,
+                              p_adj_limt         = 0.05,
+                              gene_portion       = 0.05,
+                              topn               = 40,
+                              max_motifs_in_plot = 30L,
+                              histgram_dir       = NULL,
+                              histgram_ncol      = 2,
+                              histgram_width     = 6,
+                              unique_cmbination  = TRUE) {
+  # Note on `topn`: kept for backwards compatibility with callers that still
+  # pass it; ignored by the new motif-selection path below. Final motif set
+  # is bounded by `max_motifs_in_plot` instead.
   suppressMessages({
 
     clusters <- unique(pmet_result$cluster) %>% sort()
@@ -266,14 +270,51 @@ ProcessPmetResult <- function(pmet_result       = NULL,
     ## 5. Split pmet result by cluster (the empty `[, ]` selector was a no-op).
     pmet.filtered.split.list <- pmet.filtered %>% split(pmet.filtered$cluster)
 
-    motifs_top_list <- clusters %>%
+    ## 5b. Score every motif per cluster by cumulative significance.
+    ##     score(m | cluster) = sum( -log10(p_adj) ) over pairs containing m.
+    ##     Floor p_adj at 1e-300 — BH adjusted values can underflow to 0 on
+    ##     very significant pairs and -log10(0)=Inf would break sum().
+    score_per_cluster <- clusters %>%
       lapply(function(clu) {
-        dat <- pmet.filtered.split.list[[clu]] %>% arrange(p_adj) %>% head(topn)
-
-        motifs <- c(dat$motif1, dat$motif2) %>% unique()
-        return(motifs)
+        dat <- pmet.filtered.split.list[[clu]] %>%
+          mutate(neg_log_p = -log10(pmax(p_adj, 1e-300)))
+        bind_rows(
+          dat %>% select(motif = motif1, neg_log_p),
+          dat %>% select(motif = motif2, neg_log_p)
+        ) %>%
+          group_by(motif) %>%
+          summarise(score = sum(neg_log_p), .groups = "drop") %>%
+          arrange(desc(score))
       }) %>%
       setNames(clusters)
+
+    ## 5c. Per-cluster quota: divide the global cap by cluster count, but
+    ##     never drop below 3 so even crowded plots show something for each
+    ##     cluster.
+    motifs_per_cluster <- max(3L, as.integer(floor(max_motifs_in_plot / length(clusters))))
+
+    motifs_top_list <- score_per_cluster %>%
+      lapply(function(scored) head(scored$motif, motifs_per_cluster)) %>%
+      setNames(clusters)
+
+    ## 5d. Secondary trim: when clusters share few motifs the union can
+    ##     still exceed the cap. Rank globally by (#clusters present,
+    ##     summed score) and intersect each cluster's top-K with the kept
+    ##     set. Motifs hit by more clusters are preferred — they make the
+    ##     cross-cluster comparison readable.
+    motif_union <- motifs_top_list %>% unlist() %>% unique()
+    if (length(motif_union) > max_motifs_in_plot) {
+      global <- bind_rows(score_per_cluster, .id = "cluster") %>%
+        filter(motif %in% motif_union) %>%
+        group_by(motif) %>%
+        summarise(global_score = sum(score),
+                  n_clu        = n_distinct(cluster),
+                  .groups      = "drop") %>%
+        arrange(desc(n_clu), desc(global_score))
+      kept <- head(global$motif, max_motifs_in_plot)
+      motifs_top_list <- motifs_top_list %>%
+        lapply(function(m) intersect(m, kept))
+    }
 
     # keep the plot result to return later
     results <- list()

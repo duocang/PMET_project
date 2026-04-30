@@ -297,10 +297,19 @@ emit_progress "heatmaps" 3 3 "Generating heatmaps"
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
 else
-    draw() { Rscript scripts/r/draw_heatmap.R "$@"; }
-    draw All     "$plot_output/heatmap.png"                "$pairing_output/motif_output.txt" 5 3 6 FALSE
-    draw Overlap "$plot_output/heatmap_overlap_unique.png" "$pairing_output/motif_output.txt" 5 3 6 TRUE
-    draw Overlap "$plot_output/heatmap_overlap.png"        "$pairing_output/motif_output.txt" 5 3 6 FALSE
+    # See pair_only.sh for rationale on max_motifs / max_fig_inches and the
+    # try-catch wrapper. motif_output.txt is the canonical product; heatmap
+    # is best-effort.
+    max_motifs=30
+    max_fig_inches=40
+    draw() {
+        if ! Rscript scripts/r/draw_heatmap.R "$@"; then
+            print_orange "   heatmap render failed (method=$1, file=$2); main output unaffected"
+        fi
+    }
+    draw All     "$plot_output/heatmap.png"                "$pairing_output/motif_output.txt" 5 3 6 FALSE "$max_motifs" "$max_fig_inches"
+    draw Overlap "$plot_output/heatmap_overlap_unique.png" "$pairing_output/motif_output.txt" 5 3 6 TRUE  "$max_motifs" "$max_fig_inches"
+    draw Overlap "$plot_output/heatmap_overlap.png"        "$pairing_output/motif_output.txt" 5 3 6 FALSE "$max_motifs" "$max_fig_inches"
 fi
 clear_progress
 

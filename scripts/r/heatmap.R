@@ -1,17 +1,36 @@
-heatmap.func <- function(filename          = NULL,
-                         method            = NULL,
-                         pmet_out          = NULL,
-                         topn              = 5,
-                         p_adj_threshold   = 0.05,
-                         p_adj_method      = "Adjusted p-value (Bonf)",
-                         draw_histgram     = TRUE,
-                         unique_cmbination = TRUE,
-                         exclusive_motifs  = TRUE,
-                         histgram_ncol     = 2,
-                         histgram_width    = 6,
-                         heatmap_width     = 20,
-                         heatmap_height    = 20)
+heatmap.func <- function(filename           = NULL,
+                         method             = NULL,
+                         pmet_out           = NULL,
+                         topn               = 5,
+                         p_adj_threshold    = 0.05,
+                         p_adj_method       = "Adjusted p-value (Bonf)",
+                         draw_histgram      = TRUE,
+                         unique_cmbination  = TRUE,
+                         exclusive_motifs   = TRUE,
+                         histgram_ncol      = 2,
+                         histgram_width     = 6,
+                         heatmap_width      = 20,
+                         heatmap_height     = 20,
+                         max_motifs_in_plot = 30L,
+                         max_fig_inches     = 40)
 {
+  # Output dimensions are computed from the actual motif count and panel
+  # layout instead of being hard-coded — keeps cells legible (~0.18 in/cell)
+  # and stops the figure from blowing past ggsave's 50-inch ceiling on
+  # crowded inputs.
+  .compute_dims <- function(n_motifs, ncol_p, nrow_p, max_inches) {
+    cell_inch  <- 0.18
+    axis_pad   <- 3.0   # axis labels + tick room
+    legend_pad <- 2.0   # right-side legend
+    title_pad  <- 0.6   # top title
+    panel_w    <- n_motifs * cell_inch + axis_pad
+    panel_h    <- n_motifs * cell_inch + axis_pad
+    list(
+      width  = min(panel_w * ncol_p + legend_pad, max_inches),
+      height = min(panel_h * nrow_p + title_pad, max_inches)
+    )
+  }
+
   if (draw_histgram) {
     histgram.path <- filename %>%
     tools::file_path_sans_ext() %>%
@@ -33,14 +52,15 @@ heatmap.func <- function(filename          = NULL,
     arrange(desc(p_adj)) %>%
     mutate(`motif_pair` = paste0(motif1, "^^", motif2))
 
-  pmet.result.processed <- ProcessPmetResult( pmet_result       = pmet.result,
-                                              p_adj_limt        = p_adj_threshold,
-                                              gene_portion      = 0.05,
-                                              topn              = topn,
-                                              histgram_ncol     = 2,
-                                              histgram_width    = 6,
-                                              histgram_dir      = histgram.path,
-                                              unique_cmbination = unique_cmbination
+  pmet.result.processed <- ProcessPmetResult( pmet_result        = pmet.result,
+                                              p_adj_limt         = p_adj_threshold,
+                                              gene_portion       = 0.05,
+                                              topn               = topn,
+                                              max_motifs_in_plot = max_motifs_in_plot,
+                                              histgram_ncol      = 2,
+                                              histgram_width     = 6,
+                                              histgram_dir       = histgram.path,
+                                              unique_cmbination  = unique_cmbination
                                               )
 
   if (is.null(pmet.result.processed)) {
@@ -136,18 +156,27 @@ heatmap.func <- function(filename          = NULL,
     }
   }
 
-  # set size of saved plot
+  # Decide motif count drawn and panel layout, then size accordingly.
   if (method == "Overlap") {
-    wid <- heatmap_width
-    hei <- heatmap_height
-  } else {
-    if (method == "All") {
-      wid <- 20
-      hei <- 10 * ceiling(length(clusters)/2)
-    } else if (method %in% clusters) {
-      wid <- 20
-      hei <- 20
+    if (length(clusters) == 1) {
+      n_drawn <- length(motifs.selected[[1]])
+    } else {
+      n_drawn <- num.motifs   # union vector built above
     }
+    nc <- 1; nr <- 1          # Overlap is one merged panel
+  } else if (method == "All") {
+    n_drawn <- length(unique(unlist(motifs.selected)))
+    nc <- 2; nr <- ceiling(length(clusters) / 2)
+  } else { # method %in% clusters
+    n_drawn <- length(motifs.selected[[method]])
+    nc <- 1; nr <- 1
   }
-  ggsave(filename, p, width = wid, height = hei, dpi = 320, units = "in")
+
+  dims <- .compute_dims(n_drawn, nc, nr, max_fig_inches)
+  ggsave(filename, p,
+         width  = dims$width,
+         height = dims$height,
+         dpi    = 320,
+         units  = "in",
+         limitsize = FALSE)
 }

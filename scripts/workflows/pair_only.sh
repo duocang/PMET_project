@@ -223,10 +223,20 @@ emit_progress "heatmaps" 2 2 "Generating heatmaps"
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
 else
-    draw() { Rscript scripts/r/draw_heatmap.R "$@"; }
-    draw All     "$plot_output/heatmap.png"                "$outputdir/motif_output.txt" 5 3 6 FALSE
-    draw Overlap "$plot_output/heatmap_overlap_unique.png" "$outputdir/motif_output.txt" 5 3 6 TRUE
-    draw Overlap "$plot_output/heatmap_overlap.png"        "$outputdir/motif_output.txt" 5 3 6 FALSE
+    # Heatmaps are derived art — failures here (R package quirks, oversize
+    # plots, etc) must not nuke the run. motif_output.txt is the science
+    # product; this stage is best-effort. max_motifs / max_fig_inches cap
+    # readability and on-disk size (see scripts/r/draw_heatmap.R).
+    max_motifs=30
+    max_fig_inches=40
+    draw() {
+        if ! Rscript scripts/r/draw_heatmap.R "$@"; then
+            print_orange "   heatmap render failed (method=$1, file=$2); main output unaffected"
+        fi
+    }
+    draw All     "$plot_output/heatmap.png"                "$outputdir/motif_output.txt" 5 3 6 FALSE "$max_motifs" "$max_fig_inches"
+    draw Overlap "$plot_output/heatmap_overlap_unique.png" "$outputdir/motif_output.txt" 5 3 6 TRUE  "$max_motifs" "$max_fig_inches"
+    draw Overlap "$plot_output/heatmap_overlap.png"        "$outputdir/motif_output.txt" 5 3 6 FALSE "$max_motifs" "$max_fig_inches"
 fi
 clear_progress
 
