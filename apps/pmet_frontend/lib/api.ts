@@ -11,6 +11,10 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Admin auth uses an httpOnly cookie set by /api/admin/login. axios needs
+  // withCredentials=true to send cookies on subsequent same-origin requests
+  // when the dev server proxies via nginx.
+  withCredentials: true,
 });
 
 export const taskApi = {
@@ -40,6 +44,40 @@ export const taskApi = {
 
   downloadResult: (taskId: string): string => {
     return `${API_URL}/api/tasks/${taskId}/result`;
+  },
+
+  cancel: async (taskId: string, reason?: string): Promise<{ ok: boolean; killed_pids: number[] }> => {
+    const response = await api.post(`/api/tasks/${taskId}/cancel`, { reason });
+    return response.data;
+  },
+};
+
+export const adminApi = {
+  login: async (token: string): Promise<{ ok: boolean }> => {
+    const response = await api.post('/api/admin/login', { token });
+    return response.data;
+  },
+
+  logout: async (): Promise<{ ok: boolean }> => {
+    const response = await api.post('/api/admin/logout');
+    return response.data;
+  },
+
+  me: async (): Promise<{ is_admin: boolean }> => {
+    const response = await api.get('/api/admin/me');
+    return response.data;
+  },
+
+  getSettings: async (): Promise<{ notify_on_submit: boolean }> => {
+    const response = await api.get('/api/admin/settings');
+    return response.data;
+  },
+
+  updateSettings: async (
+    settings: { notify_on_submit: boolean },
+  ): Promise<{ notify_on_submit: boolean }> => {
+    const response = await api.put('/api/admin/settings', settings);
+    return response.data;
   },
 };
 

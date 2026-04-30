@@ -48,15 +48,30 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
         task_meta["started_at"] = datetime.utcnow().isoformat()
         task_file.write_text(json.dumps(task_meta, indent=2))
 
-        # Notify admin + user that task has started
+        # Notify admin + user that task has started. The admin half is
+        # gated by data/configure/admin_settings.json::notify_on_submit
+        # so the admin can mute "New Task Submitted" without a redeploy.
         if self.request.retries == 0:
-            mail.send_admin_notification(task_meta["email"], task_meta)
+            config.reload()
+            if config.NOTIFY_ON_SUBMIT:
+                mail.send_admin_notification(task_meta["email"], task_meta)
             mail.send_started_notification(task_meta["email"], task_id)
 
         # Build and execute PMET command
         result = executor.execute(task_meta)
 
         if result["success"]:
+            # If the cancel API beat us to it (rare but possible: cancel
+            # arrives just as the subprocess exits cleanly), respect that
+            # and don't overwrite the terminal state with "completed".
+            if task_file.exists():
+                try:
+                    current = json.loads(task_file.read_text())
+                    if current.get("status") == "cancelled":
+                        return {"success": False, "error": "cancelled"}
+                except json.JSONDecodeError:
+                    pass
+
             # Zip results
             result_dir = Path(task_dir)
             storage.zip_results(result_dir, task_id)
@@ -79,6 +94,18 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
             raise Exception(result.get("error", "PMET execution failed"))
 
     except Exception as e:
+        # The cancel endpoint marks status=cancelled BEFORE killing the
+        # subprocess. If we re-read the file and find that already, don't
+        # overwrite to "failed" — the cancellation path owns the final
+        # state and has already emailed the user.
+        if task_file.exists():
+            try:
+                current = json.loads(task_file.read_text())
+                if current.get("status") == "cancelled":
+                    return {"success": False, "error": "cancelled"}
+            except json.JSONDecodeError:
+                pass
+
         task_meta["status"] = "failed"
         task_meta["error_message"] = str(e)
         task_meta["completed_at"] = datetime.utcnow().isoformat()

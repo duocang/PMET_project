@@ -8,6 +8,11 @@ pydantic[email]>=2.5.0
 celery>=5.3.0
 redis>=5.0.0
 
+# Process tree management for thorough task cancellation. The worker spawns
+# subprocess pipelines that fork their own children; killing only the top
+# Popen handle leaves orphaned processes. psutil lets us walk the tree.
+psutil>=5.9
+
 # Data processing — used by both the backend (pandas) and the PMET shell
 # pipeline's Python helpers (numpy pulled in transitively via pandas,
 # biopython required by deduplicate.py and parse_promoter_lengths_from_fasta.py).

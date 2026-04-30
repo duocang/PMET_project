@@ -135,18 +135,38 @@ class PMETExecutor:
         else:
             cmd = self._build_intervals_cmd(task_meta, script_path)
 
+        # Track the subprocess PID in the task dir so /api/tasks/<id>/cancel
+        # can find and kill the entire tree (the shell pipelines fork their
+        # own children, so we need a process-group-aware kill via psutil).
+        # Use a new session/process group for clean tree-kill semantics.
+        task_id = task_meta.get("task_id", "")
+        pid_file = config.RESULT_DIR / task_id / "worker.pid" if task_id else None
+        if pid_file is not None:
+            pid_file.parent.mkdir(parents=True, exist_ok=True)
+
+        proc = None
         try:
-            result = subprocess.run(
+            proc = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
                 cwd=str(config.PROJECT_ROOT),
-                timeout=3600 * 24,  # 24 hours
+                start_new_session=True,
             )
+            if pid_file is not None:
+                pid_file.write_text(str(proc.pid))
 
-            if result.returncode != 0:
-                clean_stdout = self._clean_process_output(result.stdout)
-                clean_stderr = self._clean_process_output(result.stderr)
+            try:
+                stdout, stderr = proc.communicate(timeout=3600 * 24)  # 24 h
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.communicate()
+                return {"success": False, "error": "Execution timed out"}
+
+            if proc.returncode != 0:
+                clean_stdout = self._clean_process_output(stdout)
+                clean_stderr = self._clean_process_output(stderr)
                 return {
                     "success": False,
                     "error": f"Command failed: {clean_stderr or clean_stdout or 'Unknown error'}",
@@ -156,12 +176,16 @@ class PMETExecutor:
 
             return {
                 "success": True,
-                "stdout": self._clean_process_output(result.stdout),
+                "stdout": self._clean_process_output(stdout),
             }
-        except subprocess.TimeoutExpired:
-            return {"success": False, "error": "Execution timed out"}
         except Exception as e:
             return {"success": False, "error": str(e)}
+        finally:
+            if pid_file is not None:
+                try:
+                    pid_file.unlink()
+                except FileNotFoundError:
+                    pass
 
     def _task_dirs(self, task_id: str) -> tuple[Path, Path]:
         """Return (indexing_dir, pairing_dir) for a task under the new layout."""

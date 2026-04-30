@@ -1,14 +1,55 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from datetime import datetime
+from typing import Optional
 import json
+
+from pydantic import BaseModel
 
 from ..models.task import TaskCreate, TaskResponse, TaskStatus, TaskMode, TaskListResponse
 from ...config import config
 from ...services.storage import StorageService
+from ...services.mail import MailService
+from .admin import require_admin
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 storage = StorageService()
+
+
+class CancelPayload(BaseModel):
+    reason: Optional[str] = None
+
+
+def _kill_process_tree(pid: int) -> list[int]:
+    """SIGTERM (then SIGKILL after 5s) the process and every descendant.
+
+    Used to make a task termination *thorough* — the worker spawns shell
+    pipelines that fork their own children, so killing only the top PID
+    leaves orphans running. Returns the list of PIDs we attempted to
+    terminate so the caller can audit if needed.
+    """
+    import psutil
+
+    killed: list[int] = []
+    try:
+        parent = psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        return killed
+
+    procs = [parent] + parent.children(recursive=True)
+    for p in procs:
+        try:
+            p.terminate()
+            killed.append(p.pid)
+        except psutil.NoSuchProcess:
+            pass
+    _, alive = psutil.wait_procs(procs, timeout=5)
+    for p in alive:
+        try:
+            p.kill()
+        except psutil.NoSuchProcess:
+            pass
+    return killed
 
 
 @router.post("", response_model=TaskResponse)
@@ -55,9 +96,12 @@ async def get_task(task_id: str):
 
     task_data = json.loads(task_file.read_text())
 
-    # Check if result exists
+    # Auto-flip to completed if a zip exists, but only when the recorded
+    # status isn't already terminal (don't paper over a cancelled / failed
+    # final state with a stale zip from a previous run).
     result_zip = config.RESULT_DIR / f"{task_id}.zip"
-    if result_zip.exists():
+    current_status = task_data.get("status")
+    if result_zip.exists() and current_status not in ("cancelled", "failed"):
         task_data["status"] = TaskStatus.COMPLETED.value
         task_data["completed_at"] = datetime.fromtimestamp(
             result_zip.stat().st_mtime
@@ -117,7 +161,7 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
 
         status = TaskStatus(task_data.get("status", "pending"))
         result_zip = config.RESULT_DIR / f"{task_data['task_id']}.zip"
-        if result_zip.exists():
+        if result_zip.exists() and status not in (TaskStatus.CANCELLED, TaskStatus.FAILED):
             status = TaskStatus.COMPLETED
 
         tasks.append(TaskResponse(
@@ -133,3 +177,66 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
         ))
 
     return TaskListResponse(tasks=tasks, total=len(tasks))
+
+
+@router.post("/{task_id}/cancel", dependencies=[Depends(require_admin)])
+async def cancel_task(task_id: str, payload: CancelPayload):
+    """Admin-only: terminate a running task.
+
+    Order of operations matters here. We *first* mark the task as cancelled
+    in the JSON, then kill the worker's subprocess tree. The worker's
+    exception handler reads the JSON when its subprocess dies and skips
+    overwriting the status if it sees "cancelled" — so the cancellation
+    state is sticky and not clobbered by a "subprocess exited non-zero"
+    failure path.
+    """
+    task_file = config.TASKS_DIR / f"{task_id}.json"
+    if not task_file.exists():
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task_data = json.loads(task_file.read_text())
+    current = task_data.get("status")
+    if current in ("completed", "failed", "cancelled"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Task is already {current} and cannot be cancelled",
+        )
+
+    reason = (payload.reason or "").strip()
+    now = datetime.utcnow().isoformat()
+    task_data["status"] = TaskStatus.CANCELLED.value
+    task_data["completed_at"] = now
+    task_data["cancelled_at"] = now
+    task_data["cancelled_by"] = "admin"
+    if reason:
+        task_data["cancel_reason"] = reason
+    task_file.write_text(json.dumps(task_data, indent=2))
+
+    # Kill the worker's process tree. The PID file is written by the
+    # executor at start; absent if the task hasn't reached subprocess yet
+    # (still queued in celery), in which case there's nothing to kill —
+    # the JSON status is enough to keep it from running when picked up.
+    pid_file = config.RESULT_DIR / task_id / "worker.pid"
+    killed: list[int] = []
+    if pid_file.exists():
+        try:
+            pid = int(pid_file.read_text().strip())
+        except (ValueError, OSError):
+            pid = 0
+        if pid:
+            try:
+                killed = _kill_process_tree(pid)
+            except Exception:
+                # Don't let psutil hiccups block the cancel response —
+                # status is already written, user will get the email.
+                pass
+
+    # Email the user. Best-effort; SMTP failures shouldn't fail the API.
+    try:
+        MailService().send_cancelled_notification(
+            task_data["email"], task_id, reason or None
+        )
+    except Exception:
+        pass
+
+    return {"ok": True, "killed_pids": killed, "task_id": task_id}

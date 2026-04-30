@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -70,6 +71,14 @@ class Config:
     NCPU: int = 4
     NGINX_LINK: str = ""
 
+    # Admin auth + behaviour. ADMIN_TOKEN comes from
+    # data/configure/admin_token.txt (gitignored, single line). Empty token
+    # means admin features are disabled — no one can log in.
+    # NOTIFY_ON_SUBMIT toggles the per-task admin email; default True so
+    # existing deployments don't silently change behaviour.
+    ADMIN_TOKEN: str = ""
+    NOTIFY_ON_SUBMIT: bool = True
+
     def __post_init__(self):
         self.TASKS_DIR = self.RESULT_DIR / "tasks"
         self.RESULT_DIR.mkdir(parents=True, exist_ok=True)
@@ -94,5 +103,28 @@ class Config:
                 self.EMAIL_ADDRESS = lines[2].strip()
                 self.EMAIL_SERVER = lines[3].strip()
                 self.EMAIL_PORT = lines[4].strip()
+
+        admin_token_file = self.PROJECT_ROOT / "data" / "configure" / "admin_token.txt"
+        if admin_token_file.exists():
+            self.ADMIN_TOKEN = admin_token_file.read_text().strip()
+
+        admin_settings_file = self.PROJECT_ROOT / "data" / "configure" / "admin_settings.json"
+        if admin_settings_file.exists():
+            try:
+                settings = json.loads(admin_settings_file.read_text())
+                if isinstance(settings, dict):
+                    if isinstance(settings.get("notify_on_submit"), bool):
+                        self.NOTIFY_ON_SUBMIT = settings["notify_on_submit"]
+            except (json.JSONDecodeError, OSError):
+                # Bad JSON shouldn't break config — keep defaults and let the
+                # admin settings page rewrite it.
+                pass
+
+    def reload(self):
+        """Re-read all *runtime-mutable* config files. Call when admin
+        settings get updated through the API so the change is visible
+        immediately without restarting the worker.
+        """
+        self._load_configs()
 
 config = Config()

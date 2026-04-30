@@ -1,1 +1,1 @@
-from . import tasks, files, demo, indexing
+from . import tasks, files, demo, indexing, admin

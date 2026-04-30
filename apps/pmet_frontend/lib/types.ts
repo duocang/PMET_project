@@ -1,6 +1,6 @@
 export type AnalysisMode = 'promoters_pre' | 'promoters' | 'intervals';
 export type TaskMode = AnalysisMode;
-export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export interface TaskCreate {
   email: string;

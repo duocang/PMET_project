@@ -45,6 +45,7 @@ logs/
 
 # Secrets — never commit
 email_credential.txt
+admin_token.txt
 *.pem
 *.key
 .env

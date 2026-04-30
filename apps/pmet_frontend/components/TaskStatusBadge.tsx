@@ -13,6 +13,7 @@ const statusConfig: Record<TaskStatus, { labelKey: TranslationKey; className: st
   running: { labelKey: 'status.running', className: 'bg-blue-100 text-blue-800' },
   completed: { labelKey: 'status.completed', className: 'bg-green-100 text-green-800' },
   failed: { labelKey: 'status.failed', className: 'bg-red-100 text-red-800' },
+  cancelled: { labelKey: 'status.cancelled', className: 'bg-slate-200 text-slate-700' },
 };
 
 export default function TaskStatusBadge({ status }: TaskStatusBadgeProps) {

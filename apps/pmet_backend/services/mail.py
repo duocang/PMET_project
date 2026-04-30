@@ -101,6 +101,45 @@ class MailService:
         """
         return self._send_email(email, "Your PMET results are ready", body)
 
+    def send_cancelled_notification(
+        self, email: str, task_id: str, reason: Optional[str] = None
+    ):
+        """Notify the user that an admin terminated their task.
+
+        ``reason`` is optional; if absent the email falls back to a generic
+        line so we never send an empty "<reason>" placeholder.
+        """
+        ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+        reason_block = (
+            f'<p><strong>Reason:</strong> {reason}</p>'
+            if reason
+            else '<p>No specific reason was provided. Please contact the administrator if you need details.</p>'
+        )
+        body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }}
+                .card {{ max-width: 640px; margin: 20px auto; background: #ffffff; border-radius: 12px; padding: 24px; }}
+                .header {{ color: #b91c1c; font-size: 18px; margin-bottom: 16px; }}
+                .id {{ font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1 class="header">Your PMET task was cancelled</h1>
+                <p>The administrator has terminated your analysis.</p>
+                <p>Task ID: <span class="id">{task_id}</span></p>
+                {reason_block}
+                <p>You can re-submit a new task any time.</p>
+                <p style="color: #64748b; font-size: 13px;">Cancelled at: {ts}</p>
+            </div>
+        </body>
+        </html>
+        """
+        return self._send_email(email, "Your PMET task was cancelled", body)
+
     def send_admin_notification(self, user_email: str, task_meta: dict):
         """Send notification to admin about new task"""
         ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
