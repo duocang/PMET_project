@@ -1,4 +1,5 @@
 {
   "_note": "Hot-reloaded each time the admin settings API is called. Edit through /admin/settings in the UI, or by hand here when the API isn't reachable.",
-  "notify_on_submit": false
+  "notify_on_submit": false,
+  "notify_user_on_start": true
 }

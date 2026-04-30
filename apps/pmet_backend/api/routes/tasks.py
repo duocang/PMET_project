@@ -522,7 +522,7 @@ async def cancel_task(task_id: str, payload: CancelPayload):
     # Email the user. Best-effort; SMTP failures shouldn't fail the API.
     try:
         MailService().send_cancelled_notification(
-            task_data["email"], task_id, reason or None
+            task_data["email"], task_id, reason or None, task_data
         )
     except Exception:
         pass

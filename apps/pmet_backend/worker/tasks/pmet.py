@@ -116,14 +116,14 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
         task_meta["started_at"] = datetime.utcnow().isoformat()
         task_file.write_text(json.dumps(task_meta, indent=2))
 
-        # Notify admin + user that task has started. The admin half is
-        # gated by data/configure/admin_settings.json::notify_on_submit
-        # so the admin can mute "New Task Submitted" without a redeploy.
+        # Notify admin + user that task has started. Both switches are
+        # hot-reloaded from data/configure/admin_settings.json.
         if self.request.retries == 0:
             config.reload()
             if config.NOTIFY_ON_SUBMIT:
                 mail.send_admin_notification(task_meta["email"], task_meta)
-            mail.send_started_notification(task_meta["email"], task_id)
+            if config.NOTIFY_USER_ON_START:
+                mail.send_started_notification(task_meta["email"], task_meta)
 
         # Build and execute PMET command
         result = executor.execute(task_meta)
@@ -163,7 +163,7 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
             _log_runtime_history(task_meta)
 
             # Send result email
-            mail.send_result_notification(task_meta["email"], result_link)
+            mail.send_result_notification(task_meta["email"], result_link, task_meta)
         else:
             raise Exception(result.get("error", "PMET execution failed"))
 

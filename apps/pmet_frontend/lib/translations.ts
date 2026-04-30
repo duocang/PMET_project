@@ -268,6 +268,9 @@ const en = {
   'admin.settings.notify_on_submit.label': 'Email me when a new task is submitted',
   'admin.settings.notify_on_submit.help':
     'When off, the worker stops sending the per-task “New Task Submitted” email. User-facing emails (started, completed, cancelled) are unaffected.',
+  'admin.settings.notify_user_on_start.label': 'Email users when their task starts',
+  'admin.settings.notify_user_on_start.help':
+    'When off, users still receive completed and cancelled emails, but not the “task started” email.',
   'admin.settings.save': 'Save',
   'admin.settings.saving': 'Saving…',
   'admin.settings.saved': 'Saved',
@@ -695,6 +698,9 @@ const zh: Record<keyof typeof en, string> = {
   'admin.settings.notify_on_submit.label': '新任务提交时给我发邮件',
   'admin.settings.notify_on_submit.help':
     '关闭后 worker 不再发送每个任务的"New Task Submitted"邮件。用户侧邮件（任务开始、完成、被取消）不受影响。',
+  'admin.settings.notify_user_on_start.label': '任务开始时给用户发邮件',
+  'admin.settings.notify_user_on_start.help':
+    '关闭后用户仍会收到任务完成和任务取消邮件，但不会收到"任务已开始"邮件。',
   'admin.settings.save': '保存',
   'admin.settings.saving': '保存中…',
   'admin.settings.saved': '已保存',

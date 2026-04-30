@@ -10,6 +10,7 @@ export default function AdminSettingsPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [notifyOnSubmit, setNotifyOnSubmit] = useState(true);
+  const [notifyUserOnStart, setNotifyUserOnStart] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -24,7 +25,10 @@ export default function AdminSettingsPage() {
           return;
         }
         const settings = await adminApi.getSettings();
-        if (alive) setNotifyOnSubmit(settings.notify_on_submit);
+        if (alive) {
+          setNotifyOnSubmit(settings.notify_on_submit);
+          setNotifyUserOnStart(settings.notify_user_on_start);
+        }
       } catch (e: any) {
         if (alive) setErr(e?.message ?? 'Failed to load settings');
       } finally {
@@ -40,8 +44,12 @@ export default function AdminSettingsPage() {
     setSaving(true);
     setErr(null);
     try {
-      const result = await adminApi.updateSettings({ notify_on_submit: notifyOnSubmit });
+      const result = await adminApi.updateSettings({
+        notify_on_submit: notifyOnSubmit,
+        notify_user_on_start: notifyUserOnStart,
+      });
       setNotifyOnSubmit(result.notify_on_submit);
+      setNotifyUserOnStart(result.notify_user_on_start);
       setSavedAt(Date.now());
     } catch (e: any) {
       setErr(e?.message ?? 'Failed to save');
@@ -85,6 +93,23 @@ export default function AdminSettingsPage() {
             </div>
             <div className="text-sm text-slate-500">
               {t('admin.settings.notify_on_submit.help')}
+            </div>
+          </span>
+        </label>
+
+        <label className="mt-5 flex cursor-pointer items-start gap-3 border-t border-slate-100 pt-5">
+          <input
+            type="checkbox"
+            checked={notifyUserOnStart}
+            onChange={(e) => setNotifyUserOnStart(e.target.checked)}
+            className="mt-1 h-4 w-4 cursor-pointer"
+          />
+          <span>
+            <div className="font-medium text-slate-900">
+              {t('admin.settings.notify_user_on_start.label')}
+            </div>
+            <div className="text-sm text-slate-500">
+              {t('admin.settings.notify_user_on_start.help')}
             </div>
           </span>
         </label>

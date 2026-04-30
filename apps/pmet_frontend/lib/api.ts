@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { TaskCreate, TaskResponse, TaskListResponse, UploadResponse, EstimatePayload, EstimateResponse, TaskProgress } from './types';
 
+export interface AdminSettings {
+  notify_on_submit: boolean;
+  notify_user_on_start: boolean;
+}
+
 // Empty string = same-origin. In docker/nginx deployment the app is served on
 // :80 and nginx proxies /api/* to the backend. In local dev, set
 // NEXT_PUBLIC_API_URL=http://localhost:8000 when frontend runs on :3000.
@@ -81,14 +86,14 @@ export const adminApi = {
     return response.data;
   },
 
-  getSettings: async (): Promise<{ notify_on_submit: boolean }> => {
+  getSettings: async (): Promise<AdminSettings> => {
     const response = await api.get('/api/admin/settings');
     return response.data;
   },
 
   updateSettings: async (
-    settings: { notify_on_submit: boolean },
-  ): Promise<{ notify_on_submit: boolean }> => {
+    settings: AdminSettings,
+  ): Promise<AdminSettings> => {
     const response = await api.put('/api/admin/settings', settings);
     return response.data;
   },

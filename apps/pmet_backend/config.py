@@ -76,8 +76,11 @@ class Config:
     # means admin features are disabled — no one can log in.
     # NOTIFY_ON_SUBMIT toggles the per-task admin email; default True so
     # existing deployments don't silently change behaviour.
+    # NOTIFY_USER_ON_START toggles the per-task user "started" email; default
+    # True preserves the existing user-facing notification behaviour.
     ADMIN_TOKEN: str = ""
     NOTIFY_ON_SUBMIT: bool = True
+    NOTIFY_USER_ON_START: bool = True
 
     def __post_init__(self):
         self.TASKS_DIR = self.RESULT_DIR / "tasks"
@@ -115,6 +118,8 @@ class Config:
                 if isinstance(settings, dict):
                     if isinstance(settings.get("notify_on_submit"), bool):
                         self.NOTIFY_ON_SUBMIT = settings["notify_on_submit"]
+                    if isinstance(settings.get("notify_user_on_start"), bool):
+                        self.NOTIFY_USER_ON_START = settings["notify_user_on_start"]
             except (json.JSONDecodeError, OSError):
                 # Bad JSON shouldn't break config — keep defaults and let the
                 # admin settings page rewrite it.

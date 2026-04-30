@@ -28,7 +28,8 @@ class LoginPayload(BaseModel):
 
 
 class AdminSettings(BaseModel):
-    notify_on_submit: bool
+    notify_on_submit: Optional[bool] = None
+    notify_user_on_start: Optional[bool] = None
 
 
 def _settings_path() -> Path:
@@ -84,7 +85,10 @@ async def me(pmet_admin: Optional[str] = Cookie(default=None)):
 
 @router.get("/settings", dependencies=[Depends(require_admin)])
 async def get_settings():
-    return {"notify_on_submit": config.NOTIFY_ON_SUBMIT}
+    return {
+        "notify_on_submit": config.NOTIFY_ON_SUBMIT,
+        "notify_user_on_start": config.NOTIFY_USER_ON_START,
+    }
 
 
 @router.put("/settings", dependencies=[Depends(require_admin)])
@@ -100,7 +104,13 @@ async def update_settings(payload: AdminSettings):
         except json.JSONDecodeError:
             existing = {}
     # Preserve any sidecar fields (like _note) we don't manage.
-    existing["notify_on_submit"] = payload.notify_on_submit
+    if payload.notify_on_submit is not None:
+        existing["notify_on_submit"] = payload.notify_on_submit
+    if payload.notify_user_on_start is not None:
+        existing["notify_user_on_start"] = payload.notify_user_on_start
     path.write_text(json.dumps(existing, indent=2) + "\n")
     config.reload()
-    return {"notify_on_submit": config.NOTIFY_ON_SUBMIT}
+    return {
+        "notify_on_submit": config.NOTIFY_ON_SUBMIT,
+        "notify_user_on_start": config.NOTIFY_USER_ON_START,
+    }
