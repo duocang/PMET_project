@@ -47,6 +47,9 @@ export interface TaskResponse {
   gff3_file?: string | null;
   meme_file?: string | null;
   premade_index?: string | null;
+  indexing_species?: string | null;
+  indexing_motif_db?: string | null;
+  runtime_estimate?: EstimateResponse | null;
 
   // Current worker thread count (data/configure/cpu_configuration.txt)
   ncpu?: number | null;
@@ -61,4 +64,40 @@ export interface UploadResponse {
   filename: string;
   path: string;
   size: number;
+}
+
+export interface EstimatePayload {
+  mode: TaskMode;
+  ncpu?: number;
+  n_motifs?: number;
+  n_target_genes?: number;
+  n_intervals?: number;
+  fasta_size_bytes?: number;
+  genes_file?: string;
+  fasta_file?: string;
+  meme_file?: string;
+  premade_index?: string;
+}
+
+export interface EstimateResponse {
+  estimate_seconds: number;
+  lower_seconds: number;
+  upper_seconds: number;
+  factors: {
+    mode: string;
+    ncpu: number;
+    n_motifs: number;
+    n_target_genes: number;
+    n_intervals: number;
+    fasta_size_bytes: number;
+  };
+}
+
+export interface TaskProgress {
+  running: boolean;
+  stage?: string;
+  stage_index?: number;
+  total_stages?: number;
+  label?: string;
+  updated_at?: string;
 }

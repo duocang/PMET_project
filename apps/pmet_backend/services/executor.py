@@ -144,6 +144,13 @@ class PMETExecutor:
         if pid_file is not None:
             pid_file.parent.mkdir(parents=True, exist_ok=True)
 
+        # Tell the workflow scripts where to drop progress.json. They source
+        # scripts/lib/progress.sh which reads PROGRESS_FILE; if unset, the
+        # emit_progress calls are no-ops (CLI runs).
+        env = os.environ.copy()
+        if task_id:
+            env["PROGRESS_FILE"] = str(config.RESULT_DIR / task_id / "progress.json")
+
         proc = None
         try:
             proc = subprocess.Popen(
@@ -152,6 +159,7 @@ class PMETExecutor:
                 stderr=subprocess.PIPE,
                 text=True,
                 cwd=str(config.PROJECT_ROOT),
+                env=env,
                 start_new_session=True,
             )
             if pid_file is not None:
@@ -185,6 +193,19 @@ class PMETExecutor:
                 try:
                     pid_file.unlink()
                 except FileNotFoundError:
+                    pass
+            # Always remove the progress sentinel — the shell script's own
+            # `clear_progress` only fires on the success branch, so a crash,
+            # a SIGTERM from the cancel endpoint, or a timeout would leave
+            # a stale progress.json that makes the UI render the progress
+            # bar forever. This finally guarantees cleanup.
+            if task_id:
+                progress_file = config.RESULT_DIR / task_id / "progress.json"
+                try:
+                    progress_file.unlink()
+                except FileNotFoundError:
+                    pass
+                except OSError:
                     pass
 
     def _task_dirs(self, task_id: str) -> tuple[Path, Path]:

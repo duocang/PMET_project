@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 import json
 
@@ -18,6 +19,236 @@ storage = StorageService()
 
 class CancelPayload(BaseModel):
     reason: Optional[str] = None
+
+
+class EstimatePayload(BaseModel):
+    """Inputs for /api/tasks/estimate. Each field is optional; the backend
+    will read the file paths if the precomputed counts aren't passed in."""
+    mode: TaskMode
+    ncpu: Optional[int] = None
+    n_motifs: Optional[int] = None
+    n_target_genes: Optional[int] = None
+    n_intervals: Optional[int] = None
+    fasta_size_bytes: Optional[int] = None
+    genes_file: Optional[str] = None
+    fasta_file: Optional[str] = None
+    meme_file: Optional[str] = None
+    premade_index: Optional[str] = None
+
+
+def _resolve_safe_input(rel: Optional[str]):
+    """Resolve a payload-supplied path against PROJECT_ROOT, requiring it to
+    land inside one of the read-allowed roots. Returns None on any rule
+    miss — callers treat that as "feature unknown" and fall back to zeros
+    in the estimate.
+
+    Rules:
+      - Must be a non-empty string
+      - After `resolve(strict=False)` must live under PROJECT_ROOT/data/ or
+        PROJECT_ROOT/results/ (the upload dirs)
+      - Must be a regular file (no symlink, fifo, device)
+
+    The estimate endpoint is unauthenticated and gets to read motif counts,
+    line counts, and file sizes — without these guards a caller could pass
+    `../../etc/passwd` to sniff line counts of arbitrary readable files,
+    or point at /proc/kcore to OOM the API process.
+    """
+    if not rel or not isinstance(rel, str):
+        return None
+    root = config.PROJECT_ROOT.resolve()
+    try:
+        candidate = (root / rel).resolve(strict=False)
+    except (OSError, RuntimeError):
+        return None
+
+    allowed_prefixes = (root / "data", root / "results")
+    if not any(
+        candidate == p or p in candidate.parents for p in allowed_prefixes
+    ):
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
+def _resolve_safe_index_dir(rel: Optional[str]):
+    """Resolve a precomputed-index directory under data/precomputed_indexes."""
+    if not rel or not isinstance(rel, str):
+        return None
+    root = config.PROJECT_ROOT.resolve()
+    indexing_root = config.PRECOMPUTED_INDEXING_DIR.resolve()
+    try:
+        candidate = (root / rel).resolve(strict=False)
+    except (OSError, RuntimeError):
+        return None
+
+    if not (candidate == indexing_root or indexing_root in candidate.parents):
+        return None
+    if not candidate.is_dir():
+        return None
+    return candidate
+
+
+# Safety cap on file reads inside the estimate endpoint. Above this we just
+# return the size or 0 instead of streaming the whole file.
+_ESTIMATE_MAX_READ_BYTES = 256 * 1024 * 1024  # 256 MB
+
+
+def _count_meme_motifs(path) -> int:
+    if not path:
+        return 0
+    try:
+        if path.stat().st_size > _ESTIMATE_MAX_READ_BYTES:
+            return 0
+        with path.open("r", errors="replace") as fh:
+            return sum(1 for line in fh if line.startswith("MOTIF "))
+    except OSError:
+        return 0
+
+
+def _count_index_motifs(index_dir) -> int:
+    if not index_dir:
+        return 0
+    hits_dir = index_dir / "fimohits"
+    if not hits_dir.is_dir():
+        return 0
+    try:
+        return sum(1 for path in hits_dir.iterdir() if path.is_file())
+    except OSError:
+        return 0
+
+
+def _count_lines(path) -> int:
+    if not path:
+        return 0
+    try:
+        if path.stat().st_size > _ESTIMATE_MAX_READ_BYTES:
+            return 0
+        with path.open("r", errors="replace") as fh:
+            return sum(1 for line in fh if line.strip())
+    except OSError:
+        return 0
+
+
+def _file_size(path) -> int:
+    try:
+        return path.stat().st_size if path else 0
+    except OSError:
+        return 0
+
+
+def _premade_index_summary(premade_index: Optional[str]) -> dict:
+    """Extract species and motif database ids from a precomputed index path."""
+    if not premade_index:
+        return {}
+    parts = Path(premade_index).parts
+    try:
+        idx = parts.index("precomputed_indexes")
+    except ValueError:
+        return {}
+    if len(parts) <= idx + 2:
+        return {}
+    return {
+        "indexing_species": parts[idx + 1],
+        "indexing_motif_db": parts[idx + 2],
+    }
+
+
+def _load_runtime_calibration() -> dict:
+    """Hot-read coefficients on each estimate call so admins can tune without
+    restarting the worker."""
+    path = config.PROJECT_ROOT / "data" / "configure" / "runtime_calibration.json"
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _estimate_runtime_seconds(meta: dict, calib: dict) -> int:
+    """Return predicted seconds for the given inputs. Always >= 5s so the
+    UI never shows a nonsensically small range."""
+    mode = meta.get("mode")
+    ncpu = max(1, int(meta.get("ncpu") or config.NCPU or 1))
+    n_motifs = max(0, int(meta.get("n_motifs") or 0))
+    n_target_genes = max(0, int(meta.get("n_target_genes") or 0))
+
+    if mode == TaskMode.PROMOTERS_PRE.value:
+        c = calib.get("promoters_pre", {})
+        seconds = (
+            c.get("base_seconds", 10)
+            + c.get("per_target_gene", 0.02) * n_target_genes
+            + c.get("per_motif_per_cpu", 0.2) * n_motifs / ncpu
+            + c.get("per_motif_per_thousand_target_genes_per_cpu", 1.0)
+            * n_motifs
+            * (n_target_genes / 1000.0)
+            / ncpu
+        )
+    elif mode == TaskMode.INTERVALS.value:
+        c = calib.get("intervals", {})
+        n_intervals = max(0, int(meta.get("n_intervals") or n_target_genes or 0))
+        seconds = (
+            c.get("base_seconds", 20)
+            + c.get("per_motif_per_thousand_intervals_per_cpu", 1.0)
+            * n_motifs
+            * (n_intervals / 1000.0)
+            / ncpu
+        )
+    elif mode == TaskMode.PROMOTERS.value:
+        c = calib.get("promoters", {})
+        fasta_mb = max(0.0, int(meta.get("fasta_size_bytes") or 0) / (1024 * 1024))
+        seconds = (
+            c.get("base_seconds", 60)
+            + c.get("per_motif_per_fasta_mb_per_cpu", 0.025) * n_motifs * fasta_mb / ncpu
+            + c.get("per_target_gene", 0.02) * n_target_genes
+        )
+    else:
+        seconds = 60
+
+    return max(5, int(round(seconds)))
+
+
+def _runtime_estimate_response(inputs: dict) -> dict:
+    """Build the estimate response from either EstimatePayload or task meta."""
+    mode_raw = inputs.get("mode")
+    mode = mode_raw.value if isinstance(mode_raw, TaskMode) else str(mode_raw)
+
+    n_motifs = inputs.get("n_motifs")
+    if n_motifs is None and mode == TaskMode.PROMOTERS_PRE.value:
+        n_motifs = _count_index_motifs(_resolve_safe_index_dir(inputs.get("premade_index")))
+    elif n_motifs is None:
+        n_motifs = _count_meme_motifs(_resolve_safe_input(inputs.get("meme_file")))
+
+    n_target_genes = inputs.get("n_target_genes")
+    if n_target_genes is None:
+        n_target_genes = _count_lines(_resolve_safe_input(inputs.get("genes_file")))
+
+    fasta_size = inputs.get("fasta_size_bytes")
+    if fasta_size is None:
+        fasta_size = _file_size(_resolve_safe_input(inputs.get("fasta_file")))
+
+    n_intervals = inputs.get("n_intervals")
+    if n_intervals is None and mode == TaskMode.INTERVALS.value:
+        # Intervals lives in the gene_file slot in the submit form.
+        n_intervals = _count_lines(_resolve_safe_input(inputs.get("genes_file")))
+
+    features = {
+        "mode": mode,
+        "ncpu": inputs.get("ncpu") or config.NCPU,
+        "n_motifs": n_motifs or 0,
+        "n_target_genes": n_target_genes or 0,
+        "n_intervals": n_intervals or 0,
+        "fasta_size_bytes": fasta_size or 0,
+    }
+    seconds = _estimate_runtime_seconds(features, _load_runtime_calibration())
+    return {
+        "estimate_seconds": seconds,
+        "lower_seconds": seconds,
+        "upper_seconds": seconds * 2,
+        "factors": features,
+    }
 
 
 def _kill_process_tree(pid: int) -> list[int]:
@@ -65,6 +296,8 @@ async def create_task(task: TaskCreate):
     task_meta["task_id"] = task_id
     task_meta["status"] = TaskStatus.PENDING.value
     task_meta["created_at"] = datetime.utcnow().isoformat()
+    task_meta["runtime_estimate"] = _runtime_estimate_response(task_meta)
+    task_meta.update(_premade_index_summary(task_meta.get("premade_index")))
 
     meta_file = config.TASKS_DIR / f"{task_id}.json"
     meta_file.parent.mkdir(parents=True, exist_ok=True)
@@ -84,6 +317,9 @@ async def create_task(task: TaskCreate):
         email=task.email,
         result_link=result_link,
         created_at=datetime.utcnow(),
+        runtime_estimate=task_meta.get("runtime_estimate"),
+        indexing_species=task_meta.get("indexing_species"),
+        indexing_motif_db=task_meta.get("indexing_motif_db"),
     )
 
 
@@ -113,6 +349,11 @@ async def get_task(task_id: str):
     if not result_link and config.NGINX_LINK and result_zip.exists():
         result_link = f"{config.NGINX_LINK.rstrip('/')}/{task_id}.zip"
 
+    runtime_estimate = task_data.get("runtime_estimate")
+    if not runtime_estimate:
+        runtime_estimate = _runtime_estimate_response(task_data)
+    index_summary = _premade_index_summary(task_data.get("premade_index"))
+
     return TaskResponse(
         task_id=task_data["task_id"],
         status=TaskStatus(task_data.get("status", "pending")),
@@ -135,6 +376,9 @@ async def get_task(task_id: str):
         gff3_file=task_data.get("gff3_file"),
         meme_file=task_data.get("meme_file"),
         premade_index=task_data.get("premade_index"),
+        indexing_species=task_data.get("indexing_species") or index_summary.get("indexing_species"),
+        indexing_motif_db=task_data.get("indexing_motif_db") or index_summary.get("indexing_motif_db"),
+        runtime_estimate=runtime_estimate,
         ncpu=config.NCPU,
     )
 
@@ -177,6 +421,50 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
         ))
 
     return TaskListResponse(tasks=tasks, total=len(tasks))
+
+
+@router.get("/{task_id}/progress")
+async def get_task_progress(task_id: str):
+    """Return the live progress.json the worker writes via
+    scripts/lib/progress.sh. Returns {"running": false} when the file is
+    absent (task not started yet, already finished, or never instrumented).
+
+    Defensive: if the task JSON says completed/failed/cancelled we return
+    not-running regardless of file presence — covers the case where the
+    executor's cleanup didn't run (worker SIGKILLed mid-write) and a
+    stale progress.json would otherwise make the UI show a phantom
+    progress bar.
+    """
+    task_file = config.TASKS_DIR / f"{task_id}.json"
+    if task_file.exists():
+        try:
+            task_data = json.loads(task_file.read_text())
+            if task_data.get("status") in ("completed", "failed", "cancelled"):
+                return {"running": False}
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    progress_file = config.RESULT_DIR / task_id / "progress.json"
+    if not progress_file.exists():
+        return {"running": False}
+    try:
+        data = json.loads(progress_file.read_text())
+        if not isinstance(data, dict):
+            return {"running": False}
+        data["running"] = True
+        return data
+    except (json.JSONDecodeError, OSError):
+        return {"running": False}
+
+
+@router.post("/estimate")
+async def estimate_task(payload: EstimatePayload):
+    """Predict task runtime from input metadata. Returns a range
+    [estimate, 2 × estimate]; the upper bound is the conservative figure
+    the UI surfaces. The backend reads file paths to fill in motif /
+    gene / fasta-size counts if the caller didn't precompute them.
+    """
+    return _runtime_estimate_response(payload.model_dump())
 
 
 @router.post("/{task_id}/cancel", dependencies=[Depends(require_admin)])

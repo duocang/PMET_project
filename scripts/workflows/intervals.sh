@@ -42,6 +42,13 @@ else
     print_red()    { printf "\033[31m%s\033[0m\n" "$1"; }
     print_orange() { printf "\033[33m%s\033[0m\n" "$1"; }
 fi
+if [[ -f scripts/lib/progress.sh ]]; then
+    # shellcheck source=/dev/null
+    source scripts/lib/progress.sh
+else
+    emit_progress() { :; }
+    clear_progress() { :; }
+fi
 if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
     source scripts/lib/timer.sh
@@ -172,6 +179,7 @@ grand_start=$SECONDS
 # ==============================================================================
 
 print_green "\n[1/3] Interval indexing..."
+emit_progress "indexing" 1 3 "Interval indexing (FIMO scan)"
 echo "Indexing output: $indexing_output"
 h_start=$SECONDS
 
@@ -230,6 +238,7 @@ print_elapsed_time "$h_start"
 # ==============================================================================
 
 print_green "\n[2/3] Heterotypic motif search..."
+emit_progress "heterotypic" 2 3 "Heterotypic pairing"
 echo "Pairing output: $pairing_output"
 
 # Stage [1] keeps the index in sanitized form (':' -> '__COLON__'). Sanitize
@@ -284,6 +293,7 @@ done
 # ==============================================================================
 
 print_green "\n[3/3] Generating heatmaps..."
+emit_progress "heatmaps" 3 3 "Generating heatmaps"
 
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
@@ -293,6 +303,7 @@ else
     draw Overlap "$plot_output/heatmap_overlap_unique.png" "$pairing_output/motif_output.txt" 5 3 6 TRUE
     draw Overlap "$plot_output/heatmap_overlap.png"        "$pairing_output/motif_output.txt" 5 3 6 FALSE
 fi
+clear_progress
 
 print_green "\nDone."
 print_elapsed_time "$grand_start"

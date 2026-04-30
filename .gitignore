@@ -88,3 +88,6 @@ tests/audit/runs/
 /verify-*.png
 /home-learn-*.png
 
+# Local audit notes — persisted on disk for your reference, not committed
+AUDIT_FINDINGS.md
+

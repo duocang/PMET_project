@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { taskApi } from '@/lib/api';
-import { TaskResponse } from '@/lib/types';
+import { TaskResponse, TaskProgress } from '@/lib/types';
 import TaskStatusBadge from '@/components/TaskStatusBadge';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { TranslationKey } from '@/lib/translations';
+import { formatRuntimeRange, humanizeIdentifier } from '@/lib/runtime';
 
 interface PageProps {
   params: { id: string };
@@ -22,6 +23,7 @@ export default function TaskDetailPage({ params }: PageProps) {
   const { id } = params;
   const { t } = useTranslation();
   const [task, setTask] = useState<TaskResponse | null>(null);
+  const [progress, setProgress] = useState<TaskProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [polling, setPolling] = useState(false);
 
@@ -33,13 +35,22 @@ export default function TaskDetailPage({ params }: PageProps) {
   useEffect(() => {
     if (task && (task.status === 'pending' || task.status === 'running')) {
       setPolling(true);
-      const interval = setInterval(fetchTask, 5000);
+      const tick = () => {
+        fetchTask();
+        // Pull live stage from the worker's progress.json. Best-effort: 404
+        // / parse failure just leaves the previous bar in place.
+        taskApi.progress(id).then(setProgress).catch(() => {});
+      };
+      tick();
+      const interval = setInterval(tick, 5000);
       return () => {
         clearInterval(interval);
         setPolling(false);
       };
+    } else {
+      setProgress(null);
     }
-  }, [task?.status]);
+  }, [task?.status, id]);
 
   const fetchTask = async () => {
     try {
@@ -71,6 +82,8 @@ export default function TaskDetailPage({ params }: PageProps) {
     );
   }
 
+  const precomputedInfo = getPrecomputedIndexInfo(task);
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <Link href="/tasks" className="text-sm text-slate-500 hover:text-slate-700">
@@ -92,9 +105,28 @@ export default function TaskDetailPage({ params }: PageProps) {
         </div>
 
         {polling && (
-          <div className="mt-5 flex items-center gap-2 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-            {t('task.running_msg')}
+          <div className="mt-5 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+              <span className="font-medium">
+                {progress?.label ?? t('task.running_msg')}
+              </span>
+              {progress?.stage_index && progress?.total_stages ? (
+                <span className="text-blue-500">
+                  · {progress.stage_index} / {progress.total_stages}
+                </span>
+              ) : null}
+            </div>
+            {progress?.stage_index && progress?.total_stages && (
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-blue-100">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-500 ease-out"
+                  style={{
+                    width: `${activeStagePercent(progress.stage_index, progress.total_stages)}%`,
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -119,8 +151,34 @@ export default function TaskDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Two-column: timeline + parameters */}
+      {/* Analysis, timeline + parameters */}
       <div className="grid gap-6 md:grid-cols-2">
+        <Card title={t('task.section.analysis')}>
+          <DataRow label={t('task.analysis.mode')} value={t(MODE_KEYS[task.mode])} />
+          {task.runtime_estimate && (
+            <DataRow
+              label={t('task.analysis.estimated_runtime')}
+              value={formatRuntimeRange(
+                task.runtime_estimate.lower_seconds,
+                task.runtime_estimate.upper_seconds,
+                t,
+              )}
+            />
+          )}
+          {task.mode === 'promoters_pre' && precomputedInfo.species && (
+            <DataRow
+              label={t('task.analysis.species')}
+              value={humanizeIdentifier(precomputedInfo.species)}
+            />
+          )}
+          {task.mode === 'promoters_pre' && precomputedInfo.motifDb && (
+            <DataRow
+              label={t('task.analysis.motif_db')}
+              value={humanizeIdentifier(precomputedInfo.motifDb)}
+            />
+          )}
+        </Card>
+
         <Card title={t('task.section.timeline')}>
           <DataRow label={t('task.created')} value={formatDate(task.created_at)} />
           {task.started_at && (
@@ -229,6 +287,28 @@ function hasInputFiles(t: TaskResponse) {
   return Boolean(
     t.genes_file || t.fasta_file || t.gff3_file || t.meme_file || t.premade_index,
   );
+}
+
+function activeStagePercent(stageIndex: number, totalStages: number) {
+  if (totalStages <= 0) return 0;
+  // Progress JSON is emitted at the start of each stage. Showing stage N/N as
+  // 100% would imply the job is done while the final stage is still running,
+  // so display the midpoint of the active stage and reserve 100% for terminal
+  // completion.
+  return Math.min(95, Math.max(5, ((stageIndex - 0.5) / totalStages) * 100));
+}
+
+function getPrecomputedIndexInfo(t: TaskResponse) {
+  if (t.indexing_species || t.indexing_motif_db) {
+    return { species: t.indexing_species || '', motifDb: t.indexing_motif_db || '' };
+  }
+
+  const parts = t.premade_index?.split('/') ?? [];
+  const idx = parts.indexOf('precomputed_indexes');
+  if (idx < 0 || parts.length <= idx + 2) {
+    return { species: '', motifDb: '' };
+  }
+  return { species: parts[idx + 1], motifDb: parts[idx + 2] };
 }
 
 function formatDate(dateStr: string) {

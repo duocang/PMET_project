@@ -38,6 +38,13 @@ else
     print_orange()            { printf "\033[33m%s\033[0m\n" "$1"; }
     print_fluorescent_yellow(){ printf "\033[93m%s\033[0m\n" "$1"; }
 fi
+if [[ -f scripts/lib/progress.sh ]]; then
+    # shellcheck source=/dev/null
+    source scripts/lib/progress.sh
+else
+    emit_progress() { :; }
+    clear_progress() { :; }
+fi
 if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
     source scripts/lib/timer.sh
@@ -218,6 +225,7 @@ grand_start=$SECONDS
 # ==============================================================================
 
 print_green "\n[1/3] Homotypic motif search..."
+emit_progress "homotypic" 1 3 "Homotypic motif search (FIMO scan)"
 h_start=$SECONDS
 
 overlap_arg=AllowOverlap; is_no_overlap "$overlap" && overlap_arg=NoOverlap
@@ -250,6 +258,7 @@ print_elapsed_time "$h_start"
 # ==============================================================================
 
 print_green "\n[2/3] Heterotypic motif search..."
+emit_progress "heterotypic" 2 3 "Heterotypic pairing"
 
 universefile="$homotypic_output/universe.txt"
 gene_tmp=$(mktemp)
@@ -290,6 +299,7 @@ rm -f "${shards[@]}"
 # ==============================================================================
 
 print_green "\n[3/3] Generating heatmaps..."
+emit_progress "heatmaps" 3 3 "Generating heatmaps"
 
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
@@ -300,5 +310,6 @@ else
     draw Overlap "$plot_output/heatmap_overlap.png"        "$heterotypic_output/motif_output.txt" 5 3 6 FALSE
 fi
 
+clear_progress
 print_green "\nDone."
 print_elapsed_time "$grand_start"

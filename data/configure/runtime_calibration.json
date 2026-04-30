@@ -1,0 +1,18 @@
+{
+  "_note": "Coefficients for the static runtime estimate. POST /api/tasks/estimate maps task inputs (mode, fasta size, motif count, gene count, ncpu) to a predicted seconds value; the UI shows a range from estimate to 2× estimate. Tune by running representative jobs, dividing observed seconds by the formula's prediction, and rolling the per-* coefficients accordingly. Coefficients are roughly calibrated against TAIR10 + Franco-Zorrilla on a 2-cpu dev box.",
+  "promoters_pre": {
+    "base_seconds": 10,
+    "per_target_gene": 0.02,
+    "per_motif_per_cpu": 0.2,
+    "per_motif_per_thousand_target_genes_per_cpu": 1.0
+  },
+  "intervals": {
+    "base_seconds": 20,
+    "per_motif_per_thousand_intervals_per_cpu": 1.0
+  },
+  "promoters": {
+    "base_seconds": 60,
+    "per_motif_per_fasta_mb_per_cpu": 0.025,
+    "per_target_gene": 0.02
+  }
+}

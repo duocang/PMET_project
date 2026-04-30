@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import FileUpload from '@/components/FileUpload';
 import ParameterPanel from '@/components/ParameterPanel';
-import { AnalysisMode } from '@/lib/types';
+import { AnalysisMode, EstimateResponse } from '@/lib/types';
 import {
   taskApi,
   fileApi,
@@ -16,6 +16,7 @@ import {
 } from '@/lib/api';
 import { useSettingsStore, useTaskStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
+import { formatRuntimeRange } from '@/lib/runtime';
 
 function SubmitPageContent() {
   const { t } = useTranslation();
@@ -82,6 +83,13 @@ function SubmitPageContent() {
   const [submitting, setSubmitting] = useState(false);
   const [indexingEntries, setIndexingEntries] = useState<IndexingEntry[]>([]);
 
+  // Runtime estimate. Recomputed (debounced ~400 ms) whenever the inputs
+  // that affect duration change — mode, uploaded file paths, premade
+  // index pick. Backend reads the file paths to count motifs / genes /
+  // fasta size; we only ship paths so the form stays cheap.
+  const [estimate, setEstimate] = useState<EstimateResponse | null>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+
   // Single per-page-mount upload session id. Every file upload from this
   // page reuses this id so all four files for one submission land in the
   // same temp dir under result/uploads/<id>/, instead of each upload
@@ -121,6 +129,64 @@ function SubmitPageContent() {
       .then((res) => setIndexingEntries(res.entries))
       .catch((err) => console.error('Failed to load indexing list', err));
   }, [mode]);
+
+  // Recompute the runtime estimate (debounced 400 ms) whenever any input
+  // that affects duration changes — uploaded paths, premade index pick,
+  // mode. Guarded: only fire when there's at least *something* to
+  // estimate against, to avoid showing "5 – 10 seconds" before the user
+  // has supplied any inputs.
+  useEffect(() => {
+    const hasInputs =
+      (mode === 'promoters_pre' && (files.premade_index || uploadedPaths.genes)) ||
+      (mode === 'intervals' && (uploadedPaths.fasta || uploadedPaths.meme)) ||
+      (mode === 'promoters' && (uploadedPaths.fasta || uploadedPaths.meme));
+    if (!hasInputs) {
+      setEstimate(null);
+      return;
+    }
+
+    setEstimateLoading(true);
+    // Cancel an in-flight request when inputs change so a slow earlier
+    // response can't overwrite a fresher one.
+    const controller = new AbortController();
+    const handle = setTimeout(() => {
+      taskApi
+        .estimate(
+          {
+            mode,
+            genes_file: uploadedPaths.genes || undefined,
+            fasta_file: uploadedPaths.fasta || undefined,
+            meme_file: uploadedPaths.meme || undefined,
+            premade_index: files.premade_index || undefined,
+          },
+          controller.signal,
+        )
+        .then((r) => setEstimate(r))
+        .catch((err) => {
+          if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
+            // Superseded by a newer request; ignore silently.
+            return;
+          }
+          console.error('estimate failed', err);
+          setEstimate(null);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setEstimateLoading(false);
+        });
+    }, 400);
+
+    return () => {
+      clearTimeout(handle);
+      controller.abort();
+      setEstimateLoading(false);
+    };
+  }, [
+    mode,
+    uploadedPaths.genes,
+    uploadedPaths.fasta,
+    uploadedPaths.meme,
+    files.premade_index,
+  ]);
 
   // Lazy-fetch species and motif-db detail independently when the user
   // opens the panel. Each has its own cache so species info appears the
@@ -619,8 +685,25 @@ function SubmitPageContent() {
         fixedParams={indexingEntries.find((e) => e.value === files.premade_index)?.fixed_params}
       />
 
-      {/* Submit */}
-      <div className="flex justify-end mt-6">
+      {/* Submit + estimate */}
+      <div className="mt-6 flex flex-col items-end gap-2">
+        {(estimate || estimateLoading) && (
+          <div className="text-sm text-slate-600">
+            {estimateLoading && !estimate ? (
+              <span className="text-slate-400">{t('submit.estimate.loading')}</span>
+            ) : estimate ? (
+              <>
+                <span className="text-slate-500">{t('submit.estimate.label')}: </span>
+                <span className="font-medium text-slate-900">
+                  {formatRuntimeRange(estimate.lower_seconds, estimate.upper_seconds, t)}
+                </span>
+                <span className="ml-2 text-xs text-slate-400">
+                  {t('submit.estimate.note')}
+                </span>
+              </>
+            ) : null}
+          </div>
+        )}
         <button
           onClick={handleSubmit}
           disabled={submitting}

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { TaskCreate, TaskResponse, TaskListResponse, UploadResponse } from './types';
+import { TaskCreate, TaskResponse, TaskListResponse, UploadResponse, EstimatePayload, EstimateResponse, TaskProgress } from './types';
 
 // Empty string = same-origin. In docker/nginx deployment the app is served on
 // :80 and nginx proxies /api/* to the backend. In local dev, set
@@ -48,6 +48,19 @@ export const taskApi = {
 
   cancel: async (taskId: string, reason?: string): Promise<{ ok: boolean; killed_pids: number[] }> => {
     const response = await api.post(`/api/tasks/${taskId}/cancel`, { reason });
+    return response.data;
+  },
+
+  estimate: async (
+    payload: EstimatePayload,
+    signal?: AbortSignal,
+  ): Promise<EstimateResponse> => {
+    const response = await api.post('/api/tasks/estimate', payload, { signal });
+    return response.data;
+  },
+
+  progress: async (taskId: string): Promise<TaskProgress> => {
+    const response = await api.get(`/api/tasks/${taskId}/progress`);
     return response.data;
   },
 };

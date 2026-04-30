@@ -36,6 +36,13 @@ else
     print_red()    { printf "\033[31m%s\033[0m\n" "$1"; }
     print_orange() { printf "\033[33m%s\033[0m\n" "$1"; }
 fi
+if [[ -f scripts/lib/progress.sh ]]; then
+    # shellcheck source=/dev/null
+    source scripts/lib/progress.sh
+else
+    emit_progress() { :; }
+    clear_progress() { :; }
+fi
 if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
     source scripts/lib/timer.sh
@@ -162,6 +169,7 @@ grand_start=$SECONDS
 # ==============================================================================
 
 print_green "\n[1/2] Heterotypic motif search..."
+emit_progress "heterotypic" 1 2 "Heterotypic pairing"
 echo "Homotypic index : $pmetindex"
 echo "Gene list       : $genefile"
 echo "Output dir      : $outputdir"
@@ -211,6 +219,7 @@ rm -f "${shards[@]}"
 # ==============================================================================
 
 print_green "\n[2/2] Generating heatmaps..."
+emit_progress "heatmaps" 2 2 "Generating heatmaps"
 
 if ! command -v Rscript >/dev/null 2>&1; then
     print_orange "   Rscript not found — skipping heatmaps. Main output (motif_output.txt) is unaffected."
@@ -220,6 +229,7 @@ else
     draw Overlap "$plot_output/heatmap_overlap_unique.png" "$outputdir/motif_output.txt" 5 3 6 TRUE
     draw Overlap "$plot_output/heatmap_overlap.png"        "$outputdir/motif_output.txt" 5 3 6 FALSE
 fi
+clear_progress
 
 print_green "\nDone."
 print_elapsed_time "$grand_start"

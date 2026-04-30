@@ -26,6 +26,74 @@ def is_retryable_task_error(message: str) -> bool:
     return not any(snippet in message for snippet in NON_RETRYABLE_ERROR_SNIPPETS)
 
 
+def _log_runtime_history(task_meta: dict) -> None:
+    """Append one JSON line to data/app/runtime_history.jsonl with the
+    features needed to fit a future empirical runtime model. Best-effort —
+    failure here must not block result delivery to the user.
+    """
+    try:
+        from datetime import datetime as _dt
+
+        history_path = config.PROJECT_ROOT / "data" / "app" / "runtime_history.jsonl"
+        history_path.parent.mkdir(parents=True, exist_ok=True)
+
+        started = task_meta.get("started_at")
+        completed = task_meta.get("completed_at")
+        duration_s = None
+        if started and completed:
+            try:
+                duration_s = (
+                    _dt.fromisoformat(completed) - _dt.fromisoformat(started)
+                ).total_seconds()
+            except ValueError:
+                pass
+
+        # File-based features. The worker's PROJECT_ROOT === host repo root
+        # via bind-mount, and the file paths in task_meta are relative to it.
+        n_motifs = None
+        if task_meta.get("meme_file"):
+            p = config.PROJECT_ROOT / task_meta["meme_file"]
+            if p.exists():
+                n_motifs = sum(
+                    1 for line in p.read_text(errors="replace").splitlines()
+                    if line.startswith("MOTIF ")
+                )
+
+        fasta_size = None
+        if task_meta.get("fasta_file"):
+            p = config.PROJECT_ROOT / task_meta["fasta_file"]
+            if p.exists():
+                fasta_size = p.stat().st_size
+
+        n_target_genes = None
+        if task_meta.get("genes_file"):
+            p = config.PROJECT_ROOT / task_meta["genes_file"]
+            if p.exists():
+                n_target_genes = sum(
+                    1 for line in p.read_text(errors="replace").splitlines()
+                    if line.strip()
+                )
+
+        record = {
+            "task_id": task_meta.get("task_id"),
+            "mode": task_meta.get("mode"),
+            "duration_s": duration_s,
+            "n_motifs": n_motifs,
+            "fasta_size_bytes": fasta_size,
+            "n_target_genes": n_target_genes,
+            "ncpu": config.NCPU,
+            "ic_threshold": task_meta.get("ic_threshold"),
+            "max_match": task_meta.get("max_match"),
+            "promoter_num": task_meta.get("promoter_num"),
+            "completed_at": completed,
+        }
+        with history_path.open("a") as fh:
+            fh.write(json.dumps(record) + "\n")
+    except Exception:
+        # Best-effort — never let logging take down a task completion.
+        pass
+
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def run_pmet_task(self, task_meta: dict, task_dir: str):
     """Execute PMET task asynchronously"""
@@ -87,6 +155,12 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
             task_meta["completed_at"] = datetime.utcnow().isoformat()
             task_meta["result_link"] = result_link
             task_file.write_text(json.dumps(task_meta, indent=2))
+
+            # Append a runtime-history record. Static estimator (Plan A)
+            # doesn't read this yet — it's accumulating fuel for the empirical
+            # estimator (Plan B) we may slot in later. ~200 bytes per record,
+            # safe to keep forever.
+            _log_runtime_history(task_meta)
 
             # Send result email
             mail.send_result_notification(task_meta["email"], result_link)

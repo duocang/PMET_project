@@ -74,6 +74,9 @@ class TaskResponse(BaseModel):
     gff3_file: Optional[str] = None
     meme_file: Optional[str] = None
     premade_index: Optional[str] = None
+    indexing_species: Optional[str] = None
+    indexing_motif_db: Optional[str] = None
+    runtime_estimate: Optional[dict] = None
 
     # Worker thread count read from current config (data/configure/
     # cpu_configuration.txt). Not historically frozen — reflects what
