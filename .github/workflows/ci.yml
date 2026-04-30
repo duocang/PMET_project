@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/pmet_backend/requirements.txt
+      - name: Install backend deps
+        run: pip install -r apps/pmet_backend/requirements.txt
+      - name: Run test_api.py (5-stage smoke)
+        run: python apps/pmet_backend/test_api.py
+
+  frontend-typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/pmet_frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/pmet_frontend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build
+
+  cli-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build toolchain
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake
+      - name: Build host CLI binaries
+        run: make build
+      - name: Verify expected binaries exist
+        run: |
+          for b in index_fimo_fused pair_parallel; do
+            test -x "build/$b" || { echo "missing: build/$b" >&2; exit 1; }
+          done
