@@ -37,7 +37,7 @@ print_error() {
 
 # Default configuration
 DATA_DIR="$PROJECT_ROOT/data"
-RESULT_DIR="$PROJECT_ROOT/results/demo/pipeline"
+RESULT_DIR="$PROJECT_ROOT/results/cli/demo/pipeline"
 NUM_THREADS=8
 
 # Indexing versions
@@ -75,7 +75,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --indexing-version VER  Indexing version: c, cpp, or fused"
             echo "  -d, --data DIR          Data directory (default: data)"
-            echo "  -o, --output DIR        Output directory (default: results/demo)"
+            echo "  -o, --output DIR        Output directory (default: results/cli/demo)"
             echo "  -t, --threads NUM       Number of threads (default: 8)"
             echo "  -h, --help              Show this help message"
             echo ""

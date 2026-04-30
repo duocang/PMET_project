@@ -74,9 +74,9 @@ Optional:
 Examples:
   # CLI: re-pair pipeline 03's index with a different gene list
   bash pipeline/workflows/pair_only.sh \
-      -d results/03_promoter/01_homotypic \
+      -d results/cli/03_promoter/01_homotypic \
       -g data/genes/genes_cell_type_treatment.txt \
-      -o results/pair_only/cell_type_treatment_ic4
+      -o results/cli/pair_only/cell_type_treatment_ic4
 
   # Web backend invocation (apps/pmet_backend/services/executor.py builds this)
   bash pipeline/workflows/pair_only.sh \

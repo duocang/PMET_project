@@ -43,7 +43,7 @@ done
 echo ""
 
 echo "## section:core_demo_indexing_existing_outputs"
-hash_dir_files "results/demo/fimo_official"
+hash_dir_files "results/cli/demo/fimo_official"
 echo ""
 
 for v in c cpp fused; do

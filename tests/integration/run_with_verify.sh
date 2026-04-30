@@ -64,17 +64,17 @@ case "$nn" in
         ;;
     02)
         runner=(bash scripts/tests/run_pipeline02_one_combo.sh)
-        results_dir=results/02_benchmark_parameters
+        results_dir=results/cli/02_benchmark_parameters
         baseline=$baselines_dir/02_one_combo_baseline.hashes.txt
         ;;
     03)
         runner=(bash scripts/pipeline/03_promoter.sh)
-        results_dir=results/03_promoter
+        results_dir=results/cli/03_promoter
         baseline=$baselines_dir/03_baseline.hashes.txt
         ;;
     04)
         runner=(bash scripts/pipeline/04_intervals.sh)
-        results_dir=results/04_intervals
+        results_dir=results/cli/04_intervals
         baseline=$baselines_dir/04_baseline.hashes.txt
         ;;
     05)
@@ -105,16 +105,16 @@ case "$nn" in
     08)
         # 08 needs 03's homotypic index. If it's missing, point the user to
         # run 03 first instead of producing an opaque preflight error.
-        if [[ ! -f results/03_promoter/01_homotypic/universe.txt ]]; then
-            echo "error: 08 needs results/03_promoter/01_homotypic/ — run 'bash scripts/tests/run_with_verify.sh 03' first" >&2
+        if [[ ! -f results/cli/03_promoter/01_homotypic/universe.txt ]]; then
+            echo "error: 08 needs results/cli/03_promoter/01_homotypic/ — run 'bash scripts/tests/run_with_verify.sh 03' first" >&2
             exit 2
         fi
         runner=(bash scripts/pipeline/08_pair_only.sh
-                -d results/03_promoter/01_homotypic
+                -d results/cli/03_promoter/01_homotypic
                 -g data/genes/genes_cell_type_treatment.txt
-                -o results/08_pair_only/cell_type_treatment_ic4
+                -o results/cli/08_pair_only/cell_type_treatment_ic4
                 -i 4 -t 4)
-        results_dir=results/08_pair_only/cell_type_treatment_ic4
+        results_dir=results/cli/08_pair_only/cell_type_treatment_ic4
         baseline=$baselines_dir/08_baseline.hashes.txt
         ;;
     *)

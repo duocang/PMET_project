@@ -49,7 +49,7 @@ def test_task_model():
         task = TaskCreate(
             email="test@example.com",
             mode=TaskMode.PROMOTERS_PRE,
-            genes_file="result/test/0.txt",
+            genes_file="results/app/test/0.txt",
             ic_threshold=24,
             max_match=5,
             promoter_num=5000,
@@ -108,7 +108,7 @@ def test_executor_command_building():
             "max_match": 5,
             "promoter_num": 5000,
             "fimo_threshold": 0.05,
-            "genes_file": "result/test/0.txt",
+            "genes_file": "results/app/test/0.txt",
             "premade_index": "data/precomputed_indexes/Arabidopsis_thaliana/Jaspar_plants",
             "result_link": "http://example.com/results/test.zip"
         }

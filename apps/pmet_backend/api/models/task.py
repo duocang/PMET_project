@@ -21,7 +21,7 @@ class TaskCreate(BaseModel):
     email: EmailStr
     mode: TaskMode
     # Frontend-generated UUID used as both the upload-session id (uploaded
-    # files land under result/<task_id>/upload/) and the task id. Optional
+    # files land under results/app/<task_id>/upload/) and the task id. Optional
     # for legacy / curl callers — the server falls back to an email-stamped
     # id if not provided.
     task_id: Optional[str] = None

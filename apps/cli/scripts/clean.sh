@@ -48,7 +48,7 @@ clean_builds() {
 
 clean_results() {
     print_step "Cleaning result directories..."
-    rm -rf "$REPO_ROOT/results/demo"
+    rm -rf "$REPO_ROOT/results/cli/demo"
     print_success "Result directories cleaned"
 }
 

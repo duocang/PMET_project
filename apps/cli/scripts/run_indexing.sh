@@ -38,7 +38,7 @@ print_error() {
 # Default configuration
 VERSION="c"  # c, cpp, or fused
 DATA_DIR="$PROJECT_ROOT/data/demos/promoters/indexing/demo"
-RESULT_DIR="$PROJECT_ROOT/results/demo/indexing"
+RESULT_DIR="$PROJECT_ROOT/results/cli/demo/indexing"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  -v, --version VERSION  Indexing version to run: c, cpp, or fused (default: c)"
             echo "  -d, --data DIR         Data directory (default: data/demos/promoters/indexing/demo)"
-            echo "  -o, --output DIR       Output directory (default: results/demo/indexing)"
+            echo "  -o, --output DIR       Output directory (default: results/cli/demo/indexing)"
             echo "  -h, --help             Show this help message"
             exit 0
             ;;
@@ -115,7 +115,7 @@ PROMOTERS_FA="$DATA_DIR/promoters.fa"
 PROMOTERS_BG="$DATA_DIR/promoters.bg"
 MOTIFS_FILE="$DATA_DIR/motifs.txt"
 
-FIMO_DIR="$PROJECT_ROOT/results/demo/fimo_official"
+FIMO_DIR="$PROJECT_ROOT/results/cli/demo/fimo_official"
 
 RESULT_DIR="$RESULT_DIR/$VERSION"
 # Create output directory

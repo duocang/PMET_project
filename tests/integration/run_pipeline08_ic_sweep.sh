@@ -10,15 +10,15 @@
 #   IC_VALUES="2 4 6 8 10" bash scripts/tests/run_pipeline08_ic_sweep.sh
 #   HOMOTYPIC=results/05_promoter_gap/01_homotypic \
 #       GENE_LIST=data/genes/my_other_list.txt \
-#       OUT_BASE=results/08_pair_only/exp_2026q2 \
+#       OUT_BASE=results/cli/08_pair_only/exp_2026q2 \
 #       JOBS=2 \
 #       bash scripts/tests/run_pipeline08_ic_sweep.sh
 #
 # Environment variables (all optional):
 #   IC_VALUES   space-separated list of IC thresholds (default: "2 4 6 8")
-#   HOMOTYPIC   homotypic index dir (default: results/03_promoter/01_homotypic)
+#   HOMOTYPIC   homotypic index dir (default: results/cli/03_promoter/01_homotypic)
 #   GENE_LIST   gene list (default: data/genes/genes_cell_type_treatment.txt)
-#   OUT_BASE    base output dir (default: results/08_pair_only/sweep_$(date +%Y%m%d_%H%M%S))
+#   OUT_BASE    base output dir (default: results/cli/08_pair_only/sweep_$(date +%Y%m%d_%H%M%S))
 #   THREADS     pair_parallel threads per run (default: 4)
 #   JOBS        how many 08 runs to launch concurrently (default: 1)
 #               WARNING: each run uses $THREADS CPU; JOBS * THREADS should
@@ -42,9 +42,9 @@ repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)
 cd "$repo_root"
 
 ic_values=${IC_VALUES:-"2 4 6 8"}
-homotypic=${HOMOTYPIC:-results/03_promoter/01_homotypic}
+homotypic=${HOMOTYPIC:-results/cli/03_promoter/01_homotypic}
 gene_list=${GENE_LIST:-data/genes/genes_cell_type_treatment.txt}
-out_base=${OUT_BASE:-results/08_pair_only/sweep_$(date +%Y%m%d_%H%M%S)}
+out_base=${OUT_BASE:-results/cli/08_pair_only/sweep_$(date +%Y%m%d_%H%M%S)}
 threads=${THREADS:-4}
 jobs=${JOBS:-1}
 

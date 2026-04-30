@@ -22,7 +22,10 @@ def _detect_project_root() -> Path:
 @dataclass
 class Config:
     PROJECT_ROOT: Path = _detect_project_root()
-    RESULT_DIR: Path = PROJECT_ROOT / "result"
+    # Web-app task outputs land here. CLI / pipeline outputs go to
+    # results/cli/<workflow>/. Splitting under one results/ root avoids
+    # the previous result/ vs results/ singular/plural confusion.
+    RESULT_DIR: Path = PROJECT_ROOT / "results" / "app"
     # Read-only catalog of pre-computed species/motif databases, populated by
     # pipeline/data/download_pmet_data.sh. Layout: <species>/<motif_db>/.
     # Top-level: the indexes are reusable scientific resources (CLI's
@@ -31,7 +34,7 @@ class Config:
     PRECOMPUTED_INDEXING_DIR: Path = PROJECT_ROOT / "data" / "precomputed_indexes"
     PRECOMPUTED_INDEXING_METADATA: Path = PROJECT_ROOT / "data" / "app" / "indexing_metadata.json"
     GENOME_METADATA: Path = PROJECT_ROOT / "data" / "app" / "genome_n_annotation.json"
-    TASKS_DIR: Path = PROJECT_ROOT / "result" / "tasks"
+    TASKS_DIR: Path = PROJECT_ROOT / "results" / "app" / "tasks"
     # Workflows + helpers (bash + python + R) live under pipeline/.
     # The "-r" flag the indexer takes equals str(SCRIPTS_DIR).
     SCRIPTS_DIR: Path = PROJECT_ROOT / "pipeline"

@@ -20,14 +20,15 @@ services:
       - PMET_WORKERS=2
     volumes:
       # Dev-only mounts. pmet_backend/ is mounted for uvicorn --reload and
-      # celery restart-without-rebuild. data/ and result/ are runtime volumes
+      # celery restart-without-rebuild. data/ and result/ (host) → results/app/
+      # (container) are runtime volumes
       # (GB-scale inputs / job outputs) that must stay on the host. Everything
       # else — scripts/, nginx/, compiled PMET binaries — is baked into the
       # image so the container is self-contained.
       - ../apps/pmet_backend:/app/pmet_backend
       - ../pipeline:/app/pipeline
       - ../data:/app/data
-      - ./result:/app/result
+      - ./result:/app/results/app
     depends_on:
       redis:
         condition: service_healthy
@@ -46,7 +47,7 @@ services:
       - ../apps/pmet_backend:/app/pmet_backend
       - ../pipeline:/app/pipeline
       - ../data:/app/data
-      - ./result:/app/result
+      - ./result:/app/results/app
     depends_on:
       redis:
         condition: service_healthy

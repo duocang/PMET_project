@@ -105,9 +105,9 @@ run_pipeline() {
             # gene list. Requires promoter.sh to have been run first
             # (preflight fails with a clear error otherwise).
             bash "$script_path" \
-                -d "results/promoter/01_homotypic"                \
+                -d "results/cli/promoter/01_homotypic"                \
                 -g "data/genes/genes_cell_type_treatment.txt"     \
-                -o "results/pair_only/cell_type_treatment_ic4"    \
+                -o "results/cli/pair_only/cell_type_treatment_ic4"    \
                 -i 4                                              \
                 -t 4
             ;;

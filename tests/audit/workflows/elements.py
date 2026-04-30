@@ -48,7 +48,7 @@ TASK_ANCHORS = {
 
 def run(repo_root: Path, runs_dir: Path) -> dict:
     # elements.sh embeds strategy + element in its OWN output path
-    # (results/elements_<strategy>_<element>/) so we can't redirect it
+    # (results/cli/elements_<strategy>_<element>/) so we can't redirect it
     # via -o; just delete + let the script create.
     canonical_dir = repo_root / "results" / "elements_longest_five_prime_UTR"
     if canonical_dir.exists():

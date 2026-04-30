@@ -55,7 +55,7 @@ Optional:
   -h             show this help
 
 Output:
-  results/elements_<strategy>_<element>/
+  results/cli/elements_<strategy>_<element>/
     01_homotypic/                pmet index for the element
     02_heterotypic_<task>/       per-task pair_parallel output
     03_plot_<task>/              per-task heatmaps
@@ -188,7 +188,7 @@ fi
 
 # ==================== Output layout ====================
 
-res_dir=results/elements_${strategy}_${genomic_element}
+res_dir=results/cli/elements_${strategy}_${genomic_element}
 homotypic_output=$res_dir/01_homotypic
 het_output_base=$res_dir/02_heterotypic
 plot_output_base=$res_dir/03_plot

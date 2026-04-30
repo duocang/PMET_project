@@ -83,8 +83,8 @@ Heterotypic / runtime:
   -K <keep_intermediate> true | false                              (default: false)
 
 Output directories:
-  -o <homotypic_dir>     homotypic output         (default: results/promoter/01_homotypic)
-  -x <heterotypic_dir>   heterotypic output       (default: results/promoter/02_heterotypic)
+  -o <homotypic_dir>     homotypic output         (default: results/cli/promoter/01_homotypic)
+  -x <heterotypic_dir>   heterotypic output       (default: results/cli/promoter/02_heterotypic)
   -y <plot_dir>          plot output dir          (default: <heterotypic_dir>/plot)
 
 Web-backend compat:
@@ -118,7 +118,7 @@ icthresh=4
 threads=4
 keep_intermediate=false
 
-res_dir=results/promoter
+res_dir=results/cli/promoter
 homotypic_output=
 heterotypic_output=
 plot_output=

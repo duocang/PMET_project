@@ -76,8 +76,8 @@ Heterotypic / runtime:
   -t <threads>         threads                   (default: 4)
 
 Output directories:
-  -o <indexing_dir>    indexing stage output     (default: results/intervals/01_indexing)
-  -x <pairing_dir>     pairing stage output      (default: results/intervals/02_pairing,
+  -o <indexing_dir>    indexing stage output     (default: results/cli/intervals/01_indexing)
+  -x <pairing_dir>     pairing stage output      (default: results/cli/intervals/02_pairing,
                        heatmaps land in <dir>/plot)
 
 Web-backend compat:
@@ -101,7 +101,7 @@ fimothresh=0.05
 icthresh=4
 threads=4
 
-res_dir=results/intervals
+res_dir=results/cli/intervals
 indexing_output=
 pairing_output=
 project_root=$script_dir

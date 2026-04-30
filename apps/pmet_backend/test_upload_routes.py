@@ -37,7 +37,7 @@ class UploadRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertTrue(payload["path"].startswith("result/temp_"))
+        self.assertTrue(payload["path"].startswith("results/app/temp_"))
         self.assertTrue(payload["path"].endswith("/genes.txt"))
 
         saved_path = config.PROJECT_ROOT / payload["path"]
@@ -54,7 +54,7 @@ class UploadRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         # Without a task_id we still fall back to the temp dir layout.
-        self.assertTrue(response.json()["path"].startswith("result/temp_"))
+        self.assertTrue(response.json()["path"].startswith("results/app/temp_"))
         self.assertTrue(response.json()["path"].endswith("/motifs.meme"))
 
     def test_accepts_plain_fasta_upload(self):
@@ -63,7 +63,7 @@ class UploadRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         # No task_id supplied -> falls back to temp dir layout.
-        self.assertTrue(payload["path"].startswith("result/temp_"))
+        self.assertTrue(payload["path"].startswith("results/app/temp_"))
         self.assertTrue(payload["path"].endswith("/intervals.fa"))
 
         saved_path = config.PROJECT_ROOT / payload["path"]
@@ -99,7 +99,7 @@ class UploadRouteTests(unittest.TestCase):
 
         for r in (r1, r2, r3):
             self.assertEqual(r.status_code, 200)
-            self.assertTrue(r.json()["path"].startswith(f"result/{session}/upload/"))
+            self.assertTrue(r.json()["path"].startswith(f"results/app/{session}/upload/"))
 
         # All three landed in the same directory.
         parents = {(config.PROJECT_ROOT / r.json()["path"]).parent for r in (r1, r2, r3)}

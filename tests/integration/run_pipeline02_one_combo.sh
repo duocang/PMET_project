@@ -12,7 +12,7 @@
 #   topn=5000
 #
 # Designed to run end-to-end in roughly a minute on the project's TAIR10
-# inputs. Outputs land under results/02_benchmark_parameters/ as the real
+# inputs. Outputs land under results/cli/02_benchmark_parameters/ as the real
 # pipeline does — so don't run this and the full pipeline 02 in parallel.
 
 set -uo pipefail

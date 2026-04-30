@@ -80,7 +80,7 @@ This audit just ran:
 bash pipeline/workflows/elements.sh -s longest -e 5UTR -t 4
 ```
 
-Output root: `results/elements_longest_five_prime_UTR/`.
+Output root: `results/cli/elements_longest_five_prime_UTR/`.
 
 ### Indexing-stage outputs
 

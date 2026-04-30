@@ -41,7 +41,7 @@ def _resolve_upload_dir(task_id: Optional[str]) -> Path:
 
     With a task_id (the frontend generates a UUID on submit-page mount and
     reuses it for every upload + the eventual POST /tasks), all files for
-    that task land in result/<task_id>/upload/, alongside indexing/ and
+    that task land in results/app/<task_id>/upload/, alongside indexing/ and
     pairing/ that the run will populate. Without a task_id we fall back to
     a per-call temp dir for legacy clients.
     """

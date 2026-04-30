@@ -131,9 +131,9 @@ Skip the expensive indexing stage; against an existing index, swap in a new gene
 
 ```bash
 bash pipeline/workflows/pair_only.sh \
-    -d results/promoter/01_homotypic \
+    -d results/cli/promoter/01_homotypic \
     -g data/genes/my_new_clusters.txt \
-    -o results/repaired
+    -o results/cli/repaired
 ```
 
 <a id="en-5"></a>
@@ -200,7 +200,7 @@ tests/
 docs/
 legacy/        archived historical code
 build/         compile artifacts (gitignored)
-results/       script outputs (gitignored)
+results/       run outputs (gitignored): app/ for web tasks, cli/ for pipeline runs
 ```
 
 Auxiliary scripts under [`pipeline/workflows/cli/`](pipeline/workflows/cli/): `00_env_check.sh` (dependency check + TAIR10 download), `01_perf_cpu.sh` / `02_perf_params.sh` (perf benchmarks), `05_promoter_gap.sh` (promoter gap analysis — see figure below), `_pmet_index_element.sh` (the indexing sub-pipeline library sourced by `elements.sh` — not invoked directly).
@@ -238,7 +238,7 @@ When `make up` finishes, open **http://localhost:5960** — nginx fronts the fro
 - `apps/pmet_backend/` → `/app/pmet_backend` (uvicorn auto-reloads; worker needs `make restart-worker`)
 - `pipeline/` → `/app/pipeline`
 - `data/` → `/app/data`
-- `deploy/result/` → `/app/result`
+- `deploy/result/` → `/app/results/app` (host dir name kept short; container side reflects the unified `results/{app,cli}/` layout)
 
 The frontend image is baked at build time (no bind mount); frontend edits require `make rebuild` (or `cd deploy && make rebuild-frontend` for just the frontend).
 
@@ -404,9 +404,9 @@ bash pipeline/workflows/elements.sh -s longest -e mRNA -m Yes -t 8
 
 ```bash
 bash pipeline/workflows/pair_only.sh \
-    -d results/promoter/01_homotypic \
+    -d results/cli/promoter/01_homotypic \
     -g data/genes/my_new_clusters.txt \
-    -o results/repaired
+    -o results/cli/repaired
 ```
 
 <a id="cn-5"></a>
@@ -473,7 +473,7 @@ tests/
 docs/
 legacy/        归档的历史代码
 build/         编译产物（gitignored）
-results/       脚本输出（gitignored）
+results/       运行输出（gitignored）：app/ 给 web 任务，cli/ 给 pipeline 运行
 ```
 
 辅助脚本在 [`pipeline/workflows/cli/`](pipeline/workflows/cli/)：`00_env_check.sh`（依赖检查 + 下载 TAIR10）、`01_perf_cpu.sh` / `02_perf_params.sh`（perf benchmark）、`05_promoter_gap.sh`（启动子 gap 分析，见下图）、`_pmet_index_element.sh`（被 `elements.sh` source 的 indexing 子流程库，不直接调用）。
@@ -511,7 +511,7 @@ make rebuild     # 改了代码后重建
 - `apps/pmet_backend/` → `/app/pmet_backend`（uvicorn 自动 reload；worker 需 `make restart-worker`）
 - `pipeline/` → `/app/pipeline`
 - `data/` → `/app/data`
-- `deploy/result/` → `/app/result`
+- `deploy/result/` → `/app/results/app`（host 端目录名保持短；容器侧对齐统一的 `results/{app,cli}/` 布局）
 
 前端镜像在 build 时 baked，不挂载 — 改前端代码要 `make rebuild`（或 `cd deploy && make rebuild-frontend` 只重建前端）。
 

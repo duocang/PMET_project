@@ -82,9 +82,9 @@ HEAD_SHA=$(git rev-parse HEAD)
 git worktree add "$WORKTREE_DIR" "$HEAD_SHA" --detach 2>&1 | head -2
 
 # 将 FIMO 预计算结果复制到 worktree（C/C++ indexing 需要）
-if [ -d "$PROJECT_ROOT/results/demo/fimo_official" ]; then
-  mkdir -p "$WORKTREE_DIR/results/demo"
-  cp -r "$PROJECT_ROOT/results/demo/fimo_official" "$WORKTREE_DIR/results/demo/"
+if [ -d "$PROJECT_ROOT/results/cli/demo/fimo_official" ]; then
+  mkdir -p "$WORKTREE_DIR/results/cli/demo"
+  cp -r "$PROJECT_ROOT/results/cli/demo/fimo_official" "$WORKTREE_DIR/results/cli/demo/"
 fi
 
 build_and_run "head" "$WORKTREE_DIR"

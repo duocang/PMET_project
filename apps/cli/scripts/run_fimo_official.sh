@@ -8,7 +8,7 @@ fimothresh=0.05
 memefile="$REPO_ROOT/data/demos/promoters/indexing/demo/motifs.txt"
 promoters="$REPO_ROOT/data/demos/promoters/indexing/demo/promoters.fa"
 bgfile="$REPO_ROOT/data/demos/promoters/indexing/demo/promoters.bg"
-outdir="$REPO_ROOT/results/demo/fimo_official"
+outdir="$REPO_ROOT/results/cli/demo/fimo_official"
 
 rm -rf "$outdir"
 mkdir -p "$outdir"
