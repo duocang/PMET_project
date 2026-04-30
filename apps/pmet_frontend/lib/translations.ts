@@ -11,6 +11,7 @@ const en = {
   'nav.tagline': 'Paired Motif Enrichment Tool',
   // footer
   'footer.text': 'PMET — Paired Motif Enrichment Tool',
+  'footer.maintainer': 'Maintained by Dr. Xuesong Wang',
   // lang toggle
   'lang.toggle.aria': 'Toggle language',
 
@@ -28,8 +29,7 @@ const en = {
 
   // home: hero
   'home.hero.eyebrow': 'Cooperative motif enrichment',
-  'home.hero.tagline':
-    'Paired Motif Enrichment Tool identifies cooperative transcription factor activity across homotypic and heterotypic motif combinations.',
+  'home.hero.tagline': 'Paired Motif Enrichment Tool identifies cooperative transcription factor activity across homotypic and heterotypic motif combinations.',
   'home.hero.cta_primary': 'Start Analysis',
   'home.hero.cta_secondary': 'Visualize Results',
   'home.hero.stat_species': 'plant species',
@@ -40,20 +40,16 @@ const en = {
   'home.modes.summary':
     'PMET keeps fast pre-indexed workflows and fully custom uploads in the same interface, so users can move from screening to bespoke analysis without changing tools.',
   'home.mode.promoters_pre.title': 'Pre-computed Promoters',
-  'home.mode.promoters_pre.desc':
-    'Use indexed motif databases for plant species. Fastest path when a gene list is your main input.',
+  'home.mode.promoters_pre.desc': 'Use indexed motif databases for plant species. Fastest path when a gene list is your main input.',
   'home.mode.promoters_pre.action': 'Start Analysis',
   'home.mode.promoters.title': 'Full Promoters',
-  'home.mode.promoters.desc':
-    'Upload genome, annotation, motif database, and gene list for a fully custom promoter run.',
+  'home.mode.promoters.desc': 'Upload genome, annotation, motif database, and gene list for a fully custom promoter run.',
   'home.mode.promoters.action': 'Build Custom Run',
   'home.mode.intervals.title': 'Intervals',
-  'home.mode.intervals.desc':
-    'Analyze ChIP-seq peaks, ATAC regions, or other genomic intervals against a motif database.',
+  'home.mode.intervals.desc': 'Analyze ChIP-seq peaks, ATAC regions, or other genomic intervals against a motif database.',
   'home.mode.intervals.action': 'Analyze Intervals',
   'home.mode.visualize.title': 'Visualize Results',
-  'home.mode.visualize.desc':
-    'Open existing PMET output files as interactive heatmaps, histograms, and searchable tables.',
+  'home.mode.visualize.desc': 'Open existing PMET output files as interactive heatmaps, histograms, and searchable tables.',
   'home.mode.visualize.action': 'Upload Results',
   // home: how it works
   'home.how.eyebrow': 'Job lifecycle',
@@ -73,41 +69,27 @@ const en = {
   'home.learn.what.title': 'What is PMET?',
   'home.learn.what.intro':
     'PMET (Paired Motif Enrichment Tool) identifies motif pairs that co-occur in the promoters of a user-supplied gene set significantly more often than in the genome-wide background.',
-  'home.learn.what.bullet1':
-    'Input — a target gene set (e.g., heat-shock genes, cell-type up-regulated genes) plus a reference promoter universe.',
-  'home.learn.what.bullet2':
-    'Test — for every motif pair, build a 2×2 contingency table (target vs. background × with-pair vs. without-pair) and run a hypergeometric test.',
-  'home.learn.what.bullet3':
-    'Correction — apply BH or Bonferroni multiple-testing correction across all motif pairs.',
-  'home.learn.what.bullet4':
-    'Output — a ranked list of motif pairs with adjusted p-values, surfacing candidate cooperating TFs.',
+  'home.learn.what.bullet1': 'Input — a target gene set (e.g., heat-shock genes, cell-type up-regulated genes) plus a reference promoter universe.',
+  'home.learn.what.bullet2': 'Test — for every motif pair, build a 2×2 contingency table (target vs. background × with-pair vs. without-pair) and run a hypergeometric test.',
+  'home.learn.what.bullet3': 'Correction — apply BH or Bonferroni multiple-testing correction across all motif pairs.',
+  'home.learn.what.bullet4': 'Output — a ranked list of motif pairs with adjusted p-values, surfacing candidate cooperating TFs.',
   'home.learn.what.alt': 'PMET problem: motif pair enrichment in promoters',
-  'home.learn.what.caption':
-    'PMET asks whether two motifs co-occur on the same promoter in the target gene set more often than expected by chance.',
+  'home.learn.what.caption': 'PMET asks whether two motifs co-occur on the same promoter in the target gene set more often than expected by chance.',
   'home.learn.workflow.title': 'PMET Workflow',
-  'home.learn.workflow.intro':
-    'PMET splits the computation into two stages so the expensive motif-scanning work is paid only once per genome × motif database.',
+  'home.learn.workflow.intro': 'PMET splits the computation into two stages so the expensive motif-scanning work is paid only once per genome × motif database.',
   'home.learn.workflow.bullet1':
     'Indexing stage (expensive, reusable) — scan the entire genome for motif occurrences and build a homotypic index. Done once per genome × motif DB.',
-  'home.learn.workflow.bullet2':
-    'Pairing stage (cheap, per-query) — reuse the index to compute pair enrichment for any user-supplied gene list, in seconds to minutes.',
+  'home.learn.workflow.bullet2': 'Pairing stage (cheap, per-query) — reuse the index to compute pair enrichment for any user-supplied gene list, in seconds to minutes.',
   'home.learn.workflow.alt': 'PMET algorithm: two stages',
-  'home.learn.workflow.caption':
-    'Indexing is the bottleneck; once cached, every subsequent gene-list analysis is fast and reproducible.',
+  'home.learn.workflow.caption': 'Indexing is the bottleneck; once cached, every subsequent gene-list analysis is fast and reproducible.',
   'home.learn.modes.title': 'Mode-specific Pipelines',
-  'home.learn.modes.intro':
-    'PMET offers four entry modes for different input types. All converge on the same homotypic-index schema and the same heterotypic pair-test engine.',
-  'home.learn.modes.bullet1':
-    'promoter — extract promoter regions from a genome and GFF3 annotation, then scan and pair (the most common workflow).',
-  'home.learn.modes.bullet2':
-    'intervals — operate directly on user-supplied regions (ChIP-seq peaks, ATAC regions, etc.), skipping promoter extraction.',
-  'home.learn.modes.bullet3':
-    'elements — use a predefined set of regulatory elements as the scan universe.',
-  'home.learn.modes.bullet4':
-    'pair_only — skip indexing entirely; run pair enrichment against an already-built index.',
+  'home.learn.modes.intro': 'PMET offers four entry modes for different input types. All converge on the same homotypic-index schema and the same heterotypic pair-test engine.',
+  'home.learn.modes.bullet1': 'promoter — extract promoter regions from a genome and GFF3 annotation, then scan and pair (the most common workflow).',
+  'home.learn.modes.bullet2': 'intervals — operate directly on user-supplied regions (ChIP-seq peaks, ATAC regions, etc.), skipping promoter extraction.',
+  'home.learn.modes.bullet3': 'elements — use a predefined set of regulatory elements as the scan universe.',
+  'home.learn.modes.bullet4': 'pair_only — skip indexing entirely; run pair enrichment against an already-built index.',
   'home.learn.modes.alt': 'PMET workflow overview',
-  'home.learn.modes.caption':
-    'Four entry points feed the same homotypic-index schema, then the same heterotypic pair-test engine.',
+  'home.learn.modes.caption': 'Four entry points feed the same homotypic-index schema, then the same heterotypic pair-test engine.',
 
   // about
   'about.title': 'About PMET',
@@ -126,20 +108,16 @@ const en = {
   'about.resources.online': 'PMET Online →',
   'about.modes.heading': 'Analysis Modes',
   'about.modes.pre.title': 'Pre-computed Promoters',
-  'about.modes.pre.desc':
-    'Use our pre-computed motif databases for 21 plant species. Fastest option when your species and motif database are available.',
+  'about.modes.pre.desc': 'Use our pre-computed motif databases for 21 plant species. Fastest option when your species and motif database are available.',
   'about.modes.full.title': 'Full Promoters',
-  'about.modes.full.desc':
-    'Upload your own genome, annotation (GFF3), and motif database (MEME format) for custom analysis. Most flexible option.',
+  'about.modes.full.desc': 'Upload your own genome, annotation (GFF3), and motif database (MEME format) for custom analysis. Most flexible option.',
   'about.modes.intervals.title': 'Intervals',
-  'about.modes.intervals.desc':
-    'Analyze custom genomic intervals (e.g., ChIP-seq peaks) with a motif database. Suitable for non-promoter analyses.',
+  'about.modes.intervals.desc': 'Analyze custom genomic intervals (e.g., ChIP-seq peaks) with a motif database. Suitable for non-promoter analyses.',
   'about.modes.elements.title': 'Genomic Elements (CLI only)',
   'about.modes.elements.desc':
-    'A CLI-only research workflow (elements.sh) that indexes any GFF3 feature type — 5\' UTR, 3\' UTR, CDS, mRNA, or exon — instead of the 1 kb upstream window. Useful for asking whether motif-pair patterns differ between promoters, UTRs, and coding regions.',
+    "A CLI-only research workflow (elements.sh) that indexes any GFF3 feature type — 5' UTR, 3' UTR, CDS, mRNA, or exon — instead of the 1 kb upstream window. Useful for asking whether motif-pair patterns differ between promoters, UTRs, and coding regions.",
   'about.modes.elements.figure_alt': 'What each -e option indexes',
-  'about.modes.elements.figure_caption':
-    'Top row: one gene on the chromosome. Rows below: each `-e` option with the indexed regions highlighted.',
+  'about.modes.elements.figure_caption': 'Top row: one gene on the chromosome. Rows below: each `-e` option with the indexed regions highlighted.',
 
   // ParameterPanel
   'params.heading': 'Parameters',
@@ -269,8 +247,7 @@ const en = {
   'admin.settings.notify_on_submit.help':
     'When off, the worker stops sending the per-task “New Task Submitted” email. User-facing emails (started, completed, cancelled) are unaffected.',
   'admin.settings.notify_user_on_start.label': 'Email users when their task starts',
-  'admin.settings.notify_user_on_start.help':
-    'When off, users still receive completed and cancelled emails, but not the “task started” email.',
+  'admin.settings.notify_user_on_start.help': 'When off, users still receive completed and cancelled emails, but not the “task started” email.',
   'admin.settings.save': 'Save',
   'admin.settings.saving': 'Saving…',
   'admin.settings.saved': 'Saved',
@@ -326,8 +303,7 @@ const en = {
 
   // visualize page (standalone /visualize)
   'viz.title': 'Visualize PMET Results',
-  'viz.intro':
-    'Upload a PMET output file (tab-separated) to explore your results with interactive heatmaps, motif summaries, and filterable data tables.',
+  'viz.intro': 'Upload a PMET output file (tab-separated) to explore your results with interactive heatmaps, motif summaries, and filterable data tables.',
   'viz.choose.heading': 'Choose a PMET result',
   'viz.dnd.before': 'Drag and drop your PMET output file here, or',
   'viz.dnd.browse': 'browse',
@@ -441,6 +417,7 @@ const zh: Record<keyof typeof en, string> = {
   'nav.tagline': 'Paired Motif Enrichment Tool',
   // footer
   'footer.text': 'PMET — Paired Motif Enrichment Tool',
+  'footer.maintainer': '由 王雪松 博士维护',
   // lang toggle
   'lang.toggle.aria': '切换语言',
 
@@ -458,8 +435,7 @@ const zh: Record<keyof typeof en, string> = {
 
   // home: hero
   'home.hero.eyebrow': '协同 motif 富集',
-  'home.hero.tagline':
-    'Paired Motif Enrichment Tool 通过同型与异型 motif 组合识别协同转录因子活动。',
+  'home.hero.tagline': 'Paired Motif Enrichment Tool 通过同型与异型 motif 组合识别协同转录因子活动。',
   'home.hero.cta_primary': '开始分析',
   'home.hero.cta_secondary': '可视化结果',
   'home.hero.stat_species': '种植物物种',
@@ -467,23 +443,18 @@ const zh: Record<keyof typeof en, string> = {
   // home: modes
   'home.modes.eyebrow': '分析入口',
   'home.modes.heading': '选择与你输入匹配的运行模式',
-  'home.modes.summary':
-    'PMET 在同一界面下既提供快速的预索引工作流，也支持完全自定义上传，从筛查到定制分析无需切换工具。',
+  'home.modes.summary': 'PMET 在同一界面下既提供快速的预索引工作流，也支持完全自定义上传，从筛查到定制分析无需切换工具。',
   'home.mode.promoters_pre.title': '预计算启动子',
-  'home.mode.promoters_pre.desc':
-    '使用为植物物种预先索引好的 motif 数据库。当基因列表是主要输入时，这是最快的路径。',
+  'home.mode.promoters_pre.desc': '使用为植物物种预先索引好的 motif 数据库。当基因列表是主要输入时，这是最快的路径。',
   'home.mode.promoters_pre.action': '开始分析',
   'home.mode.promoters.title': '完整启动子流程',
-  'home.mode.promoters.desc':
-    '上传基因组、注释、motif 数据库和基因列表，完成完全自定义的启动子运行。',
+  'home.mode.promoters.desc': '上传基因组、注释、motif 数据库和基因列表，完成完全自定义的启动子运行。',
   'home.mode.promoters.action': '构建自定义运行',
   'home.mode.intervals.title': '任意区间',
-  'home.mode.intervals.desc':
-    '针对 motif 数据库分析 ChIP-seq peak、ATAC 区段或其它基因组区间。',
+  'home.mode.intervals.desc': '针对 motif 数据库分析 ChIP-seq peak、ATAC 区段或其它基因组区间。',
   'home.mode.intervals.action': '分析区间',
   'home.mode.visualize.title': '可视化结果',
-  'home.mode.visualize.desc':
-    '把已有的 PMET 输出文件打开成交互式 heatmap、histogram 和可搜索的表格。',
+  'home.mode.visualize.desc': '把已有的 PMET 输出文件打开成交互式 heatmap、histogram 和可搜索的表格。',
   'home.mode.visualize.action': '上传结果',
   // home: how it works
   'home.how.eyebrow': '任务生命周期',
@@ -501,49 +472,32 @@ const zh: Record<keyof typeof en, string> = {
   'home.learn.eyebrow': '方法背景',
   'home.learn.heading': '理解 PMET 在测量什么',
   'home.learn.what.title': 'PMET 是什么？',
-  'home.learn.what.intro':
-    'PMET（Paired Motif Enrichment Tool）用于在用户给定的基因列表中，找出在 promoter 区域共同出现频率显著高于全基因组背景的 motif 对。',
-  'home.learn.what.bullet1':
-    '输入：目标基因集（例如热激高表达基因、某细胞类型上调基因），以及作为参考的 promoter 全集。',
-  'home.learn.what.bullet2':
-    '检验：对每个 motif pair 构建 2×2 列联表（目标集 vs 背景 × 含 pair vs 不含），做超几何检验。',
-  'home.learn.what.bullet3':
-    '校正：对所有 motif pair 的 p 值做 BH 或 Bonferroni 多重检验校正。',
-  'home.learn.what.bullet4':
-    '输出：按 adj.p 排序的显著 motif pair 列表，给出候选协同的 TF 组合。',
+  'home.learn.what.intro': 'PMET（Paired Motif Enrichment Tool）用于在用户给定的基因列表中，找出在 promoter 区域共同出现频率显著高于全基因组背景的 motif 对。',
+  'home.learn.what.bullet1': '输入：目标基因集（例如热激高表达基因、某细胞类型上调基因），以及作为参考的 promoter 全集。',
+  'home.learn.what.bullet2': '检验：对每个 motif pair 构建 2×2 列联表（目标集 vs 背景 × 含 pair vs 不含），做超几何检验。',
+  'home.learn.what.bullet3': '校正：对所有 motif pair 的 p 值做 BH 或 Bonferroni 多重检验校正。',
+  'home.learn.what.bullet4': '输出：按 adj.p 排序的显著 motif pair 列表，给出候选协同的 TF 组合。',
   'home.learn.what.alt': 'PMET 关注的问题：启动子中的 motif pair 富集',
-  'home.learn.what.caption':
-    'PMET 问的是：两个 motif 是否在目标基因 promoter 中共现得显著比随机背景更多。',
+  'home.learn.what.caption': 'PMET 问的是：两个 motif 是否在目标基因 promoter 中共现得显著比随机背景更多。',
   'home.learn.workflow.title': 'PMET 工作流',
-  'home.learn.workflow.intro':
-    'PMET 把计算切成两个阶段，使得最昂贵的 motif 扫描每个"基因组 × motif 库"只需付费一次。',
-  'home.learn.workflow.bullet1':
-    '索引阶段（昂贵但可复用）：对参考基因组做一次完整 motif 扫描，构建 homotypic 索引；同一个基因组 × motif 库只需做一次。',
-  'home.learn.workflow.bullet2':
-    '配对阶段（廉价、每次查询）：在已建好的索引上对用户提供的基因列表做 pair 富集检验，秒到分钟级即可完成。',
+  'home.learn.workflow.intro': 'PMET 把计算切成两个阶段，使得最昂贵的 motif 扫描每个"基因组 × motif 库"只需付费一次。',
+  'home.learn.workflow.bullet1': '索引阶段（昂贵但可复用）：对参考基因组做一次完整 motif 扫描，构建 homotypic 索引；同一个基因组 × motif 库只需做一次。',
+  'home.learn.workflow.bullet2': '配对阶段（廉价、每次查询）：在已建好的索引上对用户提供的基因列表做 pair 富集检验，秒到分钟级即可完成。',
   'home.learn.workflow.alt': 'PMET 算法：两步走',
-  'home.learn.workflow.caption':
-    '索引是瓶颈；一旦缓存好，后续每个基因列表分析都很快，且可重复。',
+  'home.learn.workflow.caption': '索引是瓶颈；一旦缓存好，后续每个基因列表分析都很快，且可重复。',
   'home.learn.modes.title': '不同模式下的 pipeline',
-  'home.learn.modes.intro':
-    'PMET 提供四种入口模式，对应不同的输入数据类型，但都汇入同一份索引格式与同一异型 pair test 引擎。',
-  'home.learn.modes.bullet1':
-    'promoter：从基因组 + GFF3 注释中提取启动子区域，再做扫描与配对（最常用的工作流）。',
-  'home.learn.modes.bullet2':
-    'intervals：直接对用户提供的区间（ChIP-seq peak、ATAC region 等）操作，跳过启动子提取。',
-  'home.learn.modes.bullet3':
-    'elements：使用预定义的调控元件集作为扫描全集。',
-  'home.learn.modes.bullet4':
-    'pair_only：跳过索引阶段，直接在已有索引上做 pair 富集检验。',
+  'home.learn.modes.intro': 'PMET 提供四种入口模式，对应不同的输入数据类型，但都汇入同一份索引格式与同一异型 pair test 引擎。',
+  'home.learn.modes.bullet1': 'promoter：从基因组 + GFF3 注释中提取启动子区域，再做扫描与配对（最常用的工作流）。',
+  'home.learn.modes.bullet2': 'intervals：直接对用户提供的区间（ChIP-seq peak、ATAC region 等）操作，跳过启动子提取。',
+  'home.learn.modes.bullet3': 'elements：使用预定义的调控元件集作为扫描全集。',
+  'home.learn.modes.bullet4': 'pair_only：跳过索引阶段，直接在已有索引上做 pair 富集检验。',
   'home.learn.modes.alt': 'PMET 工作流总览',
-  'home.learn.modes.caption':
-    '四种入口（promoter、intervals、elements、pair_only）汇入同一份 homotypic 索引格式，再共用同一异型 pair test 引擎。',
+  'home.learn.modes.caption': '四种入口（promoter、intervals、elements、pair_only）汇入同一份 homotypic 索引格式，再共用同一异型 pair test 引擎。',
 
   // about
   'about.title': '关于 PMET',
   'about.what.heading': 'PMET 是什么？',
-  'about.what.intro':
-    'PMET（Paired Motif Enrichment Tool）通过评估启动子区中同型与异型 motif 组合，识别协同的转录因子活动。',
+  'about.what.intro': 'PMET（Paired Motif Enrichment Tool）通过评估启动子区中同型与异型 motif 组合，识别协同的转录因子活动。',
   'about.what.bullet1': '在转录调控模块内对 motif 组合进行打分，揭示 TF 协同',
   'about.what.bullet2': '同时处理同型和异型 motif，避免单 motif 分析带来的偏差',
   'about.what.bullet3': '提供多套引擎：C、C++（功能丰富版）和集成 FIMO 扫描的 fused 构建',
@@ -556,20 +510,16 @@ const zh: Record<keyof typeof en, string> = {
   'about.resources.online': 'PMET 在线版 →',
   'about.modes.heading': '分析模式',
   'about.modes.pre.title': '预计算启动子',
-  'about.modes.pre.desc':
-    '使用我们为 21 种植物物种预先计算好的 motif 数据库。当物种与 motif 数据库已就位时，是最快的选项。',
+  'about.modes.pre.desc': '使用我们为 21 种植物物种预先计算好的 motif 数据库。当物种与 motif 数据库已就位时，是最快的选项。',
   'about.modes.full.title': '完整启动子流程',
-  'about.modes.full.desc':
-    '上传你自己的基因组、注释（GFF3）和 motif 数据库（MEME 格式）做自定义分析。最灵活的选项。',
+  'about.modes.full.desc': '上传你自己的基因组、注释（GFF3）和 motif 数据库（MEME 格式）做自定义分析。最灵活的选项。',
   'about.modes.intervals.title': '任意区间',
-  'about.modes.intervals.desc':
-    '针对 motif 数据库分析自定义基因组区间（如 ChIP-seq peak）。适合非启动子分析。',
+  'about.modes.intervals.desc': '针对 motif 数据库分析自定义基因组区间（如 ChIP-seq peak）。适合非启动子分析。',
   'about.modes.elements.title': '基因组元素（仅 CLI）',
   'about.modes.elements.desc':
     '仅 CLI 的研究型工作流（elements.sh），不再固定扫描 TSS 上游 1 kb，而是索引 GFF3 中任意 feature 类型 — 5\' UTR、3\' UTR、CDS、mRNA 或 exon。用于回答"motif pair 模式在启动子、UTR 与编码区之间是否不同"这类问题。',
   'about.modes.elements.figure_alt': '每种 -e 选项索引的区域',
-  'about.modes.elements.figure_caption':
-    '最上面一行是基因在染色体上的物理结构，下面 5 行对应 5 种 -e 选项，**高亮**部分就是该选项实际索引的区间。',
+  'about.modes.elements.figure_caption': '最上面一行是基因在染色体上的物理结构，下面 5 行对应 5 种 -e 选项，**高亮**部分就是该选项实际索引的区间。',
 
   // ParameterPanel
   'params.heading': '参数',
@@ -578,7 +528,7 @@ const zh: Record<keyof typeof en, string> = {
   'params.promoter_num': '保留启动子数',
   'params.fimo_threshold': 'FIMO 阈值',
   'params.ic_threshold': 'IC 阈值',
-  'params.utr5': '是否包含 5\' UTR？',
+  'params.utr5': "是否包含 5' UTR？",
   'params.overlap': '启动子是否重叠？',
   'params.utr5.yes': '是',
   'params.utr5.no': '否',
@@ -696,11 +646,9 @@ const zh: Record<keyof typeof en, string> = {
   'admin.settings.logout': '退出登录',
   'admin.settings.section.notifications': '通知',
   'admin.settings.notify_on_submit.label': '新任务提交时给我发邮件',
-  'admin.settings.notify_on_submit.help':
-    '关闭后 worker 不再发送每个任务的"New Task Submitted"邮件。用户侧邮件（任务开始、完成、被取消）不受影响。',
+  'admin.settings.notify_on_submit.help': '关闭后 worker 不再发送每个任务的"New Task Submitted"邮件。用户侧邮件（任务开始、完成、被取消）不受影响。',
   'admin.settings.notify_user_on_start.label': '任务开始时给用户发邮件',
-  'admin.settings.notify_user_on_start.help':
-    '关闭后用户仍会收到任务完成和任务取消邮件，但不会收到"任务已开始"邮件。',
+  'admin.settings.notify_user_on_start.help': '关闭后用户仍会收到任务完成和任务取消邮件，但不会收到"任务已开始"邮件。',
   'admin.settings.save': '保存',
   'admin.settings.saving': '保存中…',
   'admin.settings.saved': '已保存',
@@ -748,16 +696,14 @@ const zh: Record<keyof typeof en, string> = {
   // data page
   'data.title': '预计算数据',
   'data.heading': '可用的物种与 motif 数据库',
-  'data.intro':
-    'PMET 为 21 种植物物种提供了预计算的同型 motif hit，并配套多个转录因子数据库。使用预计算数据可以显著缩短分析时间。',
+  'data.intro': 'PMET 为 21 种植物物种提供了预计算的同型 motif hit，并配套多个转录因子数据库。使用预计算数据可以显著缩短分析时间。',
   'data.download.heading': '下载完整数据集',
   'data.download.intro': '完整的预计算索引数据可以从 Zenodo 下载：',
   'data.download.button': '从 Zenodo 下载',
 
   // visualize page
   'viz.title': '可视化 PMET 结果',
-  'viz.intro':
-    '上传 PMET 输出文件（tab 分隔），通过交互式 heatmap、motif 摘要和可筛选的数据表探索结果。',
+  'viz.intro': '上传 PMET 输出文件（tab 分隔），通过交互式 heatmap、motif 摘要和可筛选的数据表探索结果。',
   'viz.choose.heading': '选择 PMET 结果文件',
   'viz.dnd.before': '把 PMET 输出文件拖到这里，或',
   'viz.dnd.browse': '选择文件',

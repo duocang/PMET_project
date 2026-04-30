@@ -14,11 +14,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body>
+      <body className="flex min-h-screen flex-col">
         <Toaster position="bottom-right" />
         <I18nProvider>
           <NavBar />
-          <main className="page-shell py-8">{children}</main>
+          <main className="page-shell flex-1 py-8">{children}</main>
           <SiteFooter />
         </I18nProvider>
       </body>

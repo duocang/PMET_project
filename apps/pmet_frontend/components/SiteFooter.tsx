@@ -19,6 +19,7 @@ export function SiteFooter() {
           GitHub
         </a>
       </p>
+      <p className="mt-1">{t('footer.maintainer')}</p>
     </footer>
   );
 }
