@@ -79,6 +79,19 @@ async def get_task(task_id: str):
         started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
         completed_at=datetime.fromisoformat(task_data["completed_at"]) if task_data.get("completed_at") else None,
         error_message=task_data.get("error_message"),
+        ic_threshold=task_data.get("ic_threshold"),
+        max_match=task_data.get("max_match"),
+        promoter_num=task_data.get("promoter_num"),
+        fimo_threshold=task_data.get("fimo_threshold"),
+        promoter_length=task_data.get("promoter_length"),
+        utr5=task_data.get("utr5"),
+        promoters_overlap=task_data.get("promoters_overlap"),
+        genes_file=task_data.get("genes_file"),
+        fasta_file=task_data.get("fasta_file"),
+        gff3_file=task_data.get("gff3_file"),
+        meme_file=task_data.get("meme_file"),
+        premade_index=task_data.get("premade_index"),
+        ncpu=config.NCPU,
     )
 
 

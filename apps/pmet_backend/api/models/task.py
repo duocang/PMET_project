@@ -56,6 +56,29 @@ class TaskResponse(BaseModel):
     completed_at: Optional[datetime] = None
     error_message: Optional[str] = None
 
+    # Parameters the task was submitted with — surfaced on the detail page
+    # so a user inspecting an old run can see exactly what was asked for.
+    ic_threshold: Optional[int] = None
+    max_match: Optional[int] = None
+    promoter_num: Optional[int] = None
+    fimo_threshold: Optional[float] = None
+    promoter_length: Optional[int] = None
+    utr5: Optional[str] = None
+    promoters_overlap: Optional[str] = None
+
+    # Input file paths (relative to repo root). The detail page only
+    # displays the basename; full path is preserved for debugging.
+    genes_file: Optional[str] = None
+    fasta_file: Optional[str] = None
+    gff3_file: Optional[str] = None
+    meme_file: Optional[str] = None
+    premade_index: Optional[str] = None
+
+    # Worker thread count read from current config (data/configure/
+    # cpu_configuration.txt). Not historically frozen — reflects what
+    # the worker would use *now* if the same task were rerun.
+    ncpu: Optional[int] = None
+
     class Config:
         from_attributes = True
 

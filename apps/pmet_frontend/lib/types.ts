@@ -31,6 +31,25 @@ export interface TaskResponse {
   started_at: string | null;
   completed_at: string | null;
   error_message: string | null;
+
+  // Submitted parameters (populated for any task; null for legacy records)
+  ic_threshold?: number | null;
+  max_match?: number | null;
+  promoter_num?: number | null;
+  fimo_threshold?: number | null;
+  promoter_length?: number | null;
+  utr5?: string | null;
+  promoters_overlap?: string | null;
+
+  // Input file paths relative to repo root
+  genes_file?: string | null;
+  fasta_file?: string | null;
+  gff3_file?: string | null;
+  meme_file?: string | null;
+  premade_index?: string | null;
+
+  // Current worker thread count (data/configure/cpu_configuration.txt)
+  ncpu?: number | null;
 }
 
 export interface TaskListResponse {
