@@ -26,6 +26,8 @@ export default function TasksPage() {
   );
 }
 
+const STORAGE_KEY = 'pmet:tasks:lastQuery';
+
 function TasksPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,6 +37,19 @@ function TasksPageInner() {
   const [searchInput, setSearchInput] = useState(urlQuery);
   const [tasks, setTasks] = useState<TaskResponse[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // If the URL has no ?q= but we remember a previous search this session,
+  // restore it. This covers the case where the user clicks the navbar
+  // "My Tasks" link (a plain href="/tasks" that drops the query) and
+  // expects their last search to still be there.
+  useEffect(() => {
+    if (urlQuery) return;
+    if (typeof window === 'undefined') return;
+    const saved = window.sessionStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      router.replace(`/tasks?q=${encodeURIComponent(saved)}`);
+    }
+  }, [urlQuery, router]);
 
   const fetchTasks = useCallback(async (q: string, showLoading = true) => {
     const filter = parseQuery(q);
@@ -73,6 +88,9 @@ function TasksPageInner() {
   const handleSearch = () => {
     const q = searchInput.trim();
     if (!q) return;
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(STORAGE_KEY, q);
+    }
     router.push(`/tasks?q=${encodeURIComponent(q)}`);
   };
 
