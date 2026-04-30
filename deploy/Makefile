@@ -1,6 +1,6 @@
 # PMET - Paired Motif Enrichment Tool
 
-.PHONY: help start stop build rebuild rebuild-frontend rebuild-backend \
+.PHONY: help start stop build-images rebuild rebuild-frontend rebuild-backend \
         restart restart-worker restart-nginx clean logs \
         api worker frontend test install-frontend install-backend init \
         fetch-data
@@ -15,7 +15,7 @@ help:
 	@echo ""
 	@echo "  First-time / full reset"
 	@echo "    make fetch-data         - Download TAIR10 reference + indexing archives (run ONCE, ~GBs)"
-	@echo "    make build              - Build all images (5-10 min first time)"
+	@echo "    make build-images       - Build all docker images (5-10 min first time)"
 	@echo "    make start              - Start all services in the background"
 	@echo "    make stop               - Stop all services"
 	@echo "    make clean              - Stop services, remove volumes, wipe result/"
@@ -46,8 +46,8 @@ start:
 stop:
 	docker-compose down
 
-build:
-	@echo "Building images from local core/"
+build-images:
+	@echo "Building docker images from local core/"
 	docker-compose build
 
 clean:

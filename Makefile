@@ -1,7 +1,7 @@
 # PMET monorepo top-level Makefile
 
 .PHONY: help build build-core clean-core-binaries build-indexing build-pairing demo demo-indexing demo-pairing baseline clean \
-        fetch-data up down logs ps rebuild
+        fetch-data build-app up down logs ps rebuild
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD := $(ROOT)/build
@@ -10,19 +10,24 @@ CMAKE ?= cmake
 help:
 	@echo "PMET monorepo targets:"
 	@echo ""
-	@echo "  Local CLI / dev"
-	@echo "    build        - build production C/C++ engines into ./build/"
+	@echo "  Local CLI / dev — host-side, no docker"
+	@echo "    build        - compile core C/C++ engines into ./build/  (NOT the web app)"
 	@echo "    demo         - run demo indexing + pairing against data/"
 	@echo "    baseline     - capture fingerprints to tests/baseline/fingerprints.txt"
 	@echo "    fetch-data   - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
 	@echo "    clean        - remove ./build/"
 	@echo ""
-	@echo "  Web app (docker-compose, exposes nginx on http://localhost:5960)"
+	@echo "  Web app stack — docker-compose, exposes nginx on http://localhost:5960"
+	@echo "    build-app    - build the docker images only (api + worker + frontend)"
 	@echo "    up           - build + start the full stack (api + worker + frontend + nginx + redis)"
 	@echo "    down         - stop the stack"
 	@echo "    rebuild      - rebuild images and restart"
 	@echo "    logs         - tail logs from all services"
 	@echo "    ps           - show service status"
+	@echo ""
+	@echo "  Note: 'build' (above) compiles host binaries for CLI; 'build-app' / 'up'"
+	@echo "        build docker images. They are independent — host CLI does not need"
+	@echo "        the docker stack and vice versa."
 	@echo ""
 	@echo "  More deploy targets: cd deploy && make help"
 
@@ -70,6 +75,13 @@ clean:
 # ---- Web app (proxies into deploy/) ----
 # These shortcuts run docker-compose from deploy/ so you don't need to cd.
 # All targets accept the same env vars as the underlying compose commands.
+#
+# Naming: this section's `build-app` builds *docker images* via docker-compose.
+# The unrelated top-level `build` target above compiles host C/C++ binaries
+# for CLI use — same word, very different artifact.
+
+build-app:
+	@$(MAKE) -C deploy build-images
 
 up:
 	@# 1. Stop our own compose project cleanly (no-op if nothing running).
@@ -92,7 +104,7 @@ up:
 		echo "Free it manually, or change the host port in deploy/docker-compose.yml."; \
 		exit 1; \
 	fi
-	@$(MAKE) -C deploy build
+	@$(MAKE) -C deploy build-images
 	@$(MAKE) -C deploy start
 	@echo ""
 	@echo "PMET stack is up — http://localhost:5960"
