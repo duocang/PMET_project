@@ -36,7 +36,7 @@ print_error() {
 }
 
 # Default configuration
-VERSION="c"  # c, cpp, or fused
+VERSION="fused"
 DATA_DIR="$PROJECT_ROOT/data/demos/promoters/indexing/demo"
 RESULT_DIR="$PROJECT_ROOT/results/cli/demo/indexing"
 
@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
-            echo "  -v, --version VERSION  Indexing version to run: c, cpp, or fused (default: c)"
+            echo "  -v, --version VERSION  Indexing version to run: fused (default: fused)"
             echo "  -d, --data DIR         Data directory (default: data/demos/promoters/indexing/demo)"
             echo "  -o, --output DIR       Output directory (default: results/cli/demo/indexing)"
             echo "  -h, --help             Show this help message"
@@ -79,17 +79,8 @@ print_separator
 
 # Set executable path based on version (prefer root build/ directory)
 case "$VERSION" in
-    "c")
-        EXECUTABLE="$REPO_ROOT/build/index_c"
-        FALLBACK="$REPO_ROOT/core/indexing/c/_build/index_c"
-        ;;
-    "cpp")
-        EXECUTABLE="$REPO_ROOT/build/index_cpp"
-        FALLBACK="$REPO_ROOT/core/indexing/cpp/_build/index_cpp"
-        ;;
     "fused")
         EXECUTABLE="$REPO_ROOT/build/index_fimo_fused"
-        FALLBACK="$REPO_ROOT/core/indexing/fused_fimo/_build/index_fimo_fused"
         ;;
     *)
         print_error "Unknown version: $VERSION"
@@ -97,15 +88,10 @@ case "$VERSION" in
         ;;
 esac
 
-# Use fallback if main executable not found
-if [ ! -f "$EXECUTABLE" ] && [ -f "$FALLBACK" ]; then
-    EXECUTABLE="$FALLBACK"
-fi
-
 # Check executable
 if [ ! -f "$EXECUTABLE" ]; then
     print_error "Executable not found: $EXECUTABLE"
-    echo "Please run: bash core/scripts/build_all.sh index-$VERSION"
+    echo "Please run: make build"
     exit 1
 fi
 

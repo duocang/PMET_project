@@ -1,17 +1,17 @@
 # PMET monorepo top-level Makefile
-# Thin entry point — delegates to per-module scripts.
 
-.PHONY: help build build-core demo demo-indexing demo-pairing baseline clean \
+.PHONY: help build build-core clean-core-binaries build-indexing build-pairing demo demo-indexing demo-pairing baseline clean \
         fetch-data up down logs ps rebuild
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD := $(ROOT)/build
+CMAKE ?= cmake
 
 help:
 	@echo "PMET monorepo targets:"
 	@echo ""
 	@echo "  Local CLI / dev"
-	@echo "    build        - build all C/C++ engines into ./build/"
+	@echo "    build        - build production C/C++ engines into ./build/"
 	@echo "    demo         - run demo indexing + pairing against data/"
 	@echo "    baseline     - capture fingerprints to tests/baseline/fingerprints.txt"
 	@echo "    fetch-data   - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
@@ -30,13 +30,29 @@ help:
 
 build: build-core
 
-build-core:
-	@bash core/scripts/build_all.sh all
+build-core: clean-core-binaries build-indexing build-pairing
+
+clean-core-binaries:
+	@mkdir -p $(BUILD)
+	@rm -f $(BUILD)/index_c $(BUILD)/index_cpp $(BUILD)/pair_original
+	@rm -f $(BUILD)/index_fimo_fused $(BUILD)/pair_parallel
+
+build-indexing:
+	@$(CMAKE) -S $(ROOT)/core/indexing -B $(BUILD)/cmake/indexing \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
+	@$(CMAKE) --build $(BUILD)/cmake/indexing --parallel
+
+build-pairing:
+	@$(CMAKE) -S $(ROOT)/core/pairing -B $(BUILD)/cmake/pairing \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
+	@$(CMAKE) --build $(BUILD)/cmake/pairing --parallel
 
 demo: demo-indexing demo-pairing
 
 demo-indexing:
-	@bash apps/cli/scripts/run_indexing.sh -v c
+	@bash apps/cli/scripts/run_indexing.sh -v fused
 
 demo-pairing:
 	@bash apps/cli/scripts/run_pairing.sh

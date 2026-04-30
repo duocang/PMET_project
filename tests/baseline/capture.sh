@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Baseline fingerprint capture.
-# Records: binary hashes, demo output hashes, smoke status, pytest status.
+# Records: production binary hashes, demo output hashes, smoke status, pytest status.
 # Run from repo root: bash tests/baseline/capture.sh > tests/baseline/fingerprints.txt
 set -uo pipefail
 
@@ -30,15 +30,8 @@ echo "# git: $(git rev-parse --short HEAD 2>/dev/null) on $(git rev-parse --abbr
 echo ""
 
 echo "## section:binaries"
-for b in index_c index_cpp index_fimo_fused pair_original pair_parallel; do
+for b in index_fimo_fused pair_parallel; do
   printf "build/%s\t%s\n" "$b" "$(hash_file "build/$b")"
-done
-# Pre-refactor copies (to be removed once subdirs are dropped):
-for d in PMET_project pmet_analysis_pipeline pmet_shiny_app; do
-  [ -d "$d/build" ] || continue
-  for b in index_c index_cpp index_fimo_fused pair_original pair_parallel; do
-    [ -f "$d/build/$b" ] && printf "%s/build/%s\t%s\n" "$d" "$b" "$(hash_file "$d/build/$b")"
-  done
 done
 echo ""
 
@@ -46,7 +39,7 @@ echo "## section:core_demo_indexing_existing_outputs"
 hash_dir_files "results/cli/demo/fimo_official"
 echo ""
 
-for v in c cpp fused; do
+for v in fused; do
   echo "## section:core_demo_run_indexing_$v"
   out_dir="$(mktemp -d)"
   if bash apps/cli/scripts/run_indexing.sh -v "$v" -o "$out_dir" >"/tmp/baseline_idx_$v.log" 2>&1; then

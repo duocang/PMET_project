@@ -1,35 +1,16 @@
-# baseline captured: 2026-04-28T21:41:36Z
+# baseline captured: 2026-04-30T07:11:16Z
 # host: Darwin 24.6.0 arm64
-# git: f60f901 on refactor/monorepo
+# git: ac09b73 on main
 
 ## section:binaries
-build/index_c	a3152d4ada47ca9cc1a5df6e04819f35b33d0c5130cf924964cac7b0263f50af
-build/index_cpp	2e76ff0c6914e7e7ebee91295e58f74e3c3feeb7d37e9acbf49ccfa2025d170f
-build/index_fimo_fused	1199c5d2d08a2bb96e03bdf95d0ea79ddee7393cc138789185103c54baa773a1
-build/pair_original	1e95b310f626ca3ada009b58505ab6a1abdcd9a01fff27e2c9b167fa30750ecc
-build/pair_parallel	e5929f6a96f1b8de719bebaa71ef0f70bc6fda317caf2883153075a354d456b2
+build/index_fimo_fused	b851f487d0471a58fd3c5a88a0d0d5179d7b96e8fc44f47efab16fa670864cd1
+build/pair_parallel	a14286e985542b53bc16f40d8686ab933b94194d814f8c1cad9ed9d74b0be0f8
 
 ## section:core_demo_indexing_existing_outputs
 7c31212645b13b1f2e52db3a3d4b948c53ad5787e6f56a96663238081fc82b67  ./CCA1.txt
 b7d64f4dac5c821bda9e689b184e6274365d1db7b96d0418f8289e1b9caaf23a  ./MYB52_2.txt
 80def7c39c1f06fa63fc74ed44e51f7c61a04bd0cf3bd20da7729420f0b3019a  ./MYB52.txt
 8ef4dfffa7cb9ca286b2f802293092661bf702e925c3d70033e18f474f6c20db  ./MYB59.txt
-
-## section:core_demo_run_indexing_c
-# RUN_OK
-bca3241d5686bff27b9aa34cea5a35b247e58da391e48053315108b347194489  ./c/binomial_thresholds.txt
-f3208d2acd8f9fe1b9100ad10c3b3395ecd44de854bc253d1c25b56b38f21657  ./c/fimohits/CCA1.txt
-da8a4b642259d8cf7a79279b504a0ff006ece73cfca24881e4a53bf636a4a982  ./c/fimohits/MYB52_2.txt
-dc2837bff0fa67182c6120f82df664c0b255343873194b16b94aaae4069d3736  ./c/fimohits/MYB52.txt
-99f9458f9936c2adabe1f162b037a38b6c2d41334aac84ab9c3eb465ac083815  ./c/fimohits/MYB59.txt
-
-## section:core_demo_run_indexing_cpp
-# RUN_OK
-37b69a6114035d07042fc169d27ec80aba306aa3600ac115a423f648a125b8a5  ./cpp/binomial_thresholds.txt
-307446e7c94110192870e98bd2c513ccabcc56a93c12bbdeda5e0211ea8a265f  ./cpp/fimohits/CCA1.txt
-4a695923ab4e633941c2a253d9646cd8b90b24e004961e42790f089ce1ab4cd9  ./cpp/fimohits/MYB52_2.txt
-2ddb220e0b859d059dd6e963bc3928e3b29099e8ee2ee09e6228d51da189d1a2  ./cpp/fimohits/MYB52.txt
-7a31f8d9914de28f6a534c58b77480dbb9398748678ab022f1f8d32a6cc3e7fa  ./cpp/fimohits/MYB59.txt
 
 ## section:core_demo_run_indexing_fused
 # RUN_OK
@@ -47,29 +28,9 @@ cb2a9f55d7bf4524761e1b6654336f2341813f33e7405405f7992345488acdef  ./motif_output
 # SMOKE_OK
 # [0;33m  • Install R packages:      Rscript pipeline/r/install_packages.R[0m
 # [0;33m  • Install Python packages: pip install numpy pandas scipy biopython[0m
-# [0;33m  • Setup PMET binaries:     pipeline/workflows/bench/00_requirements.sh --setup-pmet[0m
+# [0;33m  • Setup PMET binaries:     make build  (or: pipeline/workflows/cli/00_env_check.sh --setup-pmet)[0m
 # [0;33m------------------------------------------
 # [0m
 
 ## section:backend_pytest
-# PYTEST_FAIL exit=1
-# 
-# 1. Testing imports...
-#    - config loaded, NCPU=2
-#    ✗ Import error: No module named 'pydantic'
-# 
-# 2. Testing TaskCreate model...
-# Traceback (most recent call last):
-#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/test_api.py", line 172, in <module>
-#     main()
-#     ~~~~^^
-#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/test_api.py", line 153, in main
-#     results.append(test_task_model())
-#                    ~~~~~~~~~~~~~~~^^
-#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/test_api.py", line 46, in test_task_model
-#     from pmet_backend.api.models.task import TaskCreate, TaskMode
-#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/api/models/__init__.py", line 1, in <module>
-#     from .task import TaskCreate, TaskResponse, TaskStatus, TaskMode
-#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/api/models/task.py", line 4, in <module>
-#     from pydantic import BaseModel, EmailStr, Field
-# ModuleNotFoundError: No module named 'pydantic'
+# PYTEST_OK

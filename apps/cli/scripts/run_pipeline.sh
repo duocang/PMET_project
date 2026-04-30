@@ -36,15 +36,13 @@ print_error() {
 }
 
 # Default configuration
-DATA_DIR="$PROJECT_ROOT/data"
+DATA_DIR="$PROJECT_ROOT/data/demos/promoters"
 RESULT_DIR="$PROJECT_ROOT/results/cli/demo/pipeline"
 NUM_THREADS=8
 
 # Indexing versions
-INDEXING_VERSIONS=("c" "cpp" "fused")
+INDEXING_VERSIONS=("fused")
 INDEXING_DESCRIPTIONS=(
-    "C version (index_c) - Fast and lightweight"
-    "C++ version (pmetindex) - Feature-rich"
     "Fused version (index_fimo_fused) - Integrated FIMO"
 )
 
@@ -73,8 +71,8 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
-            echo "  --indexing-version VER  Indexing version: c, cpp, or fused"
-            echo "  -d, --data DIR          Data directory (default: data)"
+            echo "  --indexing-version VER  Indexing version: fused"
+            echo "  -d, --data DIR          Data directory (default: data/demos/promoters)"
             echo "  -o, --output DIR        Output directory (default: results/cli/demo)"
             echo "  -t, --threads NUM       Number of threads (default: 8)"
             echo "  -h, --help              Show this help message"

@@ -6,9 +6,9 @@
         fetch-data
 
 # PMET binaries are built from the in-repo core/ sources during
-# `docker build` (apps/pmet_backend/Dockerfile copies core/ and runs
-# build_all.sh). No upstream-SHA pinning is needed; the layer cache
-# busts when core/ changes.
+# `docker build` (apps/pmet_backend/Dockerfile copies core/ and builds
+# core/indexing + core/pairing with CMake). No upstream-SHA pinning is
+# needed; the layer cache busts when core/ changes.
 
 help:
 	@echo "PMET commands"

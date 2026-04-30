@@ -38,11 +38,8 @@ echo -e "${BLUE}================================================================
 clean_builds() {
     print_step "Cleaning build directories..."
     rm -rf "$REPO_ROOT/build"
-    rm -rf "$REPO_ROOT/core/indexing/c/_build"
-    rm -rf "$REPO_ROOT/core/indexing/cpp/_build"
-    rm -rf "$REPO_ROOT/core/indexing/fused_fimo/_build"
-    rm -rf "$REPO_ROOT/core/pairing/parallel/_build"
-    rm -rf "$REPO_ROOT/core/pairing/original/_build"
+    rm -rf "$REPO_ROOT/core/indexing/build"
+    rm -rf "$REPO_ROOT/core/pairing/build"
     print_success "Build directories cleaned"
 }
 

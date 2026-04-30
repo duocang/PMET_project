@@ -55,24 +55,20 @@ ENV PATH="/opt/meme/bin:/opt/meme/libexec/meme-${MEME_VERSION}:${PATH}"
 COPY apps/pmet_backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Build PMET binaries from the in-repo core/ sources. The previous Dockerfile
-# cloned PMET_project from upstream; that's now redundant since core/ is
-# the canonical source in this monorepo. Binaries land in /app/build/ —
-# the path config.PMET_SCRIPTS_DIR/build resolves to (PMET_SCRIPTS_DIR=/app).
+# Build PMET binaries from the in-repo core/ sources. Binaries land in
+# /app/build/, the path config.PMET_SCRIPTS_DIR/build resolves to.
 COPY core/ /tmp/core/
-RUN cd /tmp/core \
-    && bash scripts/build_all.sh \
-    && mkdir -p /app/build \
-    && cp /tmp/build/index_fimo_fused \
-          /tmp/build/pair_parallel \
-          /tmp/build/pair_original \
-          /tmp/build/index_c \
-          /tmp/build/index_cpp \
-          /app/build/ 2>/dev/null \
+RUN mkdir -p /app/build \
+    && cmake -S /tmp/core/indexing -B /tmp/core-build/indexing \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/app/build \
+    && cmake --build /tmp/core-build/indexing --parallel "$(nproc)" \
+    && cmake -S /tmp/core/pairing -B /tmp/core-build/pairing \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/app/build \
+    && cmake --build /tmp/core-build/pairing --parallel "$(nproc)" \
     && chmod +x /app/build/* \
-    && rm -rf /tmp/core /tmp/build
-# NOTE: build_all.sh writes to <REPO_ROOT>/build/; here REPO_ROOT resolves
-# to /tmp (since core lives at /tmp/core), so we read from /tmp/build/ above.
+    && rm -rf /tmp/core /tmp/core-build
 
 # Copy application code. data/ is excluded via .dockerignore and mounted
 # at runtime from the host (GB-scale).

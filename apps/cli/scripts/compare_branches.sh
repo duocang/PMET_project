@@ -1,7 +1,7 @@
 #!/bin/bash
 #############################################
 # 对比当前工作区与 HEAD 提交的运行结果
-# 覆盖全部引擎: indexing (c, cpp, fused) + pairing (original, parallel)
+# 覆盖生产引擎: indexing (fused) + pairing (parallel)
 # 结果存放在项目根目录 branch-compare/ 下
 #############################################
 
@@ -22,8 +22,8 @@ PROJECT_ROOT="$REPO_ROOT"
 COMPARE_DIR="$PROJECT_ROOT/branch-compare"
 WORKTREE_DIR="/tmp/pmet-head-worktree"
 
-INDEXING_VERSIONS="c cpp fused"
-PAIRING_VERSIONS="original parallel"
+INDEXING_VERSIONS="fused"
+PAIRING_VERSIONS="parallel"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${GREEN}PMET 全引擎分支结果对比${NC}"
@@ -52,19 +52,19 @@ build_and_run() {
 
   cd "$root"
 
-  echo -e "${BLUE}[$label] 构建所有引擎${NC}"
-  bash scripts/build_all.sh all 2>&1 | tail -3
+  echo -e "${BLUE}[$label] 构建生产引擎${NC}"
+  make build 2>&1 | tail -8
 
   echo -e "${BLUE}[$label] 运行 Indexing${NC}"
   for v in $INDEXING_VERSIONS; do
     echo -e "  ${YELLOW}indexing-$v${NC}"
-    bash scripts/run_indexing.sh -v "$v" -o "$COMPARE_DIR/$label/indexing" 2>&1 | tail -2
+    bash apps/cli/scripts/run_indexing.sh -v "$v" -o "$COMPARE_DIR/$label/indexing" 2>&1 | tail -2
   done
 
   echo -e "${BLUE}[$label] 运行 Pairing${NC}"
   for v in $PAIRING_VERSIONS; do
     echo -e "  ${YELLOW}pairing-$v${NC}"
-    bash scripts/run_pairing.sh -v "$v" -o "$COMPARE_DIR/$label/pairing" 2>&1 | tail -2
+    bash apps/cli/scripts/run_pairing.sh -o "$COMPARE_DIR/$label/pairing" 2>&1 | tail -2
   done
 }
 

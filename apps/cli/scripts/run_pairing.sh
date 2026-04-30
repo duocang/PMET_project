@@ -85,7 +85,7 @@ print_separator
 EXECUTABLE="$REPO_ROOT/build/pair_parallel"
 if [ ! -f "$EXECUTABLE" ]; then
     print_error "Executable not found: $EXECUTABLE"
-    echo "Please run: bash core/scripts/build_all.sh pair-parallel"
+    echo "Please run: make build"
     exit 1
 fi
 

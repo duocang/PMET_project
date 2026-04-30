@@ -43,36 +43,18 @@ print_list() {
 }
 
 # ==============================================================================
-# Setup PMET from upstream (simple version)
+# Build PMET binaries from this checkout
 # ==============================================================================
 
 setup_pmet() {
-    local upstream_dir="$script_dir/external/pmet_project"
-    local upstream_repo="https://github.com/duocang/PMET_project"
+    print_orange "\n[SETUP] Building PMET binaries from this checkout..."
 
-    print_orange "\n[SETUP] Setting up PMET from upstream..."
+    (cd "$script_dir" && make build)
 
-    # Clone or update
-    if [ -d "$upstream_dir" ]; then
-        print_orange "Updating existing repository..."
-        git -C "$upstream_dir" pull --ff-only || true
+    if [[ -x "$script_dir/build/index_fimo_fused" && -x "$script_dir/build/pair_parallel" ]]; then
+        print_green "[✓] Build complete! Binaries available in ./build"
     else
-        print_orange "Cloning PMET_project..."
-        mkdir -p "$script_dir/external"
-        git clone "$upstream_repo" "$upstream_dir"
-    fi
-
-    # Build
-    print_orange "Building PMET binaries..."
-    (cd "$upstream_dir" && bash scripts/build_all.sh)
-
-    # Copy build artifacts
-    if [ -d "$upstream_dir/build" ]; then
-        mkdir -p "$script_dir/build"
-        cp -r "$upstream_dir/build/"* "$script_dir/build/"
-        print_green "[✓] Build complete! Binaries copied to ./build"
-    else
-        print_red "[✗] Build failed - no build directory found"
+        print_red "[✗] Build failed - expected binaries not found in ./build"
         exit 1
     fi
 }
@@ -132,5 +114,5 @@ print_orange "\n------------------------------------------"
 print_orange "Tips:"
 print_orange "  • Install R packages:      Rscript pipeline/r/install_packages.R"
 print_orange "  • Install Python packages: pip install numpy pandas scipy biopython"
-print_orange "  • Setup PMET binaries:     $0 --setup-pmet"
+print_orange "  • Setup PMET binaries:     make build  (or: $0 --setup-pmet)"
 print_orange "------------------------------------------\n"

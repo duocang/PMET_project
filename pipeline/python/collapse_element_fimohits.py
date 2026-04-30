@@ -19,7 +19,7 @@ _pmet_index_element.sh used to run:
     re-encode as PMETBN01 binary in place
 
 The PMETBN01 layout is documented in
-core/indexing/fused_fimo/src/pmet_index/pmet-fimo-binary.h.
+core/indexing/src/pmet_index/pmet-fimo-binary.h.
 
 Usage:
   python3 collapse_element_fimohits.py <indexing_dir> <maxk>
