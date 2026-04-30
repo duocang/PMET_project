@@ -81,3 +81,9 @@ data/precomputed_indexes/
 # Branch comparison output (regeneratable)
 branch-compare/
 tests/audit/runs/
+
+# Playwright MCP test snapshots written to repo root (transient)
+/submit-*.md
+/verify-*.png
+/home-learn-*.png
+
