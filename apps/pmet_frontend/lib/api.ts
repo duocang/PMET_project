@@ -24,9 +24,14 @@ export const taskApi = {
     return response.data;
   },
 
-  list: async (email?: string, limit = 50, offset = 0): Promise<TaskListResponse> => {
+  list: async (
+    filter: { email?: string; task_id?: string } = {},
+    limit = 50,
+    offset = 0,
+  ): Promise<TaskListResponse> => {
     const params = new URLSearchParams();
-    if (email) params.append('email', email);
+    if (filter.email) params.append('email', filter.email);
+    if (filter.task_id) params.append('task_id', filter.task_id);
     params.append('limit', String(limit));
     params.append('offset', String(offset));
     const response = await api.get(`/api/tasks?${params.toString()}`);

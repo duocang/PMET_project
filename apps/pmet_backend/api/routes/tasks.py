@@ -92,12 +92,14 @@ async def download_result(task_id: str):
 
 
 @router.get("", response_model=TaskListResponse)
-async def list_tasks(email: str = None, limit: int = 50, offset: int = 0):
-    """List tasks, optionally filtered by email"""
+async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, offset: int = 0):
+    """List tasks. Filter by exact email match, by task_id substring, or both."""
     tasks = []
     for task_file in sorted(config.TASKS_DIR.glob("*.json"), reverse=True)[offset:offset+limit]:
         task_data = json.loads(task_file.read_text())
         if email and task_data.get("email") != email:
+            continue
+        if task_id and task_id not in task_data.get("task_id", ""):
             continue
 
         status = TaskStatus(task_data.get("status", "pending"))

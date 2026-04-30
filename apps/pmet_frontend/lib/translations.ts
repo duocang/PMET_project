@@ -224,10 +224,10 @@ const en = {
   // tasks list
   'tasks.title': 'My Tasks',
   'tasks.new': 'New Analysis',
-  'tasks.search.label': 'Enter the email you used when submitting to see your tasks.',
-  'tasks.search.placeholder': 'you@example.com',
+  'tasks.search.label': 'Search by email or task ID (substring match).',
+  'tasks.search.placeholder': 'you@example.com  or  pmet_…',
   'tasks.search.button': 'Search',
-  'tasks.empty.no_email': 'Enter your email above to look up your tasks.',
+  'tasks.empty.no_query': 'Enter an email or task ID above to look up tasks.',
   'tasks.empty.loading': 'Loading tasks...',
   'tasks.empty.none_prefix': 'No tasks found for',
 
@@ -588,12 +588,12 @@ const zh: Record<keyof typeof en, string> = {
   // tasks list
   'tasks.title': '我的任务',
   'tasks.new': '新建分析',
-  'tasks.search.label': '输入提交时使用的邮箱以查看你的任务。',
-  'tasks.search.placeholder': 'you@example.com',
+  'tasks.search.label': '按邮箱或任务 ID 搜索（任务 ID 支持子串匹配）。',
+  'tasks.search.placeholder': 'you@example.com  或  pmet_…',
   'tasks.search.button': '搜索',
-  'tasks.empty.no_email': '在上方输入邮箱以查看你的任务。',
+  'tasks.empty.no_query': '在上方输入邮箱或任务 ID 进行查找。',
   'tasks.empty.loading': '加载任务中...',
-  'tasks.empty.none_prefix': '未找到任何任务，邮箱：',
+  'tasks.empty.none_prefix': '未找到任何任务：',
 
   // task detail
   'task.loading': '加载任务详情中...',

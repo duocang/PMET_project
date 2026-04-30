@@ -86,11 +86,13 @@ function SubmitPageContent() {
   // page reuses this id so all four files for one submission land in the
   // same temp dir under result/uploads/<id>/, instead of each upload
   // racing for its own timestamped temp_<...> dir.
+  // 12 hex chars (~48 bits) is plenty for collision-free task IDs at this
+  // scale and keeps URLs short. Total length: pmet_ (5) + 12 = 17.
   const [uploadSessionId] = useState(() => {
     const rand =
       typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID().replace(/-/g, '')
-        : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+        : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     return `pmet_${rand}`;
   });
 
