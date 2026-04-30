@@ -13,7 +13,7 @@ def _find_output_file(task_id: str) -> Path:
     if not result_dir.exists():
         raise HTTPException(status_code=404, detail="Results not found")
 
-    # New layout: result/<task_id>/pairing/motif_output.txt. Older runs
+    # New layout: results/app/<task_id>/pairing/motif_output.txt. Older runs
     # wrote it flat — keep flat paths as fallbacks so historical tasks
     # remain readable.
     candidates = (

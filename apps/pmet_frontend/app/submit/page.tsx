@@ -92,7 +92,7 @@ function SubmitPageContent() {
 
   // Single per-page-mount upload session id. Every file upload from this
   // page reuses this id so all four files for one submission land in the
-  // same temp dir under result/uploads/<id>/, instead of each upload
+  // same temp dir under results/app/uploads/<id>/, instead of each upload
   // racing for its own timestamped temp_<...> dir.
   // 12 hex chars (~48 bits) is plenty for collision-free task IDs at this
   // scale and keeps URLs short. Total length: pmet_ (5) + 12 = 17.
@@ -335,7 +335,7 @@ function SubmitPageContent() {
         : params;
 
       // Create task. Reuse the upload session id so the run inherits the
-      // same result/<id>/ root that already holds upload/.
+      // same results/app/<id>/ root that already holds upload/.
       const taskData = {
         email,
         mode,

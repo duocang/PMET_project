@@ -148,8 +148,7 @@ PY=scripts/python
 # ==================== Locate binaries ====================
 
 BIN_DIR=
-for cand in "$project_root/build" "$project_root/pmet_pipeline/build" \
-            "$script_dir/build" "$script_dir/pmet_pipeline/build"; do
+for cand in "$project_root/build" "$script_dir/build"; do
     if [[ -x "$cand/index_fimo_fused" && -x "$cand/pair_parallel" ]]; then
         BIN_DIR=$cand
         break

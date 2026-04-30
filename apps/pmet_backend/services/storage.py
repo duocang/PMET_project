@@ -16,7 +16,7 @@ class StorageService:
     def generate_task_id(self, email: str, override: Optional[str] = None) -> str:
         """Return a task id, honouring a frontend-supplied override.
 
-        Each task lives at result/<task_id>/{upload,indexing,pairing}/. When
+        Each task lives at results/app/<task_id>/{upload,indexing,pairing}/. When
         the frontend supplies a UUID we reuse it so uploads and run output
         share one root. The override is validated against TASK_ID_RE to
         prevent path traversal.

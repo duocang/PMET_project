@@ -125,17 +125,16 @@ done
 
 # ==================== Locate binary ====================
 # Walks candidate dirs so the script works on host (build/) and inside the
-# docker container (where /app/build/ or /app/pmet_pipeline/build/ may apply).
+# docker container (/app/build/).
 
 BIN_DIR=
-for cand in "$project_root/build" "$project_root/pmet_pipeline/build" \
-            "$script_dir/build" "$script_dir/pmet_pipeline/build"; do
+for cand in "$project_root/build" "$script_dir/build"; do
     if [[ -x "$cand/pair_parallel" ]]; then
         BIN_DIR=$cand
         break
     fi
 done
-[[ -n $BIN_DIR ]] || error_exit "PMET binary pair_parallel not found in any of: $project_root/build, $project_root/pmet_pipeline/build, $script_dir/build, $script_dir/pmet_pipeline/build"
+[[ -n $BIN_DIR ]] || error_exit "PMET binary pair_parallel not found in any of: $project_root/build, $script_dir/build"
 BIN_PMET="$BIN_DIR/pair_parallel"
 
 # ==================== Preflight ====================

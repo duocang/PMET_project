@@ -6,7 +6,7 @@
 data/
 
 # Runtime task outputs
-result/
+results/
 
 # Legacy stack — not used by the FastAPI rewrite
 legacy/
