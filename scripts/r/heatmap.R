@@ -1,3 +1,21 @@
+# Output dimensions for the heatmap are computed from the actual motif
+# count and panel layout instead of being hard-coded — keeps cells legible
+# (~0.18 in/cell) and stops the figure from blowing past ggsave's 50-inch
+# ceiling on crowded inputs (e.g. random_genes_topN.txt with 25+ clusters).
+# Top-level so tests/unit/test_heatmap_dim_cap.R can verify the cap holds.
+compute_dims <- function(n_motifs, ncol_p, nrow_p, max_inches) {
+  cell_inch  <- 0.18
+  axis_pad   <- 3.0   # axis labels + tick room
+  legend_pad <- 2.0   # right-side legend
+  title_pad  <- 0.6   # top title
+  panel_w    <- n_motifs * cell_inch + axis_pad
+  panel_h    <- n_motifs * cell_inch + axis_pad
+  list(
+    width  = min(panel_w * ncol_p + legend_pad, max_inches),
+    height = min(panel_h * nrow_p + title_pad, max_inches)
+  )
+}
+
 heatmap.func <- function(filename           = NULL,
                          method             = NULL,
                          pmet_out           = NULL,
@@ -14,22 +32,6 @@ heatmap.func <- function(filename           = NULL,
                          max_motifs_in_plot = 30L,
                          max_fig_inches     = 40)
 {
-  # Output dimensions are computed from the actual motif count and panel
-  # layout instead of being hard-coded — keeps cells legible (~0.18 in/cell)
-  # and stops the figure from blowing past ggsave's 50-inch ceiling on
-  # crowded inputs.
-  .compute_dims <- function(n_motifs, ncol_p, nrow_p, max_inches) {
-    cell_inch  <- 0.18
-    axis_pad   <- 3.0   # axis labels + tick room
-    legend_pad <- 2.0   # right-side legend
-    title_pad  <- 0.6   # top title
-    panel_w    <- n_motifs * cell_inch + axis_pad
-    panel_h    <- n_motifs * cell_inch + axis_pad
-    list(
-      width  = min(panel_w * ncol_p + legend_pad, max_inches),
-      height = min(panel_h * nrow_p + title_pad, max_inches)
-    )
-  }
 
   if (draw_histgram) {
     histgram.path <- filename %>%
@@ -172,7 +174,7 @@ heatmap.func <- function(filename           = NULL,
     nc <- 1; nr <- 1
   }
 
-  dims <- .compute_dims(n_drawn, nc, nr, max_fig_inches)
+  dims <- compute_dims(n_drawn, nc, nr, max_fig_inches)
   ggsave(filename, p,
          width  = dims$width,
          height = dims$height,

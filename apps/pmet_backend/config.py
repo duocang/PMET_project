@@ -71,6 +71,16 @@ class Config:
     NCPU: int = 4
     NGINX_LINK: str = ""
 
+    # Liveness watchdog: a running task whose progress.json hasn't been
+    # touched for this many seconds is killed and marked failed by the
+    # watchdog container. Default 900 s (15 min) — conservative because
+    # progress is currently emitted at stage boundaries and a single big
+    # pair-test stage on CIS-BP2 can take ~10 min on its own. Bump per
+    # deployment if you have very large libraries.
+    LIVENESS_TIMEOUT_SEC: int = field(
+        default_factory=lambda: int(os.environ.get("PMET_LIVENESS_TIMEOUT_SEC", "900"))
+    )
+
     # Admin auth + behaviour. ADMIN_TOKEN comes from
     # data/configure/admin_token.txt (gitignored, single line). Empty token
     # means admin features are disabled — no one can log in.

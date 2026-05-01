@@ -56,6 +56,35 @@ services:
         condition: service_healthy
     command: celery -A pmet_backend.worker.celery_app worker --loglevel=info --concurrency=2
 
+  liveness-watchdog:
+    # Side process that scans results/app/<task_id>/progress.json and
+    # kills any task that hasn't emitted progress within the threshold.
+    # Runs in its own container so it can fire even when celery worker
+    # slots are saturated by stuck tasks. Shares the worker's PID
+    # namespace (`pid: service:worker`) so psutil can see and signal
+    # the bash subprocess tree the worker spawns.
+    build:
+      context: ../
+      dockerfile: apps/pmet_backend/Dockerfile
+      args:
+        PMET_REF: ${PMET_REF:-main}
+    environment:
+      - PMET_RESULT_DIR_REL=results
+      - PMET_LIVENESS_TIMEOUT_SEC=900
+      - PMET_WATCHDOG_POLL_SEC=60
+    volumes:
+      - ../apps/pmet_backend:/app/pmet_backend
+      - ../scripts:/app/scripts
+      - ../data:/app/data
+      - ../results/app:/app/results
+    pid: "service:worker"
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
+    command: python -m pmet_backend.worker.watchdog
+
   frontend:
     build:
       context: ../apps/pmet_frontend
