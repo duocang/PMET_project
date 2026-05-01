@@ -82,6 +82,16 @@ public:
   // path so unit tests can exercise the IC-overlap math without
   // crafting a fimohits file. Production code never calls this.
   static motif makeForTest(const std::string& name, const std::vector<double>& ic);
+  // Test-only: same as makeForTest plus a sorted gene-id vector and an
+  // immediately-built MinHash sketch. Used by sketch / Jaccard tests.
+  static motif makeForTestWithGenes(const std::string& name, const std::vector<double>& ic,
+                                    const std::vector<GeneId>& geneIds);
+  // Test-only: append one motifInstance under the given gene. Lets
+  // tests that exercise per-gene logic (geometricBinomialTest, etc.)
+  // assemble a motif's hit list without going through fimohits I/O.
+  void addInstanceForTest(GeneId gene, const motifInstance& inst) {
+    instances[gene].push_back(inst);
+  }
 
 private:
   // Shared post-load step for both readFimoFile (text) and readBinaryFimoFile:

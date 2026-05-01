@@ -269,6 +269,15 @@ motif motif::makeForTest(const std::string& name, const std::vector<double>& ic)
   return m;
 }
 
+motif motif::makeForTestWithGenes(const std::string& name, const std::vector<double>& ic,
+                                   const std::vector<GeneId>& geneIds) {
+  motif m = makeForTest(name, ic);
+  m.sortedGeneIDs = geneIds;
+  std::sort(m.sortedGeneIDs.begin(), m.sortedGeneIDs.end());
+  m.buildMinHashSketch();
+  return m;
+}
+
 void motif::setMotifName(const std::string& motif) {
   motifName = motif;
 }
