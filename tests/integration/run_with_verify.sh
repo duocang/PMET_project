@@ -15,7 +15,7 @@
 #   4. Exits non-zero on any unexpected change.
 #
 # This is the single supported entrypoint for the "modify → run → verify"
-# loop required before commit (repo-guide.md §11, §13).
+# loop required before commit.
 
 set -uo pipefail
 

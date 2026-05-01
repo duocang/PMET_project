@@ -1,9 +1,9 @@
 # Naming Conventions
 
 This document is the single source of truth for how files in this repository
-are named. repo-guide.md references it; new code must follow it; existing files
-that violate it are listed here as "grandfathered" and should be touched only
-when their contents change for an unrelated reason.
+are named. New code must follow it; existing files that violate it are listed
+here as "grandfathered" and should be touched only when their contents change
+for an unrelated reason.
 
 The goals are:
 
@@ -20,7 +20,6 @@ The goals are:
 pmet_analysis_pipeline/
 ├── run.sh                      # User-facing launcher (root for visibility)
 ├── readme.md                   # Project overview
-├── repo-guide.md                   # Long-running agent operating rules
 ├── LICENSE.md
 ├── TODO.md
 ├── .gitignore
@@ -33,7 +32,7 @@ pmet_analysis_pipeline/
 │   ├── lib/                    # Shell helpers (print_colors.sh, timer.sh)
 │   ├── indexing/               # Indexer wrappers used by pipelines
 │   ├── gff3sort/               # Vendored Perl tool
-│   ├── archive/                # Retired scripts (kept for reference per repo-guide.md)
+│   ├── archive/                # Retired scripts (kept for reference)
 │   ├── fetch_reference.sh         # One-off data download
 │   └── temp/                   # Local scratch (gitignored)
 │
@@ -154,7 +153,7 @@ Existing files that violate this (mixed case, mixed scripts) are
 grandfathered. Rename only when the file is being substantively edited
 anyway.
 
-Root-level docs (`readme.md`, `repo-guide.md`, `LICENSE.md`, `TODO.md`) are
+Root-level docs (`readme.md`, `LICENSE.md`, `TODO.md`) are
 exceptions — community convention dominates over local style.
 
 ## 8. results/

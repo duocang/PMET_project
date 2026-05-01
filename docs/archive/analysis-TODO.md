@@ -63,4 +63,4 @@ been here longer than a quarter, either close it or delete it.
   `scripts/tests/baselines/<NN>_baseline.hashes.txt`. Use
   `scripts/tests/run_with_verify.sh <NN> [<element>]` before committing.
 - Naming: see `docs/naming_conventions.md`.
-- Commit discipline: see `repo-guide.md` §14.
+- Commit discipline: small, single-purpose commits with conventional prefixes.

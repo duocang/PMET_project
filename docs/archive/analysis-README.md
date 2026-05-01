@@ -22,7 +22,7 @@ This visualization serves as an effective tool for exploring the interactions be
 ```
 .
 ├── run.sh                  # Interactive pipeline launcher
-├── readme.md / repo-guide.md / TODO.md / LICENSE.md
+├── readme.md / TODO.md / LICENSE.md
 ├── data/                   # Input data (genome, motifs, gene lists)
 ├── build/                  # Compiled binaries (pmet, pmetParallel, fimo, etc.)
 ├── results/                # All run outputs (gitignored)

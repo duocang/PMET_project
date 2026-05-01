@@ -254,6 +254,6 @@ worker_concurrency = max(1, multiprocessing.cpu_count() // 2)
 
 ### 仓库小整理
 
-- `data/configure/` 语义上属于部署期配置 → 该挪到 `deploy/configure/`（影响 4 处引用），等当前手头工作收尾后做
-- `core/indexing/{c,cpp}/scripts/{run,run_interval,debug_run}.sh` 写到 `$PROJECT_DIR/result/`（引擎本地），未集成到 monorepo `results/` —— 要么集成、要么文档说明这些是 throwaway dev-only
-- `scripts/fetch_data.sh` 和 `scripts/fetch_reference.sh` 在 TAIR10 拉取部分有重复。今天可接受（不同调用语境），但 `fetch_data.sh` 可以调用 `fetch_reference.sh` 处理 TAIR10 部分
+- `data/configure/` 语义上属于部署期配置 → 该挪到 `deploy/configure/`（实际引用 ~30 处：backend/frontend/README/docs），等当前手头工作收尾后做
+- ~~`core/indexing/{c,cpp}/scripts/{run,run_interval,debug_run}.sh` 写到 `$PROJECT_DIR/result/`（引擎本地），未集成到 monorepo `results/` —— 要么集成、要么文档说明这些是 throwaway dev-only~~ ✓ 已搬到 `core/legacy/indexing_{c,cpp}/scripts/`，按 legacy 命名空间约定即 throwaway dev-only
+- ~~`scripts/fetch_data.sh` 和 `scripts/fetch_reference.sh` 在 TAIR10 拉取部分有重复。今天可接受（不同调用语境），但 `fetch_data.sh` 可以调用 `fetch_reference.sh` 处理 TAIR10 部分~~ ✓ `fetch_data.sh` TAIR10 部分已委托给 `fetch_reference.sh`（[scripts/fetch_data.sh:30-31](scripts/fetch_data.sh#L30-L31)）

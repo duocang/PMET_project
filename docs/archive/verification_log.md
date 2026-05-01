@@ -2,7 +2,7 @@
 
 This file records baselines, behavior-preserving refactors, and intentional
 scientific changes for the PMET pipeline. Each meaningful change appends a
-section with the schema described in `repo-guide.md` (section 9).
+section with the schema described in the project conventions doc (section 9).
 
 Real measured values only — no estimated runtimes, hashes, or memory.
 
@@ -233,7 +233,7 @@ intended scientific bug fix, not a regression.
 - Status: PASS (P0-02), with the FASTA hash change classified as EXPECTED CHANGE
 - Unverified: end-to-end pipeline/02 grid downstream of the FASTA stage (FIMO + pmet); skipped due to grid size (see entry above for justification)
 - Risk: low for the *direction* of the change (strand fix is unambiguous and matches pipeline/03), medium for *downstream cascading effects* — every binomial threshold, FIMO p-value, IC selection, and binomial pair p-value computed by pipeline/02 will shift for every minus-strand gene. Anyone re-running pipeline/02 after this commit must treat all `02_benchmark_parameters` outputs as new science, not a regression
-- Next: stage commits in the order suggested by `repo-guide.md` and stop
+- Next: stage commits in the suggested order and stop
 
 
 
@@ -905,7 +905,7 @@ pairs that the unique filter must remove).
 
 - `docs/naming_conventions.md` (new) — single source of truth for layout
   and naming.
-- `repo-guide.md` — refreshed to match the new layout and the
+- The project conventions doc — refreshed to match the new layout and the
   "modify → run → verify" workflow; references `docs/naming_conventions.md`.
 - `pipeline/* → scripts/pipeline/*` (git mv); 06/07/08 renamed:
   - `06_genomic_elements_longest_isoform.sh` → `06_elements_longest.sh`
@@ -1455,7 +1455,7 @@ small genes might not annotate as separate CDS rows).
   added; results-dir paths updated.
 - `scripts/tests/run_smoke.sh`: chromosome-preflight check now also
   scans `05_promoter_gap.sh`.
-- Docs (`repo-guide.md`, `docs/naming_conventions.md`, `readme.md`,
+- Docs (`docs/naming_conventions.md`, `readme.md`,
   `TODO.md`, `run.sh` menu, `scripts/python/build_promoters.py` header
   comment): all `08_promoter_gap` references replaced with `05_*`; the
   "do not reuse 05" rule retired (numbers are contiguous again).
@@ -1725,8 +1725,8 @@ bash scripts/tests/run_pipeline02_one_combo.sh
 External AI review on 2026-04-26 also flagged
 "旧入口 `pipeline/*.sh` 删除会破坏外部脚本/任务"。Decision: do NOT
 add compatibility wrappers. The reorg was an explicitly requested user
-change (this repo is local research code, no external API), repo-guide.md
-§3 authorizes the rename, and run.sh + readme + naming_conventions
+change (this repo is local research code, no external API), the
+project conventions authorize the rename, and run.sh + readme + naming_conventions
 were updated atomically. Adding `pipeline/*.sh → scripts/pipeline/*.sh`
 shims would re-clutter the directory we deliberately cleaned.
 
@@ -2010,11 +2010,11 @@ bash scripts/tests/verify_baseline.sh \
 |---|---:|---:|---:|---|
 | `bash scripts/tests/run_with_verify.sh 03` (post-fix) | 0 | 98.84 s | 630 MB | full 03 + verify; pipeline only ≈ 84 s |
 | `bash scripts/pipeline/03_promoter.sh` (post-fix, repro) | 0 | ~84 s | ~630 MB | identical hashes to first run |
-| baseline-era 03 (per repo-guide.md §11) | — | ~76 s | — | recorded historically |
+| baseline-era 03 | — | ~76 s | — | recorded historically |
 
 The ~8 s delta against the historical 76 s baseline is within
 measurement variance (4 threads, warm vs cold caches) and falls
-inside repo-guide.md §11's tolerance for "small wall-time drift on
+inside the conventional tolerance for "small wall-time drift on
 behaviour-preserving refactors".
 
 ### Result Hashes
@@ -2258,7 +2258,7 @@ EXPECTED CHANGE (multi-source, all documented above):
 
 User asked to keep the cross-project layout consistent. shiny's `intervals_index_pair.sh` already inlines this logic; we were the outlier. Side benefits:
 
-- Replace shell `for meme_file in memefiles/*.txt; do index_fimo_fused & done; wait` (fork-N processes, each spawns its own OMP team → CPU oversubscription) with a single OMP-batched call. Matches repo-guide.md §7 P2 item 4 ("FIMO batching has multiple implementations").
+- Replace shell `for meme_file in memefiles/*.txt; do index_fimo_fused & done; wait` (fork-N processes, each spawns its own OMP team → CPU oversubscription) with a single OMP-batched call. Matches the noted P2 item ("FIMO batching has multiple implementations").
 - Drop the dead `((n++))` + nondeterministic write-order pattern.
 - Stop polluting `data/homotypic_intervals/` with `intervals_temp.fa`; sanitized FASTA now lives under `results/` and is cleaned up.
 - Cleaner output dir: `memefiles/` is no longer left behind for the user to see (it only existed to feed `calculateICfrommeme_IC_to_csv.py`).
@@ -2565,7 +2565,7 @@ bash scripts/tests/run_with_verify.sh 08    # OK 12 files
 
 ### Naming convention impact
 
-repo-guide.md §4 lists pipelines `00..07` as contiguous; this commit extends the active set to `00..08`. `docs/naming_conventions.md` should be updated in a follow-up to reflect this (deferred — not needed to make 08 work).
+The active pipeline set was previously `00..07`; this commit extends it to `00..08`. `docs/naming_conventions.md` should be updated in a follow-up to reflect this (deferred — not needed to make 08 work).
 
 ### Verification Summary
 
@@ -2584,7 +2584,7 @@ repo-guide.md §4 lists pipelines `00..07` as contiguous; this commit extends th
 ### Why now
 
 Two follow-ups identified at the close of the 08 add (verification log entry "Add pipeline 08"):
-1. `docs/naming_conventions.md` should be the single source of truth for active pipelines (repo-guide.md §22 says `repo-guide.md` is local agent guidance, so `naming_conventions.md` is the user-facing record).
+1. `docs/naming_conventions.md` should be the single source of truth for active pipelines (it is the user-facing record).
 2. Parameter sweeps are 08's killer use case — wrap it in a thin convenience script before users hand-roll one.
 
 ### Sweep wrapper design

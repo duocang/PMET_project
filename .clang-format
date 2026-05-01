@@ -9,7 +9,7 @@
 
 BasedOnStyle: LLVM
 
-# Indentation: project uses 2 spaces (repo-guide.md global rule + existing code).
+# Indentation: project uses 2 spaces.
 IndentWidth: 2
 TabWidth: 2
 UseTab: Never

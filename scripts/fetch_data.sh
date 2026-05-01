@@ -23,26 +23,12 @@ mkdir -p "$REF_DIR" "$INDEX_DIR"
 
 log() { printf '\n>>> %s\n' "$*"; }
 
-# Download a .gz URL and decompress to the given final path.
-download_gz() {
-    local url=$1 out=$2
-    if [[ -s $out ]]; then
-        log "Already have $(basename "$out"), skipping"
-        return
-    fi
-    log "Downloading $(basename "$out")"
-    curl -fL --progress-bar "$url" -o "$out.gz"
-    gunzip -f "$out.gz"
-}
-
 # ---- TAIR10 reference (Arabidopsis thaliana) ----
-download_gz \
-    "https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-56/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz" \
-    "$REF_DIR/TAIR10.fasta"
-
-download_gz \
-    "https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-56/gff3/arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.56.gff3.gz" \
-    "$REF_DIR/TAIR10.gff3"
+# Delegated to fetch_reference.sh — single source of truth for URLs +
+# gunzip semantics. fetch_reference.sh writes to the same data/reference
+# path, so anything we do downstream sees the same files.
+log "Fetching TAIR10 reference"
+bash "$SCRIPT_DIR/fetch_reference.sh"
 
 # ---- Pre-computed PMET indexing archives (Zenodo) ----
 urls=(
