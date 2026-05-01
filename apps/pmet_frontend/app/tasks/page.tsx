@@ -186,12 +186,21 @@ function TasksPageInner() {
             />
             <button
               onClick={handleSearch}
-              className="btn-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={!isAdmin && !searchInput.trim()}
             >
               {t('tasks.search.button')}
             </button>
           </div>
+          {/* Stale-input hint: results below correspond to ?q=, but the
+              user has edited the box without re-submitting. Surface that
+              gap so the list isn't silently misaligned with the search
+              text. Cheap visual cue, no new behavior. */}
+          {searchInput.trim() !== urlQuery && (
+            <p className="mt-1 text-xs text-amber-700">
+              {t('tasks.search.stale_hint')}
+            </p>
+          )}
         </div>
 
         {isAdmin && (
@@ -253,6 +262,16 @@ function TasksPageInner() {
           </div>
         )}
       </div>
+
+      {/* What query the list below actually represents. Search is
+          submit-only, so we surface the "active query" explicitly to
+          stop the input box and the rendered list from silently
+          drifting apart in the user's mental model. */}
+      {urlQuery && !showEmpty && (
+        <p className="mb-3 text-xs text-slate-500">
+          {t('tasks.results_for')} <span className="font-mono text-slate-700">{urlQuery}</span>
+        </p>
+      )}
 
       {showEmpty ? (
         <div className="text-center py-12 text-slate-500">{t('tasks.empty.no_query')}</div>
