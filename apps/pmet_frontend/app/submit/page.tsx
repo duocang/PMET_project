@@ -22,6 +22,7 @@ import {
 } from '@/lib/api';
 import { useSettingsStore, useTaskStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
+import type { TranslationKey } from '@/lib/translations';
 import { formatRuntimeRange } from '@/lib/runtime';
 
 function SubmitPageContent() {
@@ -30,7 +31,16 @@ function SubmitPageContent() {
   const searchParams = useSearchParams();
   const urlMode = searchParams.get('mode') as AnalysisMode | null;
 
-  const { mode, setMode, email, setEmail } = useSettingsStore();
+  // Form state lives in the settings store (in-memory) so it survives
+  // SPA navigation — leaving /submit and coming back used to clear
+  // species / motif-DB / file picks because the page-level useState
+  // unmounted with the route. Only `mode` reaches localStorage; the
+  // rest stays in-memory.
+  const {
+    mode, setMode, email, setEmail,
+    filesByMode, pathsByMode, speciesByMode,
+    updateFilesForMode, updatePathsForMode, setSpeciesForMode,
+  } = useSettingsStore();
   const { setLoading, addTask } = useTaskStore();
 
   const [params, setParams] = useState({
@@ -43,48 +53,15 @@ function SubmitPageContent() {
     promoters_overlap: 'NoOverlap' as string,
   });
 
-  // Per-mode file state — uploads from one analysis mode stay in that mode
-  // and aren't visible after the user switches (and come back intact if
-  // they switch back).
-  type ModeFiles = {
-    genes: File | null;
-    fasta: File | null;
-    gff3: File | null;
-    meme: File | null;
-    premade_index: string;
-  };
-  type ModePaths = { genes: string; fasta: string; gff3: string; meme: string };
   type FileFieldType = 'genes' | 'fasta' | 'gff3' | 'meme';
-
-  const emptyFiles: ModeFiles = { genes: null, fasta: null, gff3: null, meme: null, premade_index: '' };
-  const emptyPaths: ModePaths = { genes: '', fasta: '', gff3: '', meme: '' };
-
-  const [filesByMode, setFilesByMode] = useState<Record<AnalysisMode, ModeFiles>>({
-    promoters_pre: { ...emptyFiles },
-    promoters: { ...emptyFiles },
-    intervals: { ...emptyFiles },
-  });
-  const [pathsByMode, setPathsByMode] = useState<Record<AnalysisMode, ModePaths>>({
-    promoters_pre: { ...emptyPaths },
-    promoters: { ...emptyPaths },
-    intervals: { ...emptyPaths },
-  });
-  const [speciesByMode, setSpeciesByMode] = useState<Record<AnalysisMode, string>>({
-    promoters_pre: '',
-    promoters: '',
-    intervals: '',
-  });
 
   const files = filesByMode[mode];
   const uploadedPaths = pathsByMode[mode];
   const selectedSpecies = speciesByMode[mode];
 
-  const updateFiles = (patch: Partial<ModeFiles>) =>
-    setFilesByMode((prev) => ({ ...prev, [mode]: { ...prev[mode], ...patch } }));
-  const updatePaths = (patch: Partial<ModePaths>) =>
-    setPathsByMode((prev) => ({ ...prev, [mode]: { ...prev[mode], ...patch } }));
-  const setSelectedSpecies = (v: string) =>
-    setSpeciesByMode((prev) => ({ ...prev, [mode]: v }));
+  const updateFiles = (patch: Partial<typeof files>) => updateFilesForMode(mode, patch);
+  const updatePaths = (patch: Partial<typeof uploadedPaths>) => updatePathsForMode(mode, patch);
+  const setSelectedSpecies = (v: string) => setSpeciesForMode(mode, v);
 
   const [submitting, setSubmitting] = useState(false);
   const [indexingEntries, setIndexingEntries] = useState<IndexingEntry[]>([]);
@@ -227,8 +204,8 @@ function SubmitPageContent() {
   ) => {
     try {
       const result = await fileApi.upload(file, fileType, uploadSessionId, onProgress);
-      updatePaths({ [fileType]: result.path } as Partial<ModePaths>);
-      updateFiles({ [fileType]: file } as Partial<ModeFiles>);
+      updatePaths({ [fileType]: result.path });
+      updateFiles({ [fileType]: file });
     } catch (error) {
       throw error;
     }
@@ -242,11 +219,11 @@ function SubmitPageContent() {
       // server-side failure.
       try { await fileApi.deleteUpload(path); }
       finally {
-        updatePaths({ [fileType]: '' } as Partial<ModePaths>);
-        updateFiles({ [fileType]: null } as Partial<ModeFiles>);
+        updatePaths({ [fileType]: '' });
+        updateFiles({ [fileType]: null });
       }
     } else {
-      updateFiles({ [fileType]: null } as Partial<ModeFiles>);
+      updateFiles({ [fileType]: null });
     }
   };
 
@@ -378,10 +355,12 @@ function SubmitPageContent() {
     <div className="max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">{t('submit.title')}</h1>
 
-      {/* Mode Selection */}
+      {/* Mode Selection — buttons say what the user provides; a short
+          subtitle below the active button explains it in one line, and
+          a collapsible details block expands the full when-to-pick. */}
       <div className="card mb-6">
         <h3 className="text-lg font-semibold mb-4">{t('submit.mode.heading')}</h3>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           {(['promoters_pre', 'promoters', 'intervals'] as AnalysisMode[]).map((m) => (
             <button
               key={m}
@@ -396,6 +375,18 @@ function SubmitPageContent() {
             </button>
           ))}
         </div>
+        <p className="mt-3 text-sm text-slate-600">
+          {t(`submit.mode.${mode}.subtitle` as TranslationKey)}
+        </p>
+        <details className="mt-2 group">
+          <summary className="cursor-pointer select-none text-xs font-medium text-slate-500 hover:text-slate-700">
+            <span className="group-open:hidden">{t('submit.mode.show_details')}</span>
+            <span className="hidden group-open:inline">{t('submit.mode.hide_details')}</span>
+          </summary>
+          <p className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
+            {t(`submit.mode.${mode}.details` as TranslationKey)}
+          </p>
+        </details>
       </div>
 
       {/* Email */}

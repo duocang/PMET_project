@@ -41,14 +41,17 @@ const en = {
   'home.modes.heading': 'Choose the run that matches your inputs',
   'home.modes.summary':
     'PMET keeps fast pre-indexed workflows and fully custom uploads in the same interface, so users can move from screening to bespoke analysis without changing tools.',
-  'home.mode.promoters_pre.title': 'Pre-computed Promoters',
-  'home.mode.promoters_pre.desc': 'Use indexed motif databases for plant species. Fastest path when a gene list is your main input.',
+  // Title + desc kept verbatim in sync with submit.mode.<x> +
+  // submit.mode.<x>.subtitle so the same words greet the user on the
+  // landing card and again at the top of the form they navigate into.
+  'home.mode.promoters_pre.title': 'Use Built-in Species',
+  'home.mode.promoters_pre.desc': 'Pick a pre-indexed plant species + motif database; just upload a gene list. Fastest path.',
   'home.mode.promoters_pre.action': 'Start Analysis',
-  'home.mode.promoters.title': 'Full Promoters',
-  'home.mode.promoters.desc': 'Upload genome, annotation, motif database, and gene list for a fully custom promoter run.',
+  'home.mode.promoters.title': 'Bring Your Own Genome',
+  'home.mode.promoters.desc': 'Build the index from your own genome FASTA + GFF3. Use this for unsupported species or custom promoter parameters.',
   'home.mode.promoters.action': 'Build Custom Run',
-  'home.mode.intervals.title': 'Intervals',
-  'home.mode.intervals.desc': 'Analyze ChIP-seq peaks, ATAC regions, or other genomic intervals against a motif database.',
+  'home.mode.intervals.title': 'Peak / Interval Sequences',
+  'home.mode.intervals.desc': 'Run motif co-occurrence on arbitrary regions (ATAC-seq / ChIP-seq peaks, etc.); skips the promoter-extraction step.',
   'home.mode.intervals.action': 'Analyze Intervals',
   'home.mode.visualize.title': 'Visualize Results',
   'home.mode.visualize.desc': 'Open existing PMET output files as interactive heatmaps, histograms, and searchable tables.',
@@ -138,9 +141,23 @@ const en = {
   // submit
   'submit.title': 'Submit New Analysis',
   'submit.mode.heading': 'Analysis Mode',
-  'submit.mode.promoters_pre': 'Pre-computed Promoters',
-  'submit.mode.promoters': 'Full Promoters',
-  'submit.mode.intervals': 'Intervals',
+  // Button labels prioritise "what the user provides" over the internal
+  // technical name (pre-computed / full / intervals). The corresponding
+  // mode.<x> keys above stay as the descriptive names used on task badges.
+  'submit.mode.promoters_pre': 'Use Built-in Species',
+  'submit.mode.promoters': 'Bring Your Own Genome',
+  'submit.mode.intervals': 'Peak / Interval Sequences',
+  'submit.mode.promoters_pre.subtitle': 'Pick a pre-indexed plant species + motif database; just upload a gene list. Fastest path.',
+  'submit.mode.promoters.subtitle': 'Build the index from your own genome FASTA + GFF3. Use this for unsupported species or custom promoter parameters.',
+  'submit.mode.intervals.subtitle': 'Run motif co-occurrence on arbitrary regions (ATAC-seq / ChIP-seq peaks, etc.); skips the promoter-extraction step.',
+  'submit.mode.promoters_pre.details':
+    "The fastest mode. We've pre-scanned motifs across 21 plant species against 5 motif databases (CIS-BP2, JASPAR, PlantTFDB, Plant Cistrome DB, Franco-Zorrilla et al.) — about 16 GB on disk. You only provide a gene list (with optional cluster labels) and pick species + motif DB. Pair-enrichment runs in seconds to a few minutes depending on motif library size. Pick this when your species is on our list AND you're OK with our promoter definition (1 kb upstream + optional 5′ UTR). Most users start here.",
+  'submit.mode.promoters.details':
+    'Build the homotypic motif index from scratch on your own data, then run pair enrichment. You provide a genome FASTA, a GFF3 annotation, a MEME motif file, and a gene list. The indexing stage scans every motif against every promoter (~2 min wall on TAIR10 + 113 motifs at 4 threads). Pick this when your species isn\'t in the pre-built list, or you want to override our promoter definition (different upstream length, different UTR handling, custom GFF3, custom motif set).',
+  'submit.mode.intervals.details':
+    'Skips the "promoter" concept entirely. You provide a FASTA where each record is one genomic region (e.g. one ChIP-seq / ATAC-seq peak), plus your own MEME motifs and a regions list with optional cluster labels. Pick this when you\'re working with peaks, conserved elements, enhancer regions — anything that isn\'t a gene promoter. The motif co-occurrence test is statistically identical to the other modes; only the universe differs (your regions instead of gene promoters).',
+  'submit.mode.show_details': 'Show details',
+  'submit.mode.hide_details': 'Hide details',
   'submit.email.label': 'Email Address *',
   'submit.email.placeholder': 'your@email.com',
   'submit.email.help': 'Results will be sent to this email',
@@ -471,14 +488,16 @@ const zh: Record<keyof typeof en, string> = {
   'home.modes.eyebrow': '分析入口',
   'home.modes.heading': '选择与你输入匹配的运行模式',
   'home.modes.summary': 'PMET 在同一界面下既提供快速的预索引工作流，也支持完全自定义上传，从筛查到定制分析无需切换工具。',
-  'home.mode.promoters_pre.title': '预计算启动子',
-  'home.mode.promoters_pre.desc': '使用为植物物种预先索引好的 motif 数据库。当基因列表是主要输入时，这是最快的路径。',
+  // 与 submit.mode.<x> + submit.mode.<x>.subtitle 完全同款文案，让首页
+  // 卡片和表单顶端给用户的提示一致。
+  'home.mode.promoters_pre.title': '使用内置物种',
+  'home.mode.promoters_pre.desc': '选预先索引好的植物物种 + motif 库，只需上传基因列表。最快路径。',
   'home.mode.promoters_pre.action': '开始分析',
-  'home.mode.promoters.title': '完整启动子流程',
-  'home.mode.promoters.desc': '上传基因组、注释、motif 数据库和基因列表，完成完全自定义的启动子运行。',
+  'home.mode.promoters.title': '上传基因组',
+  'home.mode.promoters.desc': '用你自己的基因组 FASTA + GFF3 现场建索引。适合非支持物种或需要自定义启动子参数的场景。',
   'home.mode.promoters.action': '构建自定义运行',
-  'home.mode.intervals.title': '任意区间',
-  'home.mode.intervals.desc': '针对 motif 数据库分析 ChIP-seq peak、ATAC 区段或其它基因组区间。',
+  'home.mode.intervals.title': 'Peak / 区段序列',
+  'home.mode.intervals.desc': '在任意基因组区段（ATAC peak、ChIP-seq peak 等）上跑 motif 共现分析，跳过启动子提取步骤。',
   'home.mode.intervals.action': '分析区间',
   'home.mode.visualize.title': '可视化结果',
   'home.mode.visualize.desc': '把已有的 PMET 输出文件打开成交互式 heatmap、histogram 和可搜索的表格。',
@@ -565,9 +584,22 @@ const zh: Record<keyof typeof en, string> = {
   // submit
   'submit.title': '提交新分析',
   'submit.mode.heading': '分析模式',
-  'submit.mode.promoters_pre': '预计算启动子',
-  'submit.mode.promoters': '完整启动子流程',
-  'submit.mode.intervals': '任意区间',
+  // 按钮标签按"用户提供什么"来取名，避免 pre-computed / full / intervals
+  // 这种内部术语；上面 mode.<x> 仍是任务卡片用的描述名，保持不变。
+  'submit.mode.promoters_pre': '使用内置物种',
+  'submit.mode.promoters': '上传基因组',
+  'submit.mode.intervals': 'Peak / 区段序列',
+  'submit.mode.promoters_pre.subtitle': '选预先索引好的植物物种 + motif 库，只需上传基因列表。最快路径。',
+  'submit.mode.promoters.subtitle': '用你自己的基因组 FASTA + GFF3 现场建索引。适合非支持物种或需要自定义启动子参数的场景。',
+  'submit.mode.intervals.subtitle': '在任意基因组区段（ATAC peak、ChIP-seq peak 等）上跑 motif 共现分析，跳过启动子提取步骤。',
+  'submit.mode.promoters_pre.details':
+    '最快的模式。我们已经为 21 个植物物种、5 个 motif 数据库（CIS-BP2、JASPAR、PlantTFDB、Plant Cistrome DB、Franco-Zorrilla et al.）预先扫好了 motif 命中——磁盘占用约 16 GB。你只需提供基因列表（可选 cluster 标签）+ 选物种 + 选 motif 库。Pair-enrichment 几秒到几分钟内完成（取决于 motif 库大小）。何时选这个：物种在我们的列表里，且你接受默认的启动子定义（上游 1 kb + 可选 5′ UTR）。绝大多数用户从这里开始。',
+  'submit.mode.promoters.details':
+    '用你自己的数据从头建立同型 motif 索引，再跑 pair enrichment。需要上传：基因组 FASTA、GFF3 注释、MEME motif 文件、基因列表。建索引阶段会对每个 motif 在每个启动子上扫描（TAIR10 + 113 个 motif 在 4 线程下约 2 分钟）。何时选这个：物种不在预计算列表里，或你想覆盖默认的启动子定义（不同上游长度、不同 UTR 处理、自定义 GFF3、自定义 motif 库）。',
+  'submit.mode.intervals.details':
+    '完全跳过"启动子"概念。你提供一个 FASTA——每条记录是一个基因组区段（例如一个 ChIP-seq / ATAC-seq peak），加上自己的 MEME motif 文件和带可选 cluster 标签的区段列表。何时选这个：在 peak、保守区段、增强子区段——任何非启动子的区段上工作。motif 共现的统计逻辑和其它模式完全一样，只是 universe 是你的 peak 而不是基因启动子。',
+  'submit.mode.show_details': '查看详细说明',
+  'submit.mode.hide_details': '收起详细说明',
   'submit.email.label': '邮箱地址 *',
   'submit.email.placeholder': 'your@email.com',
   'submit.email.help': '结果会发送到这个邮箱',
