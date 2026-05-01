@@ -10,6 +10,7 @@ import {
   EXAMPLE_GFF3,
   EXAMPLE_MEME,
   EXAMPLE_GENE_LIST,
+  EXAMPLE_PEAK_LIST,
 } from '@/lib/fileExamples';
 import { AnalysisMode, EstimateResponse } from '@/lib/types';
 import {
@@ -685,8 +686,8 @@ function SubmitPageContent() {
               demoUrl={`/api/demo/${mode}/genes`}
               demoFilename={mode === 'intervals' ? 'peaks.txt' : 'genes_cell_type_treatment.txt'}
               previewTitle={t(mode === 'intervals' ? 'submit.preview.peaks_title' : 'submit.preview.gene_list_title')}
-              previewNote={t('submit.preview.gene_list_note')}
-              previewContent={EXAMPLE_GENE_LIST}
+              previewNote={t(mode === 'intervals' ? 'submit.preview.peaks_note' : 'submit.preview.gene_list_note')}
+              previewContent={mode === 'intervals' ? EXAMPLE_PEAK_LIST : EXAMPLE_GENE_LIST}
             />
           </div>
         </div>

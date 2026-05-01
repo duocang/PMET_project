@@ -64,6 +64,19 @@ pericycle\tAT5G19880
 …
 `;
 
+// Same two-column shape as the gene list, but the second column is a
+// genomic interval name (chr:start-end(strand)) rather than a gene ID.
+// Drawn from data/demos/intervals/indexing/peaks.txt so users see the
+// exact form the indexing pipeline expects.
+export const EXAMPLE_PEAK_LIST = `U\t1:2631-3760(+)
+U\t1:8666-10130(-)
+U\t1:12940-14714(-)
+U\t1:22121-23519(+)
+U\t1:32670-33365(-)
+U\t1:37061-38444(-)
+…
+`;
+
 export interface FileExample {
   title: string;
   content: string;
