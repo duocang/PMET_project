@@ -52,6 +52,12 @@ class TaskResponse(BaseModel):
     mode: TaskMode
     email: str
     result_link: Optional[str] = None
+    # Set when status==failed but the pairing stage finished and
+    # motif_output.txt is on disk. Lets the user download partial
+    # scientific output even after the late-stage (heatmap / zip)
+    # crash that flipped the task to failed. Points at
+    # /api/tasks/<id>/partial-result.
+    partial_result_link: Optional[str] = None
     created_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None

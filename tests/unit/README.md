@@ -39,6 +39,26 @@ the unit-test refactor); this test verifies:
 - extreme inputs (1000 motifs × 100 rows) still cap
 - `max_inches` is configurable
 
+### `test_partial_result_link.py`
+
+Covers Problem 4 short-term fix in `TODO.md` — the partial-result
+rescue link. PMET writes `<task_id>/pairing/motif_output.txt` before
+the R heatmap and the zip stage; either of those late stages can fail
+and flip the task to `failed`, hiding the scientific output that's
+already on disk. The fix exposes a separate
+`/api/tasks/{id}/partial-result` link when the file exists, without
+changing `status` (so the failure remains visible).
+
+Tests use `fastapi.TestClient` to drive the route handler with config
+patched to a tmp dir:
+
+- `_locate_motif_output` returns Path / None / None on present /
+  missing / empty file
+- `GET /tasks/{id}` surfaces `partial_result_link` only when
+  `status==failed` AND `motif_output.txt` exists
+- `GET /tasks/{id}/partial-result` streams the TSV with a sensible
+  filename, 404s when the file or the task is missing
+
 ### `test_watchdog_staleness.py`
 
 Covers the liveness watchdog (problem 2 in `TODO.md`). The watchdog

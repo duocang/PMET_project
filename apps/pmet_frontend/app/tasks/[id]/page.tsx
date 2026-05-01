@@ -130,6 +130,20 @@ export default function TaskDetailPage({ params }: PageProps) {
           </div>
         )}
 
+        {task.partial_result_link && (
+          <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+            <h3 className="mb-1 text-sm font-semibold text-amber-800">
+              {t('task.partial_available')}
+            </h3>
+            <p className="mb-2 text-sm text-amber-700">
+              {t('task.download_partial_help')}
+            </p>
+            <a href={task.partial_result_link} className="text-sm font-semibold text-amber-800 underline hover:text-amber-900">
+              {t('task.download_partial')}
+            </a>
+          </div>
+        )}
+
         {task.error_message && (
           <div className="mt-5 rounded-md bg-red-50 px-4 py-3">
             <h3 className="mb-1 text-sm font-semibold text-red-700">{t('task.error')}</h3>

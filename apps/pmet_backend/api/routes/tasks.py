@@ -251,6 +251,19 @@ def _runtime_estimate_response(inputs: dict) -> dict:
     }
 
 
+def _locate_motif_output(task_id: str) -> Optional[Path]:
+    """Return the path to motif_output.txt if the pairing stage produced
+    one for this task, else None.
+
+    Web tasks (promoters_pre / promoters / intervals) write to
+    `<task_dir>/pairing/motif_output.txt`. We only check that one
+    canonical location — Elements mode (CLI-only) uses a different
+    layout but is not exposed via the web API.
+    """
+    candidate = config.RESULT_DIR / task_id / "pairing" / "motif_output.txt"
+    return candidate if candidate.is_file() and candidate.stat().st_size > 0 else None
+
+
 def _kill_process_tree(pid: int) -> list[int]:
     """SIGTERM (then SIGKILL after 5s) the process and every descendant.
 
@@ -354,12 +367,22 @@ async def get_task(task_id: str):
         runtime_estimate = _runtime_estimate_response(task_data)
     index_summary = _premade_index_summary(task_data.get("premade_index"))
 
+    # Partial-result rescue: a task that crashed in the heatmap or zip
+    # step would normally be marked failed with no download surface,
+    # even though pairing wrote motif_output.txt. Expose a separate
+    # link in that case so the user can still grab the scientific
+    # payload. Status stays 'failed' so the failure remains visible.
+    partial_result_link: Optional[str] = None
+    if task_data.get("status") == "failed" and _locate_motif_output(task_id) is not None:
+        partial_result_link = f"/api/tasks/{task_id}/partial-result"
+
     return TaskResponse(
         task_id=task_data["task_id"],
         status=TaskStatus(task_data.get("status", "pending")),
         mode=TaskMode(task_data["mode"]),
         email=task_data["email"],
         result_link=result_link,
+        partial_result_link=partial_result_link,
         created_at=datetime.fromisoformat(task_data["created_at"]),
         started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
         completed_at=datetime.fromisoformat(task_data["completed_at"]) if task_data.get("completed_at") else None,
@@ -390,6 +413,26 @@ async def download_result(task_id: str):
     if not result_zip.exists():
         raise HTTPException(status_code=404, detail="Result not found")
     return FileResponse(result_zip, media_type="application/zip", filename=f"{task_id}.zip")
+
+
+@router.get("/{task_id}/partial-result")
+async def download_partial_result(task_id: str):
+    """Download motif_output.txt directly when the task was marked failed
+    but the pairing stage finished. Companion to the partial_result_link
+    field surfaced by GET /tasks/{id}. The task must be a known one (its
+    JSON exists); we do not check status — by the time the link reaches
+    the user, get_task already gated on status==failed."""
+    task_file = config.TASKS_DIR / f"{task_id}.json"
+    if not task_file.exists():
+        raise HTTPException(status_code=404, detail="Task not found")
+    motif_output = _locate_motif_output(task_id)
+    if motif_output is None:
+        raise HTTPException(status_code=404, detail="Partial result not available")
+    return FileResponse(
+        motif_output,
+        media_type="text/tab-separated-values",
+        filename=f"{task_id}_motif_output.txt",
+    )
 
 
 @router.get("", response_model=TaskListResponse)

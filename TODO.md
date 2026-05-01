@@ -11,7 +11,7 @@
 - ~~[问题 1：基因列表 cluster 多时，画图把整个任务拖死](#问题-1已修)~~
 - ~~[问题 2：CIS-BP2 这种大库，正常用户也会撞超时](#问题-2已修)~~
 - [问题 3：明知挂了还要机械重试 10 分钟](#问题-3)
-- [问题 4（meta）：`task.status` 是个骗子](#问题-4-meta)
+- [问题 4（meta）：`task.status` 是个骗子](#问题-4-meta) — 短期已修，长期仍在
 - [优先级建议](#优先级建议)
 - [其它 backlog（节奏未到）](#其它-backlog节奏未到)
 
@@ -125,10 +125,15 @@ permanent 失败 `raise self.retry()` 设 `max_retries=0`，或干脆 early retu
 - 矩阵测试和 manifest 重建脚本都被骗——把一批"假 fail"记成"完全失败"，但里面相当一部分只是 heatmap 失败、`motif_output.txt` 完整可用
 - 信任 API status 字段的所有 caller（poller、监控、外部脚本）都被坑
 
-**短期方案** ◐ 部分修
+**短期方案** ✓ 已修
 
 - ~~一次性 backfill 脚本：扫 `results/app/<id>/pairing/motif_output.txt` 是否存在，重建 manifest（已写在 `tmp_cli/fix_manifest.sh`）~~ — 矩阵测试当时用过，把假 fail 的 23+9 个任务正确翻成 success
-- **生产 API：未做**。`/api/tasks/{id}` 应该在 `status==failed` 且 `motif_output.txt` 存在时附 `partial_result_link`（不动 status，让失败仍可见）；前端任务详情页基于 `partial_result_link` 显示 "Download partial result" 按钮
+- ~~**生产 API**~~ ✓ 已落地：
+  - `apps/pmet_backend/api/routes/tasks.py` 加 `_locate_motif_output(task_id)` helper 和 `partial_result_link` 字段
+  - `GET /api/tasks/{id}`：当 `status==failed` 且 `<task>/pairing/motif_output.txt` 非空时，返回 `partial_result_link = /api/tasks/{id}/partial-result`（status 仍是 failed，失败本身依然可见）
+  - 新端点 `GET /api/tasks/{id}/partial-result`：直接 stream `motif_output.txt`，filename 写成 `<task_id>_motif_output.txt`
+  - 前端任务详情页（`apps/pmet_frontend/app/tasks/[id]/page.tsx`）在红色 Error 块**上方**单独显示一块 amber/琥珀色 banner（"Partial result available" 标题 + 解释文 + 下载链接），视觉上和错误本身分开 —— 一眼能看出"虽然失败但有东西能拿"，避免被红色吓住忽略下载按钮
+  - 单测在 `tests/unit/test_partial_result_link.py`（10 case，覆盖 helper + 路由 + 边界）
 
 **长期方案**：把 status 拆开
 
@@ -150,7 +155,7 @@ permanent 失败 `raise self.retry()` 设 `max_retries=0`，或干脆 early retu
 |---|---|---|---|
 | ~~P0~~ | ~~问题 1：R 端动态尺寸 + bash try-catch~~ | ~~半小时~~ | ~~~25% 假 failed 立刻翻为 success~~ ✓ commit `4fd9aa2` |
 | ~~P0~~ | ~~问题 2：celery time limit 调高 + 前端预警~~ | ~~1–2 小时~~ | ~~CIS-BP2 用户不再无故失败~~ ✓ liveness-watchdog 容器 + commit `5c64e63`（runtime estimate / progress） |
-| P1 | 问题 4 短期：`partial_result_link` API + 前端按钮 | 2–3 小时 | 历史 task 的部分产物可下载 |
+| ~~P1~~ | ~~问题 4 短期：`partial_result_link` API + 前端按钮~~ | ~~2–3 小时~~ | ~~历史 task 的部分产物可下载~~ ✓ 已修 + 单测 (`tests/unit/test_partial_result_link.py` 10 case) |
 | P1 | 问题 3：permanent vs transient 异常分类 | 1–2 小时 | worker 资源利用率 |
 | P2 | 问题 4 长期：status 字段拆分 + 前端配套 | 半天 | 长期 UX、监控可信度 |
 | P3 | 问题 2 算法：pair 粗筛 | 1–2 天 | 实质降低大库 runtime |

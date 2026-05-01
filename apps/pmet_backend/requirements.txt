@@ -21,3 +21,9 @@ biopython>=1.83
 
 # Development
 python-dotenv>=1.0.0
+
+# Test-only — fastapi.TestClient delegates to starlette which needs httpx
+# at import time. Listed under main reqs because the slim image is used
+# by both the worker and the unit-test runner; not large enough to gate
+# behind a separate dev-deps file.
+httpx>=0.25

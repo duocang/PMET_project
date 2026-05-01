@@ -46,6 +46,9 @@ fi
 run_one "watchdog staleness (Python)" \
     "$PYTHON" tests/unit/test_watchdog_staleness.py
 
+run_one "partial-result rescue link (Python)" \
+    "$PYTHON" tests/unit/test_partial_result_link.py
+
 printf '\n========================================\n'
 if (( failed == 0 )); then
     printf '[unit] all %d test file(s) passed\n' "$total"

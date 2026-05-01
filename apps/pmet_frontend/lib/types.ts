@@ -27,6 +27,11 @@ export interface TaskResponse {
   mode: TaskMode;
   email: string;
   result_link: string | null;
+  // Set when the task is failed but pairing produced motif_output.txt
+  // (i.e. heatmap or zip step crashed after the scientific work was
+  // already on disk). Lets the user grab the partial output without
+  // hiding the failure status.
+  partial_result_link?: string | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
