@@ -52,6 +52,10 @@ class TaskResponse(BaseModel):
     mode: TaskMode
     email: str
     result_link: Optional[str] = None
+    # Size of the result zip when result_link is set, so the UI can label
+    # "Download Results (123 MB)" on the success path. Mirrors the partial
+    # field below; populated whenever <task_id>.zip exists on disk.
+    result_size_bytes: Optional[int] = None
     # Set when status==failed but the pairing stage finished and
     # motif_output.txt is on disk. Lets the user download partial
     # scientific output even after the late-stage (heatmap / zip)

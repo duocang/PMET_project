@@ -142,6 +142,23 @@ class PartialResultLinkTests(unittest.TestCase):
         self.assertIsNone(r.json()["partial_result_link"])
         self.assertIsNone(r.json()["partial_result_size_bytes"])
 
+    def test_completed_task_with_zip_returns_result_size(self):
+        """When the result zip is on disk, result_size_bytes is populated
+        so the success-download button can render '(123 MB)'."""
+        tid = self._write_task(status="completed")
+        zip_body = b"fake zip content"
+        (self.results_root / f"{tid}.zip").write_bytes(zip_body)
+        r = self.client.get(f"/api/tasks/{tid}")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["result_size_bytes"], len(zip_body))
+
+    def test_completed_task_without_zip_no_result_size(self):
+        """No zip yet (e.g. running, or zip cleaned up) → no size."""
+        tid = self._write_task(status="completed")
+        r = self.client.get(f"/api/tasks/{tid}")
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNone(r.json()["result_size_bytes"])
+
     def test_running_task_no_partial_link(self):
         tid = self._write_task(status="running")
         self._write_motif_output(tid)

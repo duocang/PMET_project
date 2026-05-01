@@ -27,6 +27,9 @@ export interface TaskResponse {
   mode: TaskMode;
   email: string;
   result_link: string | null;
+  // Size of the result zip when result_link is set — UI uses it to label
+  // the success download with "(123 MB)" so users aren't surprised.
+  result_size_bytes?: number | null;
   // Set when the task is failed but pairing produced motif_output.txt
   // (i.e. heatmap or zip step crashed after the scientific work was
   // already on disk). Lets the user grab the partial output without

@@ -199,6 +199,11 @@ export default function TaskDetailPage({ params }: PageProps) {
           <div className="mt-5 flex flex-wrap gap-3">
             <a href={taskApi.downloadResult(task.task_id)} className="btn-primary">
               {t('task.download')}
+              {task.result_size_bytes != null && (
+                <span className="ml-1 font-normal opacity-80">
+                  ({formatBytes(task.result_size_bytes)})
+                </span>
+              )}
             </a>
             <Link href={`/tasks/${task.task_id}/visualize`} className="btn-secondary">
               {t('task.visualize')}

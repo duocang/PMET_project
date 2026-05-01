@@ -363,6 +363,16 @@ async def get_task(task_id: str):
     if not result_link and config.NGINX_LINK and result_zip.exists():
         result_link = f"{config.NGINX_LINK.rstrip('/')}/{task_id}.zip"
 
+    # Surface the zip size whenever it's on disk so the UI can label the
+    # download button "(123 MB)". Symmetric with partial_result_size_bytes
+    # below — same UX courtesy across success and partial-failure paths.
+    result_size_bytes: Optional[int] = None
+    if result_zip.exists():
+        try:
+            result_size_bytes = result_zip.stat().st_size
+        except OSError:
+            result_size_bytes = None
+
     runtime_estimate = task_data.get("runtime_estimate")
     if not runtime_estimate:
         runtime_estimate = _runtime_estimate_response(task_data)
@@ -398,6 +408,7 @@ async def get_task(task_id: str):
         mode=TaskMode(task_data["mode"]),
         email=task_data["email"],
         result_link=result_link,
+        result_size_bytes=result_size_bytes,
         partial_result_link=partial_result_link,
         partial_result_size_bytes=partial_result_size_bytes,
         stages=stages,
@@ -481,12 +492,22 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
         if result_zip.exists() and status not in (TaskStatus.CANCELLED, TaskStatus.FAILED):
             status = TaskStatus.COMPLETED
 
+        # Mirror the size field that GET /tasks/{id} surfaces — list view's
+        # TaskCard reads it to label the success download "(123 MB)".
+        result_size_bytes: Optional[int] = None
+        if result_zip.exists():
+            try:
+                result_size_bytes = result_zip.stat().st_size
+            except OSError:
+                result_size_bytes = None
+
         tasks.append(TaskResponse(
             task_id=task_data["task_id"],
             status=status,
             mode=TaskMode(task_data["mode"]),
             email=task_data["email"],
             result_link=task_data.get("result_link"),
+            result_size_bytes=result_size_bytes,
             created_at=datetime.fromisoformat(task_data["created_at"]),
             started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
             completed_at=datetime.fromisoformat(task_data["completed_at"]) if task_data.get("completed_at") else None,

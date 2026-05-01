@@ -5,6 +5,7 @@ import TaskStatusBadge from './TaskStatusBadge';
 import { taskApi } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { TranslationKey } from '@/lib/translations';
+import { formatBytes } from '@/lib/runtime';
 
 interface TaskCardProps {
   task: TaskResponse;
@@ -54,6 +55,11 @@ export default function TaskCard({ task, onSelect }: TaskCardProps) {
             onClick={(e) => e.stopPropagation()}
           >
             {t('taskcard.download')}
+            {task.result_size_bytes != null && (
+              <span className="ml-1 font-normal opacity-80">
+                ({formatBytes(task.result_size_bytes)})
+              </span>
+            )}
           </a>
         </div>
       )}
