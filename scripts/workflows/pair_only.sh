@@ -43,6 +43,12 @@ else
     emit_progress() { :; }
     clear_progress() { :; }
 fi
+if [[ -f scripts/lib/minhash.sh ]]; then
+    # shellcheck source=/dev/null
+    source scripts/lib/minhash.sh
+else
+    resolve_minhash_min() { printf '0'; }
+fi
 if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
     source scripts/lib/timer.sh
@@ -189,6 +195,9 @@ fi
 cp "$gene_tmp" "$outputdir/genes_used_PMET.txt"
 grep -vwFf "$universefile" "$genefile" > "$outputdir/genes_not_found.txt" || true
 
+minhash_min=$(resolve_minhash_min "$pmetindex/fimohits")
+echo "MinHash prefilter: -m $minhash_min"
+
 # pair_parallel resolves -p/-b/-c/-f relative to -d, so feed it the
 # index dir as the base and bare filenames for the rest.
 "$BIN_PMET" \
@@ -200,7 +209,8 @@ grep -vwFf "$universefile" "$genefile" > "$outputdir/genes_not_found.txt" || tru
     -c IC.txt                  \
     -f fimohits                \
     -o "$outputdir"            \
-    -t "$threads" > "$outputdir/pmet.log"
+    -t "$threads"              \
+    -m "$minhash_min" > "$outputdir/pmet.log"
 
 # Merge ONLY pair_parallel's temp*.txt shards — naive `cat *.txt` would now
 # also concatenate the diagnostic files we just wrote.

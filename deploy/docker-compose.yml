@@ -46,6 +46,12 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - PMET_WORKERS=2
       - PMET_RESULT_DIR_REL=results
+      # MinHash prefilter on the pair stage. Default off (calibration found no
+      # generally-safe positive value — see docs/perf/minhash_calibration.md).
+      # Power users who tolerate some false negatives can opt in:
+      # - PMET_MINHASH_MIN=900        # force this exact value (e.g. 900 ≈ 18 % speedup, ≈ 22 % FN on CIS-BP2)
+      # - PMET_MINHASH_THRESHOLD=500  # motif-count cutoff for auto-enable (default 500)
+      # - PMET_MINHASH_DEFAULT=N      # value used when auto-enabled (default 0)
     volumes:
       - ../apps/pmet_backend:/app/pmet_backend
       - ../scripts:/app/scripts

@@ -45,6 +45,12 @@ else
     emit_progress() { :; }
     clear_progress() { :; }
 fi
+if [[ -f scripts/lib/minhash.sh ]]; then
+    # shellcheck source=/dev/null
+    source scripts/lib/minhash.sh
+else
+    resolve_minhash_min() { printf '0'; }
+fi
 if [[ -f scripts/lib/timer.sh ]]; then
     # shellcheck source=/dev/null
     source scripts/lib/timer.sh
@@ -272,6 +278,9 @@ fi
 cp "$gene_tmp" "$heterotypic_output/genes_used_PMET.txt"
 grep -vwFf "$universefile" "$gene_input_file" > "$heterotypic_output/genes_not_found.txt" || true
 
+minhash_min=$(resolve_minhash_min "$homotypic_output/fimohits")
+echo "MinHash prefilter: -m $minhash_min"
+
 "$BIN_PMET" \
     -d "$homotypic_output"            \
     -g "$gene_tmp"                    \
@@ -281,7 +290,8 @@ grep -vwFf "$universefile" "$gene_input_file" > "$heterotypic_output/genes_not_f
     -c IC.txt                         \
     -f fimohits                       \
     -o "$heterotypic_output"          \
-    -t "$threads" > "$heterotypic_output/pmet.log"
+    -t "$threads"                     \
+    -m "$minhash_min" > "$heterotypic_output/pmet.log"
 
 # Merge ONLY pair_parallel's temp*.txt shards.
 shopt -s nullglob

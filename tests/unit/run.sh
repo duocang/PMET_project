@@ -58,6 +58,9 @@ run_one "mail dispatch templates (Python)" \
 run_one "error classification permanent vs transient (Python)" \
     "$PYTHON" tests/unit/test_error_classification.py
 
+run_one "minhash resolver policy (bash)" \
+    bash tests/unit/test_minhash_resolver.sh
+
 printf '\n========================================\n'
 if (( failed == 0 )); then
     printf '[unit] all %d test file(s) passed\n' "$total"

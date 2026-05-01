@@ -167,6 +167,8 @@ Each script's `-h` is the authoritative reference (with defaults). The table bel
 
 > ⚠️ The IC threshold is `-c` in `promoter.sh / intervals.sh` but `-i` in `pair_only.sh` — historical mismatch, never harmonised. In `promoter.sh`, `-i` is actually `gff3_id_key` (the GFF3 attribute key).
 
+**MinHash prefilter (opt-in).** `pair_parallel` ships a MinHash-based prefilter (`-m <K>`) that can skip pair candidates with low estimated gene-set intersection. The default is off — calibration on CIS-BP2 (see [docs/perf/minhash_calibration.md](docs/perf/minhash_calibration.md)) did not find a setting that gave meaningful speedup without a non-trivial false-negative rate. Power users on bigger hardware can enable it with `PMET_MINHASH_MIN=N`.
+
 <a id="en-6"></a>
 
 ## 6. Output format
@@ -468,6 +470,8 @@ bash scripts/workflows/pair_only.sh \
 | 线程数（默认 4，pair_only 见 `-h`）   | `-t`        | `-t`        | `-t`                      | `-t`        |
 
 > ⚠️ IC 阈值在 `promoter.sh / intervals.sh` 是 `-c`，在 `pair_only.sh` 是 `-i` — 历史遗留，未统一。`promoter.sh` 的 `-i` 实际是 `gff3_id_key`（GFF3 attribute key）。
+
+**MinHash 粗筛（opt-in）**。`pair_parallel` 自带 MinHash 粗筛（`-m <K>`），可跳过 gene-set 估计交集过小的候选对。**默认关闭**——CIS-BP2 校准显示没有"显著加速 + 可接受 FN 率"的安全默认值，详见 [docs/perf/minhash_calibration.md](docs/perf/minhash_calibration.md)。多核机器、可容忍少量漏检的 power user 可设 `PMET_MINHASH_MIN=N` 启用。
 
 <a id="cn-6"></a>
 
