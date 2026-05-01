@@ -61,6 +61,9 @@ run_one "error classification permanent vs transient (Python)" \
 run_one "minhash resolver policy (bash)" \
     bash tests/unit/test_minhash_resolver.sh
 
+run_one "list_tasks pagination + filter (Python)" \
+    "$PYTHON" tests/unit/test_list_tasks_pagination.py
+
 printf '\n========================================\n'
 if (( failed == 0 )); then
     printf '[unit] all %d test file(s) passed\n' "$total"

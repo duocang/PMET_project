@@ -500,15 +500,35 @@ async def download_partial_result(task_id: str):
 
 @router.get("", response_model=TaskListResponse)
 async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, offset: int = 0):
-    """List tasks. Filter by exact email match, by task_id substring, or both."""
-    tasks = []
-    for task_file in sorted(config.TASKS_DIR.glob("*.json"), reverse=True)[offset:offset+limit]:
-        task_data = json.loads(task_file.read_text())
+    """List tasks, newest first. Filter by exact email match, by task_id
+    substring, or both. Filtering happens BEFORE pagination — the prior
+    revision sliced the file list first, which made an email-filtered
+    search silently return empty whenever the first `limit` newest
+    files happened not to match (real matches sat on disk further
+    down). See test_list_pagination_filters_before_slicing."""
+    candidates = sorted(config.TASKS_DIR.glob("*.json"), reverse=True)
+    # task_id filters by filename stem (== task_id by writer convention),
+    # so we can drop non-matching files without parsing JSON. Email lives
+    # only inside the JSON, so the email check has to read each file.
+    if task_id:
+        candidates = [p for p in candidates if task_id in p.stem]
+
+    matched: list[dict] = []
+    for task_file in candidates:
+        try:
+            task_data = json.loads(task_file.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
         if email and task_data.get("email") != email:
             continue
         if task_id and task_id not in task_data.get("task_id", ""):
             continue
+        matched.append(task_data)
 
+    page = matched[offset:offset + limit]
+
+    tasks = []
+    for task_data in page:
         # Same FS-derived view the detail endpoint computes — keeps list /
         # detail rendering in sync (effective_status, partial-result link,
         # stages timeline, warnings).
@@ -532,7 +552,7 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
             error_message=task_data.get("error_message"),
         ))
 
-    return TaskListResponse(tasks=tasks, total=len(tasks))
+    return TaskListResponse(tasks=tasks, total=len(matched))
 
 
 @router.get("/{task_id}/progress")
