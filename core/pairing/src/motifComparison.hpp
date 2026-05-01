@@ -47,6 +47,13 @@ public:
   // `this`; reads only the supplied motifs and instances.
   static bool motifInstancesOverlap(const motif& m1, const motif& m2, const motifInstance& m1Instance,
                                     const motifInstance& m2Instance, double ICthreshold);
+  // Per-promoter binomial recount: walk the kept hits in p-value order,
+  // accumulate the geometric-mean p, and ask binomialCDF (or
+  // poissonCDF when isPoisson) whether any prefix beats the motif's
+  // own threshold. Returns true if the lowest-scoring prefix passes.
+  // No `this`; pure read of `mt` plus the kept-mask.
+  static bool geometricBinomialTest(const std::vector<bool>& motifLocationsToKeep, GeneId gene,
+                                    int promoterLength, const motif& mt, bool isPoisson);
 
 private:
   void reset();
@@ -56,8 +63,6 @@ private:
   // Updates kept1/kept2 to reflect how many entries survived.
   void detectOverlappingPositions(const motif& m1, const motif& m2, GeneId gene, double ICthreshold,
                                   std::vector<bool>& keep1, std::vector<bool>& keep2, long& kept1, long& kept2);
-  bool geometricBinomialTest(const std::vector<bool>& motifLocationsToKeep, GeneId gene, int promoterLength,
-                             const motif& mt, bool isPoisson);
 
   double pval;
   long clusterSize;
