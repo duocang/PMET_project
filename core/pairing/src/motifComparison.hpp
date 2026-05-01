@@ -36,6 +36,13 @@ public:
     genesInClusterWithBothMotifs.clear();
   }
 
+  // Pure-math helpers — no `this` used. Public + static so unit tests
+  // can call them directly without spinning up a motifComparison
+  // instance. Internal callers (geometricBinomialTest below) pick them
+  // up the same way.
+  static double binomialCDF(long numPVals, long numLocations, double gm);
+  static double poissonCDF(double lambda, int k);
+
 private:
   void reset();
   bool motifInstancesOverlap(const motif& m1, const motif& m2, const motifInstance& m1Instance,
@@ -48,8 +55,6 @@ private:
                                   std::vector<bool>& keep1, std::vector<bool>& keep2, long& kept1, long& kept2);
   bool geometricBinomialTest(const std::vector<bool>& motifLocationsToKeep, GeneId gene, int promoterLength,
                              const motif& mt, bool isPoisson);
-  double binomialCDF(long numPVals, long numLocations, double gm);
-  double poissonCDF(double lambda, int k);
 
   double pval;
   long clusterSize;
