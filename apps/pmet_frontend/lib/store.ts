@@ -57,9 +57,31 @@ export interface ModePaths {
   gff3: string;
   meme: string;
 }
+// Submission parameters tracked separately per mode so toggling
+// between Use-Built-in-Species ↔ Bring-Your-Own-Genome doesn't
+// trample mode-specific tweaks (e.g. a custom IC threshold the
+// user set under one mode shouldn't follow them into another).
+export interface ModeParams {
+  ic_threshold: number;
+  max_match: number;
+  promoter_num: number;
+  fimo_threshold: number;
+  promoter_length: number;
+  utr5: string;
+  promoters_overlap: string;
+}
 
 const emptyFiles: ModeFiles = { genes: null, fasta: null, gff3: null, meme: null, premade_index: '' };
 const emptyPaths: ModePaths = { genes: '', fasta: '', gff3: '', meme: '' };
+const defaultParams: ModeParams = {
+  ic_threshold: 24,
+  max_match: 5,
+  promoter_num: 5000,
+  fimo_threshold: 0.05,
+  promoter_length: 1000,
+  utr5: 'No',
+  promoters_overlap: 'NoOverlap',
+};
 
 interface SettingsStore {
   mode: AnalysisMode;
@@ -67,11 +89,13 @@ interface SettingsStore {
   filesByMode: Record<AnalysisMode, ModeFiles>;
   pathsByMode: Record<AnalysisMode, ModePaths>;
   speciesByMode: Record<AnalysisMode, string>;
+  paramsByMode: Record<AnalysisMode, ModeParams>;
   setMode: (mode: AnalysisMode) => void;
   setEmail: (email: string) => void;
   updateFilesForMode: (mode: AnalysisMode, patch: Partial<ModeFiles>) => void;
   updatePathsForMode: (mode: AnalysisMode, patch: Partial<ModePaths>) => void;
   setSpeciesForMode: (mode: AnalysisMode, species: string) => void;
+  updateParamsForMode: (mode: AnalysisMode, patch: Partial<ModeParams>) => void;
   resetSubmitForm: () => void;
 }
 
@@ -91,6 +115,11 @@ export const useSettingsStore = create<SettingsStore>()(
         intervals: { ...emptyPaths },
       },
       speciesByMode: { promoters_pre: '', promoters: '', intervals: '' },
+      paramsByMode: {
+        promoters_pre: { ...defaultParams },
+        promoters: { ...defaultParams },
+        intervals: { ...defaultParams },
+      },
       setMode: (mode) => set({ mode }),
       setEmail: (email) => set({ email }),
       updateFilesForMode: (mode, patch) =>
@@ -105,6 +134,10 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({
           speciesByMode: { ...state.speciesByMode, [mode]: species },
         })),
+      updateParamsForMode: (mode, patch) =>
+        set((state) => ({
+          paramsByMode: { ...state.paramsByMode, [mode]: { ...state.paramsByMode[mode], ...patch } },
+        })),
       resetSubmitForm: () =>
         set({
           filesByMode: {
@@ -118,6 +151,11 @@ export const useSettingsStore = create<SettingsStore>()(
             intervals: { ...emptyPaths },
           },
           speciesByMode: { promoters_pre: '', promoters: '', intervals: '' },
+          paramsByMode: {
+            promoters_pre: { ...defaultParams },
+            promoters: { ...defaultParams },
+            intervals: { ...defaultParams },
+          },
         }),
     }),
     {

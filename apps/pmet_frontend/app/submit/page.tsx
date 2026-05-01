@@ -38,20 +38,22 @@ function SubmitPageContent() {
   // rest stays in-memory.
   const {
     mode, setMode, email, setEmail,
-    filesByMode, pathsByMode, speciesByMode,
-    updateFilesForMode, updatePathsForMode, setSpeciesForMode,
+    filesByMode, pathsByMode, speciesByMode, paramsByMode,
+    updateFilesForMode, updatePathsForMode, setSpeciesForMode, updateParamsForMode,
   } = useSettingsStore();
   const { setLoading, addTask } = useTaskStore();
 
-  const [params, setParams] = useState({
-    ic_threshold: 24,
-    max_match: 5,
-    promoter_num: 5000,
-    fimo_threshold: 0.05,
-    promoter_length: 1000,
-    utr5: 'No' as string,
-    promoters_overlap: 'NoOverlap' as string,
-  });
+  // params live in the store so the user's per-mode tweaks (IC,
+  // promoter_length, etc.) survive nav the same way species and
+  // file picks do. Initial defaults live in lib/store.ts.
+  const params = paramsByMode[mode];
+  const setParams = (next: typeof params | ((prev: typeof params) => typeof params)) => {
+    if (typeof next === 'function') {
+      updateParamsForMode(mode, next(params));
+    } else {
+      updateParamsForMode(mode, next);
+    }
+  };
 
   type FileFieldType = 'genes' | 'fasta' | 'gff3' | 'meme';
 

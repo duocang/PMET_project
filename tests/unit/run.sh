@@ -64,6 +64,16 @@ run_one "minhash resolver policy (bash)" \
 run_one "list_tasks pagination + filter (Python)" \
     "$PYTHON" tests/unit/test_list_tasks_pagination.py
 
+# Frontend Zustand store actions — uses `tsx` (devDep). Skip if
+# node_modules isn't installed (CI / fresh checkout where the
+# user hasn't run npm install yet).
+if [[ -x /Users/nuioi/projects/pmet/apps/pmet_frontend/node_modules/.bin/tsx ]]; then
+    run_one "settings store form-state actions (TypeScript)" \
+        bash -c "cd apps/pmet_frontend && npm run --silent test:unit"
+else
+    printf '\n[unit] settings store form-state actions (TypeScript): SKIP — apps/pmet_frontend/node_modules not installed\n'
+fi
+
 printf '\n========================================\n'
 if (( failed == 0 )); then
     printf '[unit] all %d test file(s) passed\n' "$total"
