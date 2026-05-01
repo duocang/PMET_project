@@ -51,6 +51,7 @@ if(PMET_BUILD_TESTS)
       tests/test_motif_instances_overlap.cpp
       tests/test_minhash_sketch.cpp
       tests/test_geometric_binomial.cpp
+      tests/test_coloc.cpp
       $<TARGET_OBJECTS:pair_lib>
   )
   target_link_libraries(pair_tests Threads::Threads)

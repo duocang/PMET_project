@@ -5,8 +5,10 @@
 #ifndef motifComparison_hpp
 #define motifComparison_hpp
 
+#include <algorithm>
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "motif.hpp"
@@ -54,6 +56,17 @@ public:
   // No `this`; pure read of `mt` plus the kept-mask.
   static bool geometricBinomialTest(const std::vector<bool>& motifLocationsToKeep, GeneId gene,
                                     int promoterLength, const motif& mt, bool isPoisson);
+
+  // Test-only: stage the universe-side intersection that
+  // findIntersectingGenes() would normally populate, so unit tests
+  // can drive colocTest() directly without setting up two whole
+  // motifs. The caller's vector is sorted in place inside the
+  // setter to match the sorted-range invariant std::set_intersection
+  // (used inside colocTest) requires.
+  void setUniverseGenesForTest(std::vector<GeneId> ids) {
+    std::sort(ids.begin(), ids.end());
+    genesInUniverseWithBothMotifs = std::move(ids);
+  }
 
 private:
   void reset();
