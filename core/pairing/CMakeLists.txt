@@ -46,6 +46,7 @@ if(PMET_BUILD_TESTS)
   add_executable(pair_tests
       tests/test_main.cpp
       tests/test_bh_correction.cpp
+      tests/test_fair_division.cpp
       $<TARGET_OBJECTS:pair_lib>
   )
   target_link_libraries(pair_tests Threads::Threads)
