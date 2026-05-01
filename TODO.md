@@ -11,7 +11,7 @@
 - ~~[问题 1：基因列表 cluster 多时，画图把整个任务拖死](#问题-1已修)~~
 - ~~[问题 2：CIS-BP2 这种大库，正常用户也会撞超时](#问题-2已修)~~
 - [问题 3：明知挂了还要机械重试 10 分钟](#问题-3)
-- [问题 4（meta）：`task.status` 是个骗子](#问题-4-meta) — 短期已修，长期仍在
+- ~~[问题 4（meta）：`task.status` 是个骗子](#问题-4-meta)~~ — 短期 + 长期都已修
 - [优先级建议](#优先级建议)
 - [其它 backlog（节奏未到）](#其它-backlog节奏未到)
 
@@ -129,23 +129,46 @@ permanent 失败 `raise self.retry()` 设 `max_retries=0`，或干脆 early retu
 
 - ~~一次性 backfill 脚本：扫 `results/app/<id>/pairing/motif_output.txt` 是否存在，重建 manifest（已写在 `tmp_cli/fix_manifest.sh`）~~ — 矩阵测试当时用过，把假 fail 的 23+9 个任务正确翻成 success
 - ~~**生产 API**~~ ✓ 已落地：
-  - `apps/pmet_backend/api/routes/tasks.py` 加 `_locate_motif_output(task_id)` helper 和 `partial_result_link` 字段
-  - `GET /api/tasks/{id}`：当 `status==failed` 且 `<task>/pairing/motif_output.txt` 非空时，返回 `partial_result_link = /api/tasks/{id}/partial-result`（status 仍是 failed，失败本身依然可见）
-  - 新端点 `GET /api/tasks/{id}/partial-result`：直接 stream `motif_output.txt`，filename 写成 `<task_id>_motif_output.txt`
-  - 前端任务详情页（`apps/pmet_frontend/app/tasks/[id]/page.tsx`）在红色 Error 块**上方**单独显示一块 amber/琥珀色 banner（"Partial result available" 标题 + 解释文 + 下载链接），视觉上和错误本身分开 —— 一眼能看出"虽然失败但有东西能拿"，避免被红色吓住忽略下载按钮
-  - 单测在 `tests/unit/test_partial_result_link.py`（10 case，覆盖 helper + 路由 + 边界）
+  - ~~`apps/pmet_backend/api/routes/tasks.py` 加 `_locate_motif_output(task_id)` helper 和 `partial_result_link` 字段~~
+  - ~~`GET /api/tasks/{id}`：当 `status==failed` 且 `<task>/pairing/motif_output.txt` 非空时，返回 `partial_result_link = /api/tasks/{id}/partial-result`（status 仍是 failed，失败本身依然可见）~~
+  - ~~新端点 `GET /api/tasks/{id}/partial-result`：直接 stream `motif_output.txt`，filename 写成 `<task_id>_motif_output.txt`，MIME 用 `application/octet-stream` 强制下载（避免 Chrome 对 `text/tab-separated-values` 内联渲染）~~
+  - ~~前端任务详情页（`apps/pmet_frontend/app/tasks/[id]/page.tsx`）在红色 Error 块**上方**单独显示一块 amber/琥珀色 banner（"Partial result available" 标题 + 解释文 + 下载链接），`<a download="…txt">` 属性强制走文件下载流而不是页面跳转~~
+  - ~~单测在 `tests/unit/test_partial_result_link.py`（10 case，覆盖 helper + 路由 + 边界）~~
+- **遗留（独立问题，不属于"task.status 是个骗子"）**：实测 `phase2_2f50fd9abbdc4c17/pairing/motif_output.txt` 是 **993 MB / 640 万行**。`curl` 能完整拉到，但浏览器超大文件下载体验差。**这是独立的"超大文件 UX"问题**，挪到 [其它 backlog → partial_result_link：GB 级文件下载体验](#partial_result_link-gb-级文件下载体验)。
 
-**长期方案**：把 status 拆开
+**长期方案** ✓ 已修
 
+把 status 拆开。**没改持久化字段**（避免 enum 迁移），而是在 `GET /api/tasks/{id}` 里附加一个**文件系统派生**的 `stages` 数组 + `warnings` + `effective_status`：
+
+```jsonc
+{
+  "status": "failed",                          // 持久化字段，保留原值
+  "effective_status": "failed",                // UI 用，可能是 completed_with_warnings
+  "stages": [
+    { "name": "indexing", "state": "skipped", "note": "uses precomputed index" },
+    { "name": "pairing",  "state": "completed" },
+    { "name": "heatmap",  "state": "skipped", "note": "rendering failed; motif_output.txt is complete" },
+    { "name": "zip",      "state": "skipped", "note": "late-stage failure; partial result still available" }
+  ],
+  "warnings": [
+    "heatmap: rendering failed; motif_output.txt is complete",
+    "zip: late-stage failure; partial result still available"
+  ]
+}
 ```
-{ "stage_indexing":  "completed",
-  "stage_pairing":   "completed",
-  "stage_heatmap":   "skipped",   # or "failed" / "in_progress"
-  "stage_zip":       "completed",
-  "warnings":        ["heatmap skipped: too many clusters"] }
-```
 
-外层 `status` 变成 derived rollup：`failed` 仅当任一上游阶段失败；`completed_with_warnings` 表示 heatmap 跳过但其它都过。这是问题 1 的根本治法——status 拆细后，画图失败再也不会让人误以为任务挂了。
+实现：
+
+- `apps/pmet_backend/services/stage_status.py`：`infer_stages(task_meta, task_dir)` 通过扫 `<task>/indexing/universe.txt`、`<task>/pairing/motif_output.txt`、`<task>/pairing/plot/heatmap*.png`、`<task>.zip` 等 FS 证据派生每个阶段的状态。state ∈ `{pending, running, completed, failed, skipped}`。`derive_warnings` / `derive_effective_status` 派生 UI 用字段。**纯函数，I/O 限于 stat / glob，每次 GET 都跑也很便宜。**
+- `apps/pmet_backend/api/routes/tasks.py`：`GET /tasks/{id}` 附加 `stages / warnings / effective_status`，**`status` 字段不动**——worker 仍是它的权威。
+- `apps/pmet_backend/api/models/task.py`：`TaskResponse` 加 `stages: list[dict]`、`warnings: list[str]`、`effective_status: str`。
+- 前端 `apps/pmet_frontend/app/tasks/[id]/page.tsx`：在 task header 卡片**最上方**（status badge 之下、partial-result banner 之上）渲染流水线 timeline —— 4 个胶囊（建索引 → 配对 → 绘图 → 打包），按 state 着色（绿✓/红✕/琥珀⊘/灰○/蓝◔/灰↻）。`warnings` 列在下方作要点说明。translations 中英两版。**位置故意放最上方**：错误时第一眼看到的不是红色 traceback，而是结构化的"哪步崩了 + 是否还有东西能拿"。
+- **`precomputed` 是独立的 state**（不和 `skipped` 复用）—— promoters_pre 的 indexing 阶段是设计上跳过（用预计算索引），不应该被涂成"warning"色。后端 `infer_stages` 直接返回 `state="precomputed"`，前端用中性灰色 + ↻ 图标渲染，和 amber 的 `skipped`（绘图/打包失败）视觉上区分。`derive_warnings` 不把 `precomputed` 当 warning。
+- **`partial_success` 是 `effective_status` 的另一个合成值** —— 当 `persisted_status==failed` 但 pairing 阶段产出了 `motif_output.txt`（heatmap 或 zip 崩了但数据还在），`derive_effective_status` 返回 `partial_success`。前端 badge 改用 `effective_status` 渲染：`partial_success` 走琥珀色 / `completed_with_warnings` 走绿底+琥珀 ring，区别于硬红的 `failed`。**这避免 user 在搜索任务进来时第一眼看到红 badge 把"配对其实成功"的真相盖过。**
+- **错误块默认折叠** —— 前端 `<details>` + `summarizeError` 启发式抽取首条 `Error` 行，灰底 / xs 字号 / 单 ⚠ 图标。展开后 traceback 在 `max-h-60 overflow-auto` 滚动框里。视觉上从"红色铺满"降级为"一行灰色注释 + 可展开"，把 banner 高度让给真正有用的 stages timeline 和 partial-result download。
+- 单测 `tests/unit/test_stage_status.py`：13 个 case，覆盖 happy path、promoters_pre 索引 `precomputed`、partial-result 路径、universe mismatch、index-side fail、running mid-pipeline、cancelled mid-run、`completed_with_warnings` 派生、`partial_success` 派生（pairing OK + persisted=failed）、`pairing` 真失败仍是 `failed`、running 透传。
+
+这同时也是问题 1 的根本治法——status 拆细后，画图失败再也不会让人误以为任务挂了。
 
 ---
 
@@ -157,7 +180,7 @@ permanent 失败 `raise self.retry()` 设 `max_retries=0`，或干脆 early retu
 | ~~P0~~ | ~~问题 2：celery time limit 调高 + 前端预警~~ | ~~1–2 小时~~ | ~~CIS-BP2 用户不再无故失败~~ ✓ liveness-watchdog 容器 + commit `5c64e63`（runtime estimate / progress） |
 | ~~P1~~ | ~~问题 4 短期：`partial_result_link` API + 前端按钮~~ | ~~2–3 小时~~ | ~~历史 task 的部分产物可下载~~ ✓ 已修 + 单测 (`tests/unit/test_partial_result_link.py` 10 case) |
 | P1 | 问题 3：permanent vs transient 异常分类 | 1–2 小时 | worker 资源利用率 |
-| P2 | 问题 4 长期：status 字段拆分 + 前端配套 | 半天 | 长期 UX、监控可信度 |
+| ~~P2~~ | ~~问题 4 长期：status 字段拆分 + 前端配套~~ | ~~半天~~ | ~~长期 UX、监控可信度~~ ✓ FS 派生 stages + warnings + 前端 timeline + 单测 (`test_stage_status.py` 11 case) |
 | P3 | 问题 2 算法：pair 粗筛 | 1–2 天 | 实质降低大库 runtime |
 
 > ~~一次性 manifest 重建脚本（`tmp_cli/fix_manifest.sh`）已写，矩阵测试时用过；问题 4 短期 API 修完后即可丢弃。~~
@@ -167,6 +190,21 @@ permanent 失败 `raise self.retry()` 设 `max_retries=0`，或干脆 early retu
 ## 其它 backlog（节奏未到）
 
 源自原 TODO.md，按主题归并、保留要点：
+
+### partial_result_link：GB 级文件下载体验
+
+短期 `/api/tasks/<id>/partial-result` 直链对常规任务（motif_output 在 KB-MB 级）够用；当 random_genes_topN 这类多 cluster + 大 motif 库时，文件能涨到 **~1 GB**。直接 `<a href>` 在浏览器里：
+
+- Chrome 默认认 `text/tab-separated-values` 当文件下载（OK），但 1 GB 流式下载耗时几分钟，过程中没有进度反馈
+- 如果 nginx `proxy_read_timeout` 走了 60s 默认值，长流可能被切断（需要核对 `deploy/nginx/nginx.conf`）
+- 浏览器 OOM 风险：某些版本会试图 buffer 整个响应
+
+**接下来要做的几件事（按价值降序）**：
+
+1. **UI 标出文件大小** —— 后端在 `partial_result_link` 旁加 `partial_result_size_bytes` 字段，前端把"Download partial result（~993 MB）"这样写出来，用户知情同意
+2. **按需 gzip** —— `Content-Encoding: gzip` 流式压缩，~1 GB 的 TSV 通常压到 ~50-100 MB（重复字段名 + adj.p 重复值压得很好）
+3. **预览/截断端点** —— `/partial-result?head=10000` 只返回前 N 行，给"看一眼能不能用"的场景，配上"完整 N MB 在这里"的二级按钮
+4. **核对 nginx timeout** —— 如果当前默认 60 s，对 1 GB 链接太短，至少调到 600 s 或改用 `X-Accel-Redirect` 让 nginx 直发不经 uvicorn
 
 ### Liveness watchdog：长阶段内更频繁 emit progress
 

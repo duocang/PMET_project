@@ -89,6 +89,20 @@ class TaskResponse(BaseModel):
     # the worker would use *now* if the same task were rerun.
     ncpu: Optional[int] = None
 
+    # Filesystem-derived per-stage view (services/stage_status.py). The
+    # binary `status` field above is the worker's authority; `stages`
+    # adds the "WHICH stage produced output" detail that lets the UI
+    # render a timeline + warnings panel without changing the persisted
+    # status. Each stage entry: {name, state, note?}.
+    stages: Optional[list[dict]] = None
+    # Human-readable warnings derived from skipped stages with notes
+    # (e.g. "heatmap: rendering failed; motif_output.txt is complete").
+    warnings: Optional[list[str]] = None
+    # Display-only label that may be `completed_with_warnings` when a
+    # successful task had a non-fatal skip. UI uses this for badge
+    # text/colour; never overwrites the persisted `status`.
+    effective_status: Optional[str] = None
+
     class Config:
         from_attributes = True
 

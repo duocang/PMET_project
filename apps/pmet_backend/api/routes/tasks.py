@@ -11,6 +11,7 @@ from ..models.task import TaskCreate, TaskResponse, TaskStatus, TaskMode, TaskLi
 from ...config import config
 from ...services.storage import StorageService
 from ...services.mail import MailService
+from ...services.stage_status import infer_stages, derive_warnings, derive_effective_status
 from .admin import require_admin
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -376,6 +377,12 @@ async def get_task(task_id: str):
     if task_data.get("status") == "failed" and _locate_motif_output(task_id) is not None:
         partial_result_link = f"/api/tasks/{task_id}/partial-result"
 
+    # Per-stage view + warnings derived from on-disk artifacts. Pure
+    # FS inspection — does not mutate task_data.
+    stages = infer_stages(task_data, config.RESULT_DIR / task_id)
+    warnings = derive_warnings(stages)
+    effective_status = derive_effective_status(task_data.get("status", "pending"), stages)
+
     return TaskResponse(
         task_id=task_data["task_id"],
         status=TaskStatus(task_data.get("status", "pending")),
@@ -383,6 +390,9 @@ async def get_task(task_id: str):
         email=task_data["email"],
         result_link=result_link,
         partial_result_link=partial_result_link,
+        stages=stages,
+        warnings=warnings if warnings else None,
+        effective_status=effective_status,
         created_at=datetime.fromisoformat(task_data["created_at"]),
         started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
         completed_at=datetime.fromisoformat(task_data["completed_at"]) if task_data.get("completed_at") else None,
@@ -428,9 +438,13 @@ async def download_partial_result(task_id: str):
     motif_output = _locate_motif_output(task_id)
     if motif_output is None:
         raise HTTPException(status_code=404, detail="Partial result not available")
+    # Force download instead of inline rendering — text/tab-separated-values
+    # would otherwise be opened in-browser by some Chrome versions, ignoring
+    # Content-Disposition. application/octet-stream is opaque so the browser
+    # always falls back to "save as".
     return FileResponse(
         motif_output,
-        media_type="text/tab-separated-values",
+        media_type="application/octet-stream",
         filename=f"{task_id}_motif_output.txt",
     )
 

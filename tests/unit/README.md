@@ -39,6 +39,25 @@ the unit-test refactor); this test verifies:
 - extreme inputs (1000 motifs × 100 rows) still cap
 - `max_inches` is configurable
 
+### `test_stage_status.py`
+
+Covers Problem 4 long-term fix in `TODO.md` — filesystem-derived
+per-stage view that augments the binary `task.status`. Exercises
+`services/stage_status.infer_stages` across:
+
+- happy path (full Promoters): all 4 stages completed
+- `promoters_pre` mode: indexing always reported as `skipped`
+  (uses precomputed) and does NOT generate a warning
+- the partial-result case: pairing completed but heatmap / zip
+  show `skipped` with a warning note
+- universe-mismatch failure: pairing `failed`, later stages still
+  `pending`
+- indexing-side failure (full mode), running mid-pipeline,
+  cancelled mid-run
+- `derive_effective_status`: returns `completed_with_warnings` only
+  when a stage was skipped *with a non-trivial note*; pass-through
+  for non-completed persisted states
+
 ### `test_partial_result_link.py`
 
 Covers Problem 4 short-term fix in `TODO.md` — the partial-result

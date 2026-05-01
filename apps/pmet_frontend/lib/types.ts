@@ -58,6 +58,25 @@ export interface TaskResponse {
 
   // Current worker thread count (data/configure/cpu_configuration.txt)
   ncpu?: number | null;
+
+  // Filesystem-derived per-stage view (services/stage_status.py).
+  // Each entry: name ∈ {indexing, pairing, heatmap, zip}, state ∈
+  // {pending, running, completed, failed, skipped}, optional note.
+  stages?: TaskStage[] | null;
+  // Human-readable warnings produced by stages that were skipped with
+  // a non-trivial reason (e.g. heatmap render aborted but pairing OK).
+  warnings?: string[] | null;
+  // Display-only label that may be 'completed_with_warnings' on top
+  // of the persisted status enum. Use for badge text/colour.
+  effective_status?: string | null;
+}
+
+export interface TaskStage {
+  name: string;
+  // 'precomputed' = stage skipped by mode design (e.g. promoters_pre's
+  // indexing). Distinct from 'skipped' which always carries a warning.
+  state: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'precomputed';
+  note?: string | null;
 }
 
 export interface TaskListResponse {

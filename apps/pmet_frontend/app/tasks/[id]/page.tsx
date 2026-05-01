@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { taskApi } from '@/lib/api';
-import { TaskResponse, TaskProgress } from '@/lib/types';
+import { TaskResponse, TaskProgress, TaskStage } from '@/lib/types';
 import TaskStatusBadge from '@/components/TaskStatusBadge';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
@@ -101,8 +101,33 @@ export default function TaskDetailPage({ params }: PageProps) {
               {t(MODE_KEYS[task.mode])} · {task.email}
             </p>
           </div>
-          <TaskStatusBadge status={task.status} />
+          <TaskStatusBadge status={task.effective_status ?? task.status} />
         </div>
+
+        {task.stages && task.stages.length > 0 && (
+          <div className="mt-5">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {t('task.stages.heading')}
+            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {task.stages.map((stage, idx) => (
+                <Fragment key={stage.name}>
+                  <StageBadge stage={stage} t={t} />
+                  {idx < task.stages!.length - 1 && (
+                    <span aria-hidden className="text-slate-300">→</span>
+                  )}
+                </Fragment>
+              ))}
+            </div>
+            {task.warnings && task.warnings.length > 0 && (
+              <ul className="mt-3 space-y-1 text-xs text-amber-700">
+                {task.warnings.map((w) => (
+                  <li key={w}>• {w}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {polling && (
           <div className="mt-5 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-700">
@@ -138,19 +163,31 @@ export default function TaskDetailPage({ params }: PageProps) {
             <p className="mb-2 text-sm text-amber-700">
               {t('task.download_partial_help')}
             </p>
-            <a href={task.partial_result_link} className="text-sm font-semibold text-amber-800 underline hover:text-amber-900">
+            <a
+              href={task.partial_result_link}
+              download={`${task.task_id}_motif_output.txt`}
+              className="text-sm font-semibold text-amber-800 underline hover:text-amber-900"
+            >
               {t('task.download_partial')}
             </a>
           </div>
         )}
 
         {task.error_message && (
-          <div className="mt-5 rounded-md bg-red-50 px-4 py-3">
-            <h3 className="mb-1 text-sm font-semibold text-red-700">{t('task.error')}</h3>
-            <pre className="whitespace-pre-wrap break-all text-sm text-red-600">
+          <details className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+            <summary className="cursor-pointer select-none font-medium text-slate-600 hover:text-slate-800">
+              <span className="text-red-600">⚠</span>{' '}
+              <span className="text-slate-700">
+                {summarizeError(task.error_message)}
+              </span>
+              <span className="ml-2 text-slate-400">
+                · {t('task.error.show_details')}
+              </span>
+            </summary>
+            <pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-2 font-mono text-xs leading-snug text-slate-600">
               {task.error_message}
             </pre>
-          </div>
+          </details>
         )}
 
         {task.status === 'completed' && (
@@ -339,4 +376,48 @@ function formatDuration(startStr: string, endStr: string) {
   if (min < 60) return `${min}m ${remSec}s`;
   const hr = Math.floor(min / 60);
   return `${hr}h ${min % 60}m`;
+}
+
+const STAGE_STYLES: Record<TaskStage['state'], { icon: string; cls: string }> = {
+  pending:     { icon: '○', cls: 'bg-slate-50 text-slate-500 border-slate-200' },
+  running:     { icon: '◔', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  completed:   { icon: '✓', cls: 'bg-green-50 text-green-700 border-green-200' },
+  failed:      { icon: '✕', cls: 'bg-red-50 text-red-700 border-red-200' },
+  // amber = something went wrong but wasn't fatal (heatmap render, zip)
+  skipped:     { icon: '⊘', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  // slate = by-design absence (e.g. promoters_pre uses precomputed index).
+  // Visually neutral so the user doesn't read it as a problem.
+  precomputed: { icon: '↻', cls: 'bg-slate-50 text-slate-600 border-slate-200' },
+};
+
+// Pull a single user-facing line out of a verbose worker error_message.
+// PMET errors typically include hundreds of lines of R warnings ("Joining
+// with by = ...", "Using p_adj as value column...") followed by the
+// actually informative line ("Error in `ggsave()`: ! Dimensions exceed
+// 50 inches"). We surface that informative line in the collapsed summary
+// so the user gets the gist without unfolding the full traceback.
+function summarizeError(msg: string): string {
+  const lines = msg.split('\n').map((l) => l.trim()).filter(Boolean);
+  // Prefer a line starting with "Error" or containing a "!" marker
+  const err = lines.find((l) => /^error\b/i.test(l)) ||
+              lines.find((l) => l.startsWith('!')) ||
+              lines.find((l) => /^command failed/i.test(l));
+  const pick = err ?? lines[0] ?? '';
+  return pick.length > 140 ? pick.slice(0, 137) + '…' : pick;
+}
+
+function StageBadge({ stage, t }: { stage: TaskStage; t: (k: TranslationKey) => string }) {
+  const style = STAGE_STYLES[stage.state];
+  // Stage label: i18n key 'task.stages.<name>' falls back to the raw name
+  const labelKey = `task.stages.${stage.name}` as TranslationKey;
+  const label = t(labelKey);
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${style.cls}`}
+      title={stage.note ?? undefined}
+    >
+      <span aria-hidden className="text-sm leading-none">{style.icon}</span>
+      <span>{label}</span>
+    </span>
+  );
 }
