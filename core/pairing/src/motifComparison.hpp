@@ -42,11 +42,14 @@ public:
   // up the same way.
   static double binomialCDF(long numPVals, long numLocations, double gm);
   static double poissonCDF(double lambda, int k);
+  // True if the two instances overlap enough that we should drop them
+  // (per-side IC over the overlap region exceeds the threshold). No
+  // `this`; reads only the supplied motifs and instances.
+  static bool motifInstancesOverlap(const motif& m1, const motif& m2, const motifInstance& m1Instance,
+                                    const motifInstance& m2Instance, double ICthreshold);
 
 private:
   void reset();
-  bool motifInstancesOverlap(const motif& m1, const motif& m2, const motifInstance& m1Instance,
-                             const motifInstance& m2Instance, double IDthreshold);
   // For one shared gene: walk every (m1 hit, m2 hit) pair whose positions
   // overlap (cheap two-pointer sweep over position-sorted indices) and mark
   // pairs that fail the IC overlap rule as "to drop" in keep1/keep2.

@@ -77,6 +77,12 @@ public:
   // per pair.
   int minhashMatchCount(const motif& other) const;
 
+  // Test-only factory: build a motif populated only with the IC vector
+  // (which seeds motifLength + ICPrefixSum). Avoids the file-loading
+  // path so unit tests can exercise the IC-overlap math without
+  // crafting a fimohits file. Production code never calls this.
+  static motif makeForTest(const std::string& name, const std::vector<double>& ic);
+
 private:
   // Shared post-load step for both readFimoFile (text) and readBinaryFimoFile:
   // sort each gene's hits by p-value, materialize sortedGeneIDs, build the

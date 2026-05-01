@@ -257,6 +257,18 @@ int motif::minhashMatchCount(const motif& other) const {
   return matches;
 }
 
+motif motif::makeForTest(const std::string& name, const std::vector<double>& ic) {
+  motif m;
+  m.motifName = name;
+  m.IC = ic;
+  m.motifLength = static_cast<int>(ic.size());
+  m.ICPrefixSum.assign(ic.size() + 1, 0.0);
+  for (std::size_t i = 0; i < ic.size(); ++i)
+    m.ICPrefixSum[i + 1] = m.ICPrefixSum[i] + ic[i];
+  m.binomialThreshold = 1.0;
+  return m;
+}
+
 void motif::setMotifName(const std::string& motif) {
   motifName = motif;
 }

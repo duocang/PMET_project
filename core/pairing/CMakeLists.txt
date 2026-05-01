@@ -48,6 +48,7 @@ if(PMET_BUILD_TESTS)
       tests/test_bh_correction.cpp
       tests/test_fair_division.cpp
       tests/test_binomial_poisson.cpp
+      tests/test_motif_instances_overlap.cpp
       $<TARGET_OBJECTS:pair_lib>
   )
   target_link_libraries(pair_tests Threads::Threads)
