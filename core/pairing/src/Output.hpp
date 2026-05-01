@@ -20,7 +20,18 @@ public:
   void printMe(long globalBonferroniFactor, std::ofstream& outFile, const std::vector<std::string>& motifNamesByIndex,
                const std::vector<std::string>& geneNamesById) const;
   double getpValue() const { return pval; };
+  // Accessors below are write-set by the BH correction pass and read
+  // back by exporters and unit tests; bhCorrection() in utils.cpp is
+  // the only place that mutates pvalBHCorrected.
+  double getBHCorrected() const { return pvalBHCorrected; };
   void setBHCorrection(double p) { pvalBHCorrected = p; };
+  // Test-only constructor: lets unit tests build an Output with a
+  // raw p-value without going through the full motifComparison flow.
+  static Output makeForTest(double rawP) {
+    Output o;
+    o.pval = rawP;
+    return o;
+  }
 
 private:
   int motif1Index = -1;

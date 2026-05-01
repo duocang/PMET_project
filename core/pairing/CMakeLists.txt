@@ -10,26 +10,43 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
-# 源文件
-set(SOURCES
-    src/main.cpp
+# Implementation files (everything except main()). Compiled once into
+# an OBJECT library so the production binary and the test binary share
+# exactly the same code — tests can never drift from what ships.
+set(PAIR_LIB_SOURCES
     src/motif.cpp
     src/motifComparison.cpp
     src/Output.cpp
     src/utils.cpp
 )
 
-# 头文件
-set(HEADERS
+set(PAIR_LIB_HEADERS
     src/motif.hpp
     src/motifComparison.hpp
     src/Output.hpp
     src/utils.hpp
 )
 
-# 创建可执行文件
-add_executable(pair_parallel ${SOURCES} ${HEADERS})
+add_library(pair_lib OBJECT ${PAIR_LIB_SOURCES} ${PAIR_LIB_HEADERS})
 
-# 查找并链接线程库 (pthread)
+# Production binary
+add_executable(pair_parallel src/main.cpp $<TARGET_OBJECTS:pair_lib>)
+
+# Find and link threading lib (pthread)
 find_package(Threads REQUIRED)
 target_link_libraries(pair_parallel Threads::Threads)
+
+# Unit tests — opt-in via -DPMET_BUILD_TESTS=ON. Default off so the
+# normal `make build` stays lean. The Makefile target `make
+# test-pairing` configures with the flag enabled, builds, and runs.
+# Tiny custom runner in tests/test_runner.hpp; one TEST_CASE per
+# pure-math kernel that has earned a regression test.
+option(PMET_BUILD_TESTS "Build pairing unit tests" OFF)
+if(PMET_BUILD_TESTS)
+  add_executable(pair_tests
+      tests/test_main.cpp
+      tests/test_bh_correction.cpp
+      $<TARGET_OBJECTS:pair_lib>
+  )
+  target_link_libraries(pair_tests Threads::Threads)
+endif()

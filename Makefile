@@ -2,7 +2,7 @@
 
 .PHONY: help build build-core clean-core-binaries build-indexing build-pairing demo demo-indexing demo-pairing baseline clean \
         clean-results clean-results-app clean-results-cli \
-        fetch-data build-app up down logs ps rebuild
+        fetch-data build-app up down logs ps rebuild test-pairing
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD := $(ROOT)/build
@@ -13,6 +13,7 @@ help:
 	@echo ""
 	@echo "  Local CLI / dev — host-side, no docker"
 	@echo "    build        - compile core C/C++ engines into ./build/  (NOT the web app)"
+	@echo "    test-pairing - build + run C++ unit tests for the pairing math kernels"
 	@echo "    demo         - run demo indexing + pairing against data/"
 	@echo "    baseline     - capture fingerprints to tests/baseline/fingerprints.txt"
 	@echo "    fetch-data   - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
@@ -57,6 +58,18 @@ build-pairing:
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
 	@$(CMAKE) --build $(BUILD)/cmake/pairing --parallel
+
+# Pairing C++ unit tests. Configures a separate build dir with
+# -DPMET_BUILD_TESTS=ON, builds the `pair_tests` binary into
+# build/pair_tests, and runs it. Math kernels only — see
+# core/pairing/tests/ for what's covered.
+test-pairing:
+	@$(CMAKE) -S $(ROOT)/core/pairing -B $(BUILD)/cmake/pairing-tests \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DPMET_BUILD_TESTS=ON \
+		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
+	@$(CMAKE) --build $(BUILD)/cmake/pairing-tests --target pair_tests --parallel
+	@$(BUILD)/pair_tests
 
 demo: demo-indexing demo-pairing
 
