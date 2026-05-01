@@ -302,6 +302,8 @@ const en = {
   'taskcard.email': 'Email:',
   'taskcard.created': 'Created:',
   'taskcard.download': 'Download Results',
+  'taskcard.show_details': 'Show pipeline details',
+  'taskcard.hide_details': 'Hide pipeline details',
 
   // data page
   'data.title': 'Pre-computed Data',
@@ -714,6 +716,8 @@ const zh: Record<keyof typeof en, string> = {
   'taskcard.email': '邮箱：',
   'taskcard.created': '创建于：',
   'taskcard.download': '下载结果',
+  'taskcard.show_details': '查看流水线详情',
+  'taskcard.hide_details': '收起流水线详情',
 
   // data page
   'data.title': '预计算数据',

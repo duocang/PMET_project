@@ -159,6 +159,48 @@ class PartialResultLinkTests(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIsNone(r.json()["result_size_bytes"])
 
+    # ------------------------------------------------------------------
+    # GET /tasks (list) must surface the same derived fields as detail
+    # ------------------------------------------------------------------
+    def test_list_endpoint_surfaces_partial_link_for_failed_with_motif(self):
+        """List view's TaskCard reads /api/tasks (not /api/tasks/{id}).
+        Both must agree on partial_result_link, partial_result_size_bytes,
+        effective_status, stages, warnings — otherwise the list shows
+        'failed' while the detail page calls the same task 'partial_success'.
+        Pin that contract here.
+        """
+        tid = self._write_task(status="failed")
+        body_text = "motif1\tmotif2\tp_adj\nA\tB\t0.001\n"
+        self._write_motif_output(tid, body_text)
+        r = self.client.get("/api/tasks")
+        self.assertEqual(r.status_code, 200)
+        match = next((t for t in r.json()["tasks"] if t["task_id"] == tid), None)
+        self.assertIsNotNone(match, "newly written task should appear in list")
+        self.assertEqual(match["partial_result_link"], f"/api/tasks/{tid}/partial-result")
+        self.assertEqual(match["partial_result_size_bytes"], len(body_text.encode()))
+
+    def test_list_endpoint_includes_result_size_for_completed(self):
+        tid = self._write_task(status="completed")
+        zip_body = b"fake zip"
+        (self.results_root / f"{tid}.zip").write_bytes(zip_body)
+        r = self.client.get("/api/tasks")
+        match = next((t for t in r.json()["tasks"] if t["task_id"] == tid), None)
+        self.assertIsNotNone(match)
+        self.assertEqual(match["result_size_bytes"], len(zip_body))
+
+    def test_list_endpoint_returns_stages_and_effective_status(self):
+        """Stages timeline + effective_status are derived FS fields the
+        TaskCard collapsible consumes. They have to be in the list response
+        for the disclosure to render anything."""
+        tid = self._write_task(status="failed")
+        self._write_motif_output(tid)
+        r = self.client.get("/api/tasks")
+        match = next((t for t in r.json()["tasks"] if t["task_id"] == tid), None)
+        self.assertIsNotNone(match)
+        self.assertIsNotNone(match["stages"])
+        self.assertGreater(len(match["stages"]), 0)
+        self.assertIsNotNone(match["effective_status"])
+
     def test_running_task_no_partial_link(self):
         tid = self._write_task(status="running")
         self._write_motif_output(tid)

@@ -252,6 +252,78 @@ def _runtime_estimate_response(inputs: dict) -> dict:
     }
 
 
+def _compute_task_view(task_data: dict, task_id: str) -> dict:
+    """FS-derived fields shared between GET /tasks/{id} (detail) and
+    GET /tasks (list). Both endpoints want the same understanding of
+    "what is this task's effective state and what can the user click on
+    right now" — keeping the logic in one place stops the views from
+    drifting apart (the bug that surfaced when list showed 'failed' but
+    detail said 'partial_success' for the same task).
+
+    Returns a dict ready to unpack into TaskResponse() kwargs that match
+    the FS state. Does not mutate task_data; caller decides what to do
+    with the returned `persisted_status` (e.g. promoting an old 'pending'
+    JSON to 'completed' when a zip lands in results/).
+    """
+    result_zip = config.RESULT_DIR / f"{task_id}.zip"
+
+    # Auto-flip the persisted status to 'completed' if a zip is on disk
+    # and the recorded status isn't already terminal — covers older JSONs
+    # the worker hadn't finished writing back. Mirror the completed_at
+    # from the zip's mtime so the timeline stays plausible.
+    persisted_status = task_data.get("status", "pending")
+    completed_at = task_data.get("completed_at")
+    if result_zip.exists() and persisted_status not in ("cancelled", "failed"):
+        persisted_status = TaskStatus.COMPLETED.value
+        completed_at = datetime.fromtimestamp(result_zip.stat().st_mtime).isoformat()
+
+    # Result zip link + size
+    result_link = task_data.get("result_link")
+    if not result_link and config.NGINX_LINK and result_zip.exists():
+        result_link = f"{config.NGINX_LINK.rstrip('/')}/{task_id}.zip"
+    result_size_bytes: Optional[int] = None
+    if result_zip.exists():
+        try:
+            result_size_bytes = result_zip.stat().st_size
+        except OSError:
+            result_size_bytes = None
+
+    # Partial-result rescue (only meaningful when persisted status is failed
+    # but pairing did write motif_output.txt before a late-stage crash).
+    partial_result_link: Optional[str] = None
+    partial_result_size_bytes: Optional[int] = None
+    if persisted_status == "failed":
+        motif_output = _locate_motif_output(task_id)
+        if motif_output is not None:
+            partial_result_link = f"/api/tasks/{task_id}/partial-result"
+            try:
+                partial_result_size_bytes = motif_output.stat().st_size
+            except OSError:
+                # File vanished between locate() and stat() — treat as no
+                # partial result (link without size would mislead the UI).
+                partial_result_link = None
+
+    # Stages timeline + derived warnings + effective_status. Pass the
+    # already-resolved status into infer_stages so it sees the same view
+    # the rest of the response will report.
+    stage_input = task_data if task_data.get("status") == persisted_status else {**task_data, "status": persisted_status}
+    stages = infer_stages(stage_input, config.RESULT_DIR / task_id)
+    warnings = derive_warnings(stages)
+    effective_status = derive_effective_status(persisted_status, stages)
+
+    return {
+        "persisted_status": persisted_status,
+        "completed_at_iso": completed_at,
+        "result_link": result_link,
+        "result_size_bytes": result_size_bytes,
+        "partial_result_link": partial_result_link,
+        "partial_result_size_bytes": partial_result_size_bytes,
+        "stages": stages,
+        "warnings": warnings if warnings else None,
+        "effective_status": effective_status,
+    }
+
+
 def _locate_motif_output(task_id: str) -> Optional[Path]:
     """Return the path to motif_output.txt if the pairing stage produced
     one for this task, else None.
@@ -345,78 +417,28 @@ async def get_task(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
 
     task_data = json.loads(task_file.read_text())
-
-    # Auto-flip to completed if a zip exists, but only when the recorded
-    # status isn't already terminal (don't paper over a cancelled / failed
-    # final state with a stale zip from a previous run).
-    result_zip = config.RESULT_DIR / f"{task_id}.zip"
-    current_status = task_data.get("status")
-    if result_zip.exists() and current_status not in ("cancelled", "failed"):
-        task_data["status"] = TaskStatus.COMPLETED.value
-        task_data["completed_at"] = datetime.fromtimestamp(
-            result_zip.stat().st_mtime
-        ).isoformat()
-
-    # Synthesize the public link if the worker hasn't persisted one yet
-    # (older JSONs, or in-flight tasks) but the zip + nginx base exist.
-    result_link = task_data.get("result_link")
-    if not result_link and config.NGINX_LINK and result_zip.exists():
-        result_link = f"{config.NGINX_LINK.rstrip('/')}/{task_id}.zip"
-
-    # Surface the zip size whenever it's on disk so the UI can label the
-    # download button "(123 MB)". Symmetric with partial_result_size_bytes
-    # below — same UX courtesy across success and partial-failure paths.
-    result_size_bytes: Optional[int] = None
-    if result_zip.exists():
-        try:
-            result_size_bytes = result_zip.stat().st_size
-        except OSError:
-            result_size_bytes = None
+    view = _compute_task_view(task_data, task_id)
 
     runtime_estimate = task_data.get("runtime_estimate")
     if not runtime_estimate:
         runtime_estimate = _runtime_estimate_response(task_data)
     index_summary = _premade_index_summary(task_data.get("premade_index"))
 
-    # Partial-result rescue: a task that crashed in the heatmap or zip
-    # step would normally be marked failed with no download surface,
-    # even though pairing wrote motif_output.txt. Expose a separate
-    # link in that case so the user can still grab the scientific
-    # payload. Status stays 'failed' so the failure remains visible.
-    partial_result_link: Optional[str] = None
-    partial_result_size_bytes: Optional[int] = None
-    if task_data.get("status") == "failed":
-        partial_motif_output = _locate_motif_output(task_id)
-        if partial_motif_output is not None:
-            partial_result_link = f"/api/tasks/{task_id}/partial-result"
-            try:
-                partial_result_size_bytes = partial_motif_output.stat().st_size
-            except OSError:
-                # File vanished between locate() and stat() — treat as no
-                # partial result (link without size would mislead the UI).
-                partial_result_link = None
-
-    # Per-stage view + warnings derived from on-disk artifacts. Pure
-    # FS inspection — does not mutate task_data.
-    stages = infer_stages(task_data, config.RESULT_DIR / task_id)
-    warnings = derive_warnings(stages)
-    effective_status = derive_effective_status(task_data.get("status", "pending"), stages)
-
     return TaskResponse(
         task_id=task_data["task_id"],
-        status=TaskStatus(task_data.get("status", "pending")),
+        status=TaskStatus(view["persisted_status"]),
         mode=TaskMode(task_data["mode"]),
         email=task_data["email"],
-        result_link=result_link,
-        result_size_bytes=result_size_bytes,
-        partial_result_link=partial_result_link,
-        partial_result_size_bytes=partial_result_size_bytes,
-        stages=stages,
-        warnings=warnings if warnings else None,
-        effective_status=effective_status,
+        result_link=view["result_link"],
+        result_size_bytes=view["result_size_bytes"],
+        partial_result_link=view["partial_result_link"],
+        partial_result_size_bytes=view["partial_result_size_bytes"],
+        stages=view["stages"],
+        warnings=view["warnings"],
+        effective_status=view["effective_status"],
         created_at=datetime.fromisoformat(task_data["created_at"]),
         started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
-        completed_at=datetime.fromisoformat(task_data["completed_at"]) if task_data.get("completed_at") else None,
+        completed_at=datetime.fromisoformat(view["completed_at_iso"]) if view["completed_at_iso"] else None,
         error_message=task_data.get("error_message"),
         ic_threshold=task_data.get("ic_threshold"),
         max_match=task_data.get("max_match"),
@@ -487,30 +509,26 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
         if task_id and task_id not in task_data.get("task_id", ""):
             continue
 
-        status = TaskStatus(task_data.get("status", "pending"))
-        result_zip = config.RESULT_DIR / f"{task_data['task_id']}.zip"
-        if result_zip.exists() and status not in (TaskStatus.CANCELLED, TaskStatus.FAILED):
-            status = TaskStatus.COMPLETED
-
-        # Mirror the size field that GET /tasks/{id} surfaces — list view's
-        # TaskCard reads it to label the success download "(123 MB)".
-        result_size_bytes: Optional[int] = None
-        if result_zip.exists():
-            try:
-                result_size_bytes = result_zip.stat().st_size
-            except OSError:
-                result_size_bytes = None
+        # Same FS-derived view the detail endpoint computes — keeps list /
+        # detail rendering in sync (effective_status, partial-result link,
+        # stages timeline, warnings).
+        view = _compute_task_view(task_data, task_data["task_id"])
 
         tasks.append(TaskResponse(
             task_id=task_data["task_id"],
-            status=status,
+            status=TaskStatus(view["persisted_status"]),
             mode=TaskMode(task_data["mode"]),
             email=task_data["email"],
-            result_link=task_data.get("result_link"),
-            result_size_bytes=result_size_bytes,
+            result_link=view["result_link"],
+            result_size_bytes=view["result_size_bytes"],
+            partial_result_link=view["partial_result_link"],
+            partial_result_size_bytes=view["partial_result_size_bytes"],
+            stages=view["stages"],
+            warnings=view["warnings"],
+            effective_status=view["effective_status"],
             created_at=datetime.fromisoformat(task_data["created_at"]),
             started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
-            completed_at=datetime.fromisoformat(task_data["completed_at"]) if task_data.get("completed_at") else None,
+            completed_at=datetime.fromisoformat(view["completed_at_iso"]) if view["completed_at_iso"] else None,
             error_message=task_data.get("error_message"),
         ))
 

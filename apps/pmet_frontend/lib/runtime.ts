@@ -19,6 +19,23 @@ export function humanizeIdentifier(value?: string | null): string {
   return (value || '').replace(/_/g, ' ');
 }
 
+// Pull a single user-facing line out of a verbose worker error_message.
+// PMET errors typically bury the actually informative line under hundreds
+// of lines of R warnings; surface that informative line in the collapsed
+// summary so the user gets the gist without unfolding the full traceback.
+export function summarizeError(msg: string): string {
+  const lines = msg
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const err =
+    lines.find((l) => /^error\b/i.test(l)) ||
+    lines.find((l) => l.startsWith('!')) ||
+    lines.find((l) => /^command failed/i.test(l));
+  const pick = err ?? lines[0] ?? '';
+  return pick.length > 140 ? pick.slice(0, 137) + '…' : pick;
+}
+
 // Used by the partial-result banner so users see "(~993 MB)" before they
 // click into a multi-GB stream. Binary-prefix (KiB/MiB/GiB) is the more
 // honest choice for raw byte counts, but ordinary users read MB and GB —

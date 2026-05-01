@@ -2,12 +2,13 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { taskApi } from '@/lib/api';
-import { TaskResponse, TaskProgress, TaskStage } from '@/lib/types';
+import { TaskResponse, TaskProgress } from '@/lib/types';
 import TaskStatusBadge from '@/components/TaskStatusBadge';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { TranslationKey } from '@/lib/translations';
-import { formatBytes, formatRuntimeRange, humanizeIdentifier } from '@/lib/runtime';
+import { formatBytes, formatRuntimeRange, humanizeIdentifier, summarizeError } from '@/lib/runtime';
+import StageBadge from '@/components/StageBadge';
 
 interface PageProps {
   params: { id: string };
@@ -388,46 +389,3 @@ function formatDuration(startStr: string, endStr: string) {
   return `${hr}h ${min % 60}m`;
 }
 
-const STAGE_STYLES: Record<TaskStage['state'], { icon: string; cls: string }> = {
-  pending:     { icon: '○', cls: 'bg-slate-50 text-slate-500 border-slate-200' },
-  running:     { icon: '◔', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  completed:   { icon: '✓', cls: 'bg-green-50 text-green-700 border-green-200' },
-  failed:      { icon: '✕', cls: 'bg-red-50 text-red-700 border-red-200' },
-  // amber = something went wrong but wasn't fatal (heatmap render, zip)
-  skipped:     { icon: '⊘', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  // slate = by-design absence (e.g. promoters_pre uses precomputed index).
-  // Visually neutral so the user doesn't read it as a problem.
-  precomputed: { icon: '↻', cls: 'bg-slate-50 text-slate-600 border-slate-200' },
-};
-
-// Pull a single user-facing line out of a verbose worker error_message.
-// PMET errors typically include hundreds of lines of R warnings ("Joining
-// with by = ...", "Using p_adj as value column...") followed by the
-// actually informative line ("Error in `ggsave()`: ! Dimensions exceed
-// 50 inches"). We surface that informative line in the collapsed summary
-// so the user gets the gist without unfolding the full traceback.
-function summarizeError(msg: string): string {
-  const lines = msg.split('\n').map((l) => l.trim()).filter(Boolean);
-  // Prefer a line starting with "Error" or containing a "!" marker
-  const err = lines.find((l) => /^error\b/i.test(l)) ||
-              lines.find((l) => l.startsWith('!')) ||
-              lines.find((l) => /^command failed/i.test(l));
-  const pick = err ?? lines[0] ?? '';
-  return pick.length > 140 ? pick.slice(0, 137) + '…' : pick;
-}
-
-function StageBadge({ stage, t }: { stage: TaskStage; t: (k: TranslationKey) => string }) {
-  const style = STAGE_STYLES[stage.state];
-  // Stage label: i18n key 'task.stages.<name>' falls back to the raw name
-  const labelKey = `task.stages.${stage.name}` as TranslationKey;
-  const label = t(labelKey);
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${style.cls}`}
-      title={stage.note ?? undefined}
-    >
-      <span aria-hidden className="text-sm leading-none">{style.icon}</span>
-      <span>{label}</span>
-    </span>
-  );
-}
