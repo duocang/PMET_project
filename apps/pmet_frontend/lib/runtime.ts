@@ -18,3 +18,19 @@ export function formatRuntimeRange(loSec: number, hiSec: number, t: Translate): 
 export function humanizeIdentifier(value?: string | null): string {
   return (value || '').replace(/_/g, ' ');
 }
+
+// Used by the partial-result banner so users see "(~993 MB)" before they
+// click into a multi-GB stream. Binary-prefix (KiB/MiB/GiB) is the more
+// honest choice for raw byte counts, but ordinary users read MB and GB —
+// stick with the SI labels they recognize while dividing by 1024 (the
+// off-by-2.4% gap doesn't matter for "is this download going to hurt").
+export function formatBytes(bytes?: number | null): string {
+  if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+  const gb = mb / 1024;
+  return `${gb < 10 ? gb.toFixed(2) : gb.toFixed(1)} GB`;
+}

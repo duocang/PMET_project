@@ -32,6 +32,9 @@ export interface TaskResponse {
   // already on disk). Lets the user grab the partial output without
   // hiding the failure status.
   partial_result_link?: string | null;
+  // Size of motif_output.txt when partial_result_link is set, so the UI
+  // can warn users about big downloads before they click.
+  partial_result_size_bytes?: number | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;

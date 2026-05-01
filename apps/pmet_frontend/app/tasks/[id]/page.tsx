@@ -7,7 +7,7 @@ import TaskStatusBadge from '@/components/TaskStatusBadge';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { TranslationKey } from '@/lib/translations';
-import { formatRuntimeRange, humanizeIdentifier } from '@/lib/runtime';
+import { formatBytes, formatRuntimeRange, humanizeIdentifier } from '@/lib/runtime';
 
 interface PageProps {
   params: { id: string };
@@ -169,6 +169,11 @@ export default function TaskDetailPage({ params }: PageProps) {
               className="text-sm font-semibold text-amber-800 underline hover:text-amber-900"
             >
               {t('task.download_partial')}
+              {task.partial_result_size_bytes != null && (
+                <span className="ml-1 font-normal text-amber-700">
+                  ({formatBytes(task.partial_result_size_bytes)})
+                </span>
+              )}
             </a>
           </div>
         )}

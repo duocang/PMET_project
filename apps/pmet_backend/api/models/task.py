@@ -58,6 +58,10 @@ class TaskResponse(BaseModel):
     # crash that flipped the task to failed. Points at
     # /api/tasks/<id>/partial-result.
     partial_result_link: Optional[str] = None
+    # Size of motif_output.txt in bytes when partial_result_link is set, so
+    # the UI can label the download with how big the user is about to pull.
+    # On big libraries × many clusters this can hit the GB range.
+    partial_result_size_bytes: Optional[int] = None
     created_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None

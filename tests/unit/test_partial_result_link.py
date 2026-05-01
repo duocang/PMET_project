@@ -112,12 +112,16 @@ class PartialResultLinkTests(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_failed_with_motif_output_surfaces_partial_link(self):
         tid = self._write_task(status="failed")
-        self._write_motif_output(tid)
+        body_text = "motif1\tmotif2\tp_adj\nA\tB\t0.001\n"
+        self._write_motif_output(tid, body_text)
         r = self.client.get(f"/api/tasks/{tid}")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["status"], "failed")
         self.assertEqual(body["partial_result_link"], f"/api/tasks/{tid}/partial-result")
+        # Size byte count must accompany the link so the UI can show
+        # "Download partial result (~993 MB)" before the user clicks.
+        self.assertEqual(body["partial_result_size_bytes"], len(body_text.encode()))
 
     def test_failed_without_motif_output_no_partial_link(self):
         tid = self._write_task(status="failed")
@@ -126,6 +130,7 @@ class PartialResultLinkTests(unittest.TestCase):
         body = r.json()
         self.assertEqual(body["status"], "failed")
         self.assertIsNone(body["partial_result_link"])
+        self.assertIsNone(body["partial_result_size_bytes"])
 
     def test_completed_task_no_partial_link(self):
         """Completed tasks already have result_link; partial is just
@@ -135,12 +140,14 @@ class PartialResultLinkTests(unittest.TestCase):
         r = self.client.get(f"/api/tasks/{tid}")
         self.assertEqual(r.status_code, 200)
         self.assertIsNone(r.json()["partial_result_link"])
+        self.assertIsNone(r.json()["partial_result_size_bytes"])
 
     def test_running_task_no_partial_link(self):
         tid = self._write_task(status="running")
         self._write_motif_output(tid)
         r = self.client.get(f"/api/tasks/{tid}")
         self.assertIsNone(r.json()["partial_result_link"])
+        self.assertIsNone(r.json()["partial_result_size_bytes"])
 
     # ------------------------------------------------------------------
     # GET /tasks/{id}/partial-result downloads the file
@@ -155,6 +162,10 @@ class PartialResultLinkTests(unittest.TestCase):
         # Should set a sensible filename in Content-Disposition
         cd = r.headers.get("content-disposition", "")
         self.assertIn(f"{tid}_motif_output.txt", cd)
+        # X-Accel-Buffering: no — tells nginx to stream chunks straight
+        # through instead of buffering the whole (potentially GB-scale)
+        # response before forwarding.
+        self.assertEqual(r.headers.get("x-accel-buffering"), "no")
 
     def test_partial_result_404_when_file_missing(self):
         tid = self._write_task(status="failed")

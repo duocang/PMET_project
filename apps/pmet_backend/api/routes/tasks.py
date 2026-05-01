@@ -374,8 +374,17 @@ async def get_task(task_id: str):
     # link in that case so the user can still grab the scientific
     # payload. Status stays 'failed' so the failure remains visible.
     partial_result_link: Optional[str] = None
-    if task_data.get("status") == "failed" and _locate_motif_output(task_id) is not None:
-        partial_result_link = f"/api/tasks/{task_id}/partial-result"
+    partial_result_size_bytes: Optional[int] = None
+    if task_data.get("status") == "failed":
+        partial_motif_output = _locate_motif_output(task_id)
+        if partial_motif_output is not None:
+            partial_result_link = f"/api/tasks/{task_id}/partial-result"
+            try:
+                partial_result_size_bytes = partial_motif_output.stat().st_size
+            except OSError:
+                # File vanished between locate() and stat() — treat as no
+                # partial result (link without size would mislead the UI).
+                partial_result_link = None
 
     # Per-stage view + warnings derived from on-disk artifacts. Pure
     # FS inspection — does not mutate task_data.
@@ -390,6 +399,7 @@ async def get_task(task_id: str):
         email=task_data["email"],
         result_link=result_link,
         partial_result_link=partial_result_link,
+        partial_result_size_bytes=partial_result_size_bytes,
         stages=stages,
         warnings=warnings if warnings else None,
         effective_status=effective_status,
@@ -442,11 +452,17 @@ async def download_partial_result(task_id: str):
     # would otherwise be opened in-browser by some Chrome versions, ignoring
     # Content-Disposition. application/octet-stream is opaque so the browser
     # always falls back to "save as".
-    return FileResponse(
+    response = FileResponse(
         motif_output,
         media_type="application/octet-stream",
         filename=f"{task_id}_motif_output.txt",
     )
+    # Tell nginx not to buffer this response. The default proxy_buffering
+    # would have nginx absorb the whole stream before forwarding — fine for
+    # KB-MB JSON, ruinous for the GB-scale motif_output.txt that big-library
+    # × many-cluster runs can produce.
+    response.headers["X-Accel-Buffering"] = "no"
+    return response
 
 
 @router.get("", response_model=TaskListResponse)
