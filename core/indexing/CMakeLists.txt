@@ -144,6 +144,41 @@ if(NOT PMET_FUSED_OPENMP_TARGET STREQUAL "")
 endif()
 
 #############################################
+# Unit tests (opt-in via -DPMET_BUILD_TESTS=ON)
+#############################################
+# Mirrors the pairing-side setup, with one twist: tests link against
+# a *subset* of PMET_INDEX_SOURCES — just the pure-math + utility
+# pieces that don't reach into FIMO. SiteStore / FileRead / fimo-binary
+# pull in the upstream FIMO API, which would force the test target
+# to link the entire FIMO blob; we don't test those (they're glue +
+# I/O), so cut them out instead.
+set(PMET_INDEX_TEST_SOURCES
+  "${CMAKE_SOURCE_DIR}/src/pmet_index/pmet-index-MemCheck.c"
+  "${CMAKE_SOURCE_DIR}/src/pmet_index/pmet-index-MotifHit.c"
+  "${CMAKE_SOURCE_DIR}/src/pmet_index/pmet-index-MotifHitVector.c"
+  "${CMAKE_SOURCE_DIR}/src/pmet_index/pmet-index-pair-test.c"
+  "${CMAKE_SOURCE_DIR}/src/pmet_index/pmet-index-utils.c"
+)
+
+option(PMET_BUILD_TESTS "Build indexing unit tests" OFF)
+if(PMET_BUILD_TESTS)
+  enable_language(CXX)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  add_executable(index_tests
+    tests/test_main.cpp
+    tests/test_pair_test.cpp
+    tests/test_utils.cpp
+    ${PMET_INDEX_TEST_SOURCES}
+  )
+  target_include_directories(index_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/pmet_index
+  )
+  target_link_libraries(index_tests PRIVATE m)
+endif()
+
+#############################################
 # 安装规则
 #############################################
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)

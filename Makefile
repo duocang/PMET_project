@@ -2,7 +2,7 @@
 
 .PHONY: help build build-core clean-core-binaries build-indexing build-pairing demo demo-indexing demo-pairing baseline clean \
         clean-results clean-results-app clean-results-cli \
-        fetch-data build-app up down logs ps rebuild test-pairing
+        fetch-data build-app up down logs ps rebuild test-pairing test-indexing test-core
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD := $(ROOT)/build
@@ -14,6 +14,8 @@ help:
 	@echo "  Local CLI / dev — host-side, no docker"
 	@echo "    build        - compile core C/C++ engines into ./build/  (NOT the web app)"
 	@echo "    test-pairing - build + run C++ unit tests for the pairing math kernels"
+	@echo "    test-indexing - build + run unit tests for the PMET indexing C code"
+	@echo "    test-core    - run both test-pairing and test-indexing"
 	@echo "    demo         - run demo indexing + pairing against data/"
 	@echo "    baseline     - capture fingerprints to tests/baseline/fingerprints.txt"
 	@echo "    fetch-data   - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
@@ -70,6 +72,21 @@ test-pairing:
 		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
 	@$(CMAKE) --build $(BUILD)/cmake/pairing-tests --target pair_tests --parallel
 	@$(BUILD)/pair_tests
+
+# Indexing C unit tests. Same shape as test-pairing but builds the
+# `index_tests` binary against the PMET-side sources (the FIMO
+# sources are excluded — they're upstream MEME C and not what we
+# wrote). See core/indexing/tests/ for coverage.
+test-indexing:
+	@$(CMAKE) -S $(ROOT)/core/indexing -B $(BUILD)/cmake/indexing-tests \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DPMET_BUILD_TESTS=ON \
+		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
+	@$(CMAKE) --build $(BUILD)/cmake/indexing-tests --target index_tests --parallel
+	@$(BUILD)/index_tests
+
+# Run both core test suites end-to-end.
+test-core: test-pairing test-indexing
 
 demo: demo-indexing demo-pairing
 
