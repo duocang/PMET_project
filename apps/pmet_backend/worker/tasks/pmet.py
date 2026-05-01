@@ -18,13 +18,40 @@ from ...services.stage_status import (
     infer_stages,
 )
 
+# Substrings that mean "retrying will not help" — celery skips its
+# default 3x60s backoff when any of these appear in the error message,
+# freeing the worker slot for queued tasks immediately.
+#
+# Two flavours, kept together for one-stop-shop maintenance:
+#  - environment / build mismatch (e.g. mac binary on linux worker)
+#  - user input is incompatible with the index (gene/interval namespace,
+#    missing required files, FASTA/GFF3 chromosome mismatch)
+#
+# Substring match — keep snippets distinctive enough not to false-match
+# transient errors. If you change one of these source-of-truth messages
+# in scripts/workflows/*.sh or core/pairing/src/*.cpp, update the
+# matching snippet here too (covered by tests/unit/test_error_classification.py).
 NON_RETRYABLE_ERROR_SNIPPETS = (
+    # Environment / build mismatch
     "cannot run inside the Linux Docker worker",
     "cannot execute binary file",
     "Exec format error",
     "Script not found",
     "Required PMET binary is missing",
     "targets Linux/",
+    # User input has no overlap with the index — covers all three
+    # workflow variants: pair_only.sh, promoter.sh, intervals.sh.
+    "the input list match",
+    # File presence checks (gene file, fimohits dir, etc.). Also covers
+    # promoters_pre's "Index dir not found" and missing precomputed files.
+    "missing or empty",
+    "Index dir not found",
+    "Index fimohits/ directory missing",
+    # FASTA / GFF3 mismatch — uploaded files are incompatible.
+    "Chromosome name mismatch",
+    # C++ pairing engine: gene-id namespace mismatch or empty input.
+    "not found in promoter lengths file",
+    "No gene clusters found",
 )
 
 

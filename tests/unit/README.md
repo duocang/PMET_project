@@ -102,6 +102,30 @@ leaves the test process and asserts subject/body content.
   / http no trailing slash / empty / unparseable inputs map to the
   expected partial-result API URL
 
+### `test_error_classification.py`
+
+Covers Problem 3 in `TODO.md` — `is_retryable_task_error` skips
+celery's default 3x60s retry when the error message matches a
+permanent-failure substring, so a wrong-species gene list doesn't
+park a worker slot for ~3 minutes.
+
+The fixture dicts (`PERMANENT_FIXTURES` / `TRANSIENT_FIXTURES`) hold
+real error strings lifted verbatim from their emit site
+(`scripts/workflows/*.sh`, `core/pairing/src/*.cpp`,
+`apps/pmet_backend/services/executor.py`). When you rename one of
+these messages, this test fails first. Cases:
+
+- 9 permanent inputs (no-match-universe in all three workflow
+  variants, missing files, FASTA/GFF3 chromosome mismatch, C++
+  promoter-lengths gene miss, no gene clusters, all 4 environment
+  mismatches) → `is_retryable_task_error` returns False
+- 8 transient inputs (generic command-failed, connection reset, disk
+  I/O, redis unavailable, OOM kill, segfault, missing temp shards,
+  empty string) → True
+- Wrapped form: `executor.py` prefixes stderr with `Command failed:`;
+  the substring detection must still trigger
+- No-duplicates guard on the snippet list itself
+
 ### `test_watchdog_staleness.py`
 
 Covers the liveness watchdog (problem 2 in `TODO.md`). The watchdog

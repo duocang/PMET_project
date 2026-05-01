@@ -55,6 +55,9 @@ run_one "stage status inference (Python)" \
 run_one "mail dispatch templates (Python)" \
     "$PYTHON" tests/unit/test_mail_dispatch.py
 
+run_one "error classification permanent vs transient (Python)" \
+    "$PYTHON" tests/unit/test_error_classification.py
+
 printf '\n========================================\n'
 if (( failed == 0 )); then
     printf '[unit] all %d test file(s) passed\n' "$total"
