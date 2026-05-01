@@ -5,6 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import FileUpload from '@/components/FileUpload';
 import ParameterPanel from '@/components/ParameterPanel';
+import {
+  EXAMPLE_FASTA,
+  EXAMPLE_GFF3,
+  EXAMPLE_MEME,
+  EXAMPLE_GENE_LIST,
+} from '@/lib/fileExamples';
 import { AnalysisMode, EstimateResponse } from '@/lib/types';
 import {
   taskApi,
@@ -629,9 +635,13 @@ function SubmitPageContent() {
               onUpload={(file, p) => handleFileUpload(file, 'fasta', p)}
               onClear={() => handleFileClear('fasta')}
               currentFile={files.fasta?.name}
+              currentFileSize={files.fasta?.size}
               required
               demoUrl={`/api/demo/${mode}/fasta`}
               demoFilename={mode === 'intervals' ? 'intervals.fa' : 'TAIR10.fasta'}
+              previewTitle={t('submit.preview.fasta_title')}
+              previewNote={t('submit.preview.fasta_note')}
+              previewContent={EXAMPLE_FASTA}
             />
           )}
 
@@ -642,9 +652,13 @@ function SubmitPageContent() {
               onUpload={(file, p) => handleFileUpload(file, 'gff3', p)}
               onClear={() => handleFileClear('gff3')}
               currentFile={files.gff3?.name}
+              currentFileSize={files.gff3?.size}
               required
               demoUrl="/api/demo/promoters/gff3"
               demoFilename="TAIR10.gff3"
+              previewTitle={t('submit.preview.gff3_title')}
+              previewNote={t('submit.preview.gff3_note')}
+              previewContent={EXAMPLE_GFF3}
             />
           )}
 
@@ -655,9 +669,13 @@ function SubmitPageContent() {
               onUpload={(file, p) => handleFileUpload(file, 'meme', p)}
               onClear={() => handleFileClear('meme')}
               currentFile={files.meme?.name}
+              currentFileSize={files.meme?.size}
               required
               demoUrl={`/api/demo/${mode}/meme`}
               demoFilename={mode === 'intervals' ? 'motif.meme' : 'Franco-Zorrilla_et_al_2014.meme'}
+              previewTitle={t('submit.preview.meme_title')}
+              previewNote={t('submit.preview.meme_note')}
+              previewContent={EXAMPLE_MEME}
             />
           )}
 
@@ -668,10 +686,14 @@ function SubmitPageContent() {
               onUpload={(file, p) => handleFileUpload(file, 'genes', p)}
               onClear={() => handleFileClear('genes')}
               currentFile={files.genes?.name}
+              currentFileSize={files.genes?.size}
               helpText={t('submit.upload.help.gene_list')}
               required
               demoUrl={`/api/demo/${mode}/genes`}
               demoFilename={mode === 'intervals' ? 'peaks.txt' : 'genes_cell_type_treatment.txt'}
+              previewTitle={t(mode === 'intervals' ? 'submit.preview.peaks_title' : 'submit.preview.gene_list_title')}
+              previewNote={t('submit.preview.gene_list_note')}
+              previewContent={EXAMPLE_GENE_LIST}
             />
           </div>
         </div>

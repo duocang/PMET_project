@@ -4,6 +4,8 @@ import { useCallback, useState } from 'react';
 import { useDropzone, type FileError, type FileRejection } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/lib/i18n';
+import { formatBytes } from '@/lib/runtime';
+import FilePreview from './FilePreview';
 
 interface FileUploadProps {
   label: string;
@@ -17,12 +19,23 @@ interface FileUploadProps {
   /** Caller deletes the previously-uploaded file (server + local state). */
   onClear?: () => Promise<void> | void;
   currentFile?: string;
+  /** Size in bytes of the currently-uploaded file. When set, the
+   *  uploaded-state panel renders "<filename> (123 MB)" so users get the
+   *  same size hint here as on download buttons. */
+  currentFileSize?: number;
   helpText?: string;
   required?: boolean;
   /** Optional URL to a demo file. If set, a small "Use example" link appears. */
   demoUrl?: string;
   /** Filename to give the fetched demo file. */
   demoFilename?: string;
+  /** Optional inline format preview. Renders a "查看示例" trigger next to
+   *  "使用示例"; clicking opens a side drawer showing `previewContent`.
+   *  All three props must be set together; if any is missing, no preview
+   *  trigger appears. */
+  previewTitle?: string;
+  previewContent?: string;
+  previewNote?: string;
 }
 
 function UploadIcon() {
@@ -73,10 +86,14 @@ export default function FileUpload({
   onUpload,
   onClear,
   currentFile,
+  currentFileSize,
   helpText,
   required = false,
   demoUrl,
   demoFilename,
+  previewTitle,
+  previewContent,
+  previewNote,
 }: FileUploadProps) {
   const { t } = useTranslation();
   const [loadingDemo, setLoadingDemo] = useState(false);
@@ -94,11 +111,22 @@ export default function FileUpload({
 
   const runUpload = useCallback(
     async (file: File) => {
+      // Tiny files (and the "use example" path) finish in <100 ms; the
+      // green progress bar would flash by before the user sees there
+      // was even an upload. Pad the visible "uploading" state to a
+      // 1.5 s floor so the animation always plays through. Real long
+      // uploads exceed this naturally and aren't affected.
+      const MIN_VISIBLE_MS = 1500;
+      const start = Date.now();
       setUploading(true);
       setProgress(0);
       setUploadingFilename(file.name);
       try {
         await onUpload(file, setProgress);
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_VISIBLE_MS) {
+          await new Promise((r) => setTimeout(r, MIN_VISIBLE_MS - elapsed));
+        }
         toast.success(`${file.name} — ${t('fileupload.toast.uploaded')}`);
       } catch (error) {
         toast.error(`${t('fileupload.toast.failed')}: ${file.name}`);
@@ -194,20 +222,31 @@ export default function FileUpload({
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
-        {demoUrl && !currentFile && !uploading && (
-          <button
-            type="button"
-            onClick={useExample}
-            disabled={loadingDemo}
-            className="text-xs font-medium text-primary-700 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="13 2 13 9 20 9" />
-              <path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7" />
-            </svg>
-            {loadingDemo ? t('fileupload.loading') : t('fileupload.use_example')}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {previewTitle && previewContent && (
+            <FilePreview
+              title={previewTitle}
+              content={previewContent}
+              note={previewNote}
+              triggerLabel={t('fileupload.preview_example')}
+              closeLabel={t('viz.modal.close')}
+            />
+          )}
+          {demoUrl && !currentFile && !uploading && (
+            <button
+              type="button"
+              onClick={useExample}
+              disabled={loadingDemo}
+              className="text-xs font-medium text-primary-700 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="13 2 13 9 20 9" />
+                <path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7" />
+              </svg>
+              {loadingDemo ? t('fileupload.loading') : t('fileupload.use_example')}
+            </button>
+          )}
+        </div>
       </div>
       <div
         {...getRootProps()}
@@ -239,7 +278,14 @@ export default function FileUpload({
           ) : currentFile ? (
             <>
               <div className="flex justify-center"><FileCheckIcon /></div>
-              <p className="font-medium text-emerald-700 break-all">{currentFile}</p>
+              <p className="font-medium text-emerald-700 break-all">
+                {currentFile}
+                {currentFileSize != null && (
+                  <span className="ml-1 font-normal text-emerald-600/80">
+                    ({formatBytes(currentFileSize)})
+                  </span>
+                )}
+              </p>
               {onClear && (
                 <button
                   type="button"
