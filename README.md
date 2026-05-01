@@ -287,12 +287,13 @@ Finer deploy targets: `cd deploy && make help`.
 
 ## 9. Tests & regression baseline
 
-Two independent verification tracks:
+Three independent verification tracks:
 
+- [`core/{pairing,indexing}/tests/`](core/) — **C/C++ unit tests for the math kernels.** ~96 cases over the pure-math pieces of both engines (BH correction, hypergeometric coloc, binomial / Poisson CDF, MinHash sketch, motif-overlap geometry, load-balancing partition, plus indexing-side string utils). `make test-pairing` / `make test-indexing` / `make test-core` build a separate test binary against the same OBJECT library production uses, so tests never drift from what ships. Wall time: < 5 s combined.
 - [`tests/audit/`](tests/audit/) — **runs every workflow** against canonical inputs and renders the dict→template into [`docs/workflows/*.md`](docs/workflows/). Every verification check produces PASS / WARN / FAIL, with SHA-256 anchors as regression sentinels. Run one or all with `python3 tests/audit/generate.py [<name> ...]`; wall time: pair_only ~15 s, intervals ~16 s, promoter ~2 min, elements ~5 min.
 - [`tests/baseline/`](tests/baseline/) — fingerprints the lower-level scripts (`apps/cli/scripts/*`); `make baseline` re-captures, `tests/baseline/fingerprints.txt` is the anchor to diff against.
 
-`apps/pmet_backend/test_api.py` is covered separately by pytest inside the backend's docker image.
+`apps/pmet_backend/test_api.py` is covered separately by pytest inside the backend's docker image. Frontend / backend Python unit tests live under [`tests/unit/`](tests/unit/) and run via `bash tests/unit/run.sh`.
 
 <a id="en-10"></a>
 
@@ -591,12 +592,13 @@ openssl rand -hex 32 > data/configure/admin_token.txt
 
 ## 9. 测试与回归基线
 
-两条独立的验证轨道：
+三条独立的验证轨道：
 
+- [`core/{pairing,indexing}/tests/`](core/) — **C/C++ 数学 kernel 单元测试。** 共 ~96 个 case，覆盖两套引擎里的纯数学部分（BH correction、hypergeometric coloc、binomial / Poisson CDF、MinHash sketch、motif overlap 几何、负载均衡分区，加 indexing 侧的字符串工具）。`make test-pairing` / `make test-indexing` / `make test-core` 用与生产共享的 OBJECT library 构建独立测试二进制，保证"测的代码 = 跑的代码"。Wall time 总计 < 5 秒。
 - [`tests/audit/`](tests/audit/) — **每个 workflow 跑一遍**真实输入，用 dict→template 渲染出 [`docs/workflows/*.md`](docs/workflows/)。每条 verification check 都给 PASS/WARN/FAIL，SHA-256 anchor 当回归哨兵。`python3 tests/audit/generate.py [<name> ...]` 跑一个或全部；wall time pair_only ~15 s，intervals ~16 s，promoter ~2 min，elements ~5 min。
 - [`tests/baseline/`](tests/baseline/) — 对底层脚本（`apps/cli/scripts/*`）的输出做 fingerprint，`make baseline` 重新捕获，`tests/baseline/fingerprints.txt` 当 anchor 对比。
 
-`apps/pmet_backend/test_api.py` 由后端 docker 镜像里的 pytest 单独覆盖。
+`apps/pmet_backend/test_api.py` 由后端 docker 镜像里的 pytest 单独覆盖。前端 / 后端 Python 层的单测在 [`tests/unit/`](tests/unit/)，跑 `bash tests/unit/run.sh`。
 
 <a id="cn-10"></a>
 
