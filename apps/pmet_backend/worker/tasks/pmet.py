@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import urlparse
 
 from celery import shared_task
 
@@ -11,6 +12,11 @@ from ...config import config
 from ...services.executor import PMETExecutor
 from ...services.mail import MailService
 from ...services.storage import StorageService
+from ...services.stage_status import (
+    derive_effective_status,
+    derive_warnings,
+    infer_stages,
+)
 
 NON_RETRYABLE_ERROR_SNIPPETS = (
     "cannot run inside the Linux Docker worker",
@@ -24,6 +30,40 @@ NON_RETRYABLE_ERROR_SNIPPETS = (
 
 def is_retryable_task_error(message: str) -> bool:
     return not any(snippet in message for snippet in NON_RETRYABLE_ERROR_SNIPPETS)
+
+
+def _build_partial_result_link(task_id: str) -> str:
+    """Public URL for /api/tasks/<id>/partial-result, derived from
+    NGINX_LINK. NGINX_LINK is the result-zip base (e.g.
+    https://pmet.online/results/) — strip its path to get the host
+    root, then append the API path. Empty when NGINX_LINK is unset."""
+    base = (config.NGINX_LINK or "").strip()
+    if not base:
+        return ""
+    parsed = urlparse(base)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}/api/tasks/{task_id}/partial-result"
+
+
+def _summarize_error(msg: str) -> str:
+    """Pick a single user-facing line out of a verbose worker error.
+    Mirrors the frontend summarizeError heuristic so the email body
+    leads with the same line the UI shows in its collapsed banner."""
+    if not msg:
+        return ""
+    lines = [ln.strip() for ln in msg.splitlines() if ln.strip()]
+    for ln in lines:
+        if ln.lower().startswith("error"):
+            return ln if len(ln) <= 200 else ln[:197] + "…"
+    for ln in lines:
+        if ln.startswith("!"):
+            return ln if len(ln) <= 200 else ln[:197] + "…"
+    for ln in lines:
+        if ln.lower().startswith("command failed"):
+            return ln if len(ln) <= 200 else ln[:197] + "…"
+    pick = lines[0] if lines else msg
+    return pick if len(pick) <= 200 else pick[:197] + "…"
 
 
 def _log_runtime_history(task_meta: dict) -> None:
@@ -162,8 +202,15 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
             # safe to keep forever.
             _log_runtime_history(task_meta)
 
-            # Send result email
-            mail.send_result_notification(task_meta["email"], result_link, task_meta)
+            # Send result email — include any non-fatal warnings derived
+            # from the on-disk artifacts (e.g. heatmap was skipped). Empty
+            # list passes through untouched, preserving the legacy mail
+            # body for clean runs.
+            stages = infer_stages(task_meta, config.RESULT_DIR / task_id)
+            warnings = derive_warnings(stages)
+            mail.send_result_notification(
+                task_meta["email"], result_link, task_meta, warnings=warnings
+            )
         else:
             raise Exception(result.get("error", "PMET execution failed"))
 
@@ -188,6 +235,34 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
         # Retry logic
         if self.request.retries < self.max_retries and is_retryable_task_error(str(e)):
             raise self.retry(exc=e)
+
+        # Final failure — branch by recoverability. If the pairing stage
+        # produced motif_output.txt despite the late-stage crash, mail
+        # the user a partial-result link instead of a generic "failed".
+        # Otherwise send the failure email with an error summary + the
+        # common-causes checklist.
+        try:
+            stages = infer_stages(task_meta, config.RESULT_DIR / task_id)
+            effective = derive_effective_status("failed", stages)
+            warnings = derive_warnings(stages)
+            error_summary = _summarize_error(str(e))
+
+            if effective == "partial_success":
+                partial_link = _build_partial_result_link(task_id)
+                mail.send_partial_result_notification(
+                    task_meta["email"],
+                    partial_link,
+                    error_summary,
+                    warnings,
+                    task_meta,
+                )
+            else:
+                mail.send_failed_notification(
+                    task_meta["email"], error_summary, task_meta
+                )
+        except Exception as mail_err:
+            # Never let a mail failure mask the original exception path.
+            print(f"failure-notification dispatch error: {mail_err}", flush=True)
 
         return {"success": False, "error": str(e)}
 

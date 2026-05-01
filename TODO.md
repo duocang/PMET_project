@@ -170,6 +170,23 @@ permanent 失败 `raise self.retry()` 设 `max_retries=0`，或干脆 early retu
 
 这同时也是问题 1 的根本治法——status 拆细后，画图失败再也不会让人误以为任务挂了。
 
+**邮件分发改造（status-aware mail dispatch）** ✓ 已修
+
+光在 UI 上把 `partial_success` 露出来不够——很多用户根本不开页面，只看完成邮件。worker 那一侧的邮件模板原本只有「成功 / 完全沉默」两条路径，硬失败连邮件都不发。改造完成后：
+
+- `apps/pmet_backend/services/mail.py`：
+  - `send_result_notification` 接受可选 `warnings` 参数；非空时主题加 `(with notes)` 后缀，badge 渲染 `Completed (with notes)`，body 多一个 amber `Notes:` 块。`completed_with_warnings` **不再单独走分支**，而是合并到 `completed` 邮件，避免噪音翻倍（用户的 a 决议）。
+  - 新增 `send_partial_result_notification(email, partial_link, error_summary, warnings, task_meta)`：主题 `PMET partial result available: <id>`，badge `Partial success`，按钮指向 `/api/tasks/<id>/partial-result`（直接 stream `motif_output.txt`，不走 zip），同时列错误摘要 + warnings 清单。`partial_link` 为空时降级成「未配置」提示而不是发空按钮。
+  - 新增 `send_failed_notification(email, error_summary, task_meta)`：主题 `PMET task failed: <id>`，badge `Failed`，body 含错误摘要框 + Common-causes 排查清单（基因 ID / FASTA / 索引 / 物种）。**填补了硬失败完全沉默的洞**（用户的 b 决议）。
+- `apps/pmet_backend/worker/tasks/pmet.py`：
+  - 成功路径：跑 `infer_stages` + `derive_warnings`，把 warnings 传给 `send_result_notification`。
+  - 失败路径（重试用尽后）：跑 `derive_effective_status("failed", stages)`。`partial_success` → `send_partial_result_notification`（带 `_build_partial_result_link` 派生的下载 URL + `_summarize_error` 抽出来的首条错误行）；其它 → `send_failed_notification`。**邮件失败本身不能再掩盖原异常**——整段包在 try/except 里只 print。
+  - `_build_partial_result_link`：`urlparse(NGINX_LINK)` 取 scheme+netloc，拼 `/api/tasks/<id>/partial-result`；NGINX_LINK 空或不可解析则返回空串。
+  - `_summarize_error`：和前端 `summarizeError` 同款启发式（`Error...` / `! ...` / `Command failed...` / 首行），最多 200 字符。
+- 单测 `tests/unit/test_mail_dispatch.py`：9 个 case。`patch.object(MailService, "_send_email")` 截获 `(to, subject, body)` 三元组，断言主题文案 / 下载链接 / `motif_output.txt` 字样 / Notes 块 / Common-causes 检查表 / 不可解析 NGINX_LINK 兜底。**SMTP 完全 stub，跑在 tests/unit/run.sh 里 < 1 秒**。
+
+至此持久化 status 不变，UI 看到的 `effective_status` 一致，邮件内容也按相同分类落到用户邮箱——三条路径对齐。
+
 ---
 
 ## 优先级建议

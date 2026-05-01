@@ -51,6 +51,9 @@ class MailService:
     def _escape(self, value) -> str:
         return html.escape(str(value), quote=True)
 
+    def _status_tone_class(self, tone: str) -> str:
+        return {"success": " success", "warning": " warning", "danger": " danger"}.get(tone, "")
+
     def _timestamp(self) -> str:
         return datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -176,6 +179,7 @@ class MailService:
         action_html: str = "",
         extra_html: str = "",
         user_email: Optional[str] = None,
+        status_tone: str = "info",
     ) -> str:
         summary = self._table("Task summary", self._task_summary_rows(task_meta, user_email))
         params = self._table("Parameters", self._parameter_rows(task_meta))
@@ -269,11 +273,13 @@ class MailService:
               font-size: 12px;
             }}
             .danger {{ background: #fee2e2; color: #b91c1c; }}
+            .success {{ background: #dcfce7; color: #15803d; }}
+            .warning {{ background: #fef3c7; color: #92400e; }}
           </style>
         </head>
         <body>
           <div class="card">
-            <div class="status">{self._escape(status)}</div>
+            <div class="status{self._status_tone_class(status_tone)}">{self._escape(status)}</div>
             <h1>{self._escape(heading)}</h1>
             <p>{self._escape(intro)}</p>
             {action_html}
@@ -301,8 +307,33 @@ class MailService:
             ),
         )
 
-    def send_result_notification(self, email: str, result_link: str, task_meta: Optional[dict] = None):
-        """Send notification with result download link."""
+    def _warnings_block(self, warnings: Optional[list]) -> str:
+        """Render a small list-of-notes section. Empty when no warnings."""
+        if not warnings:
+            return ""
+        items = "".join(f"<li>{self._escape(w)}</li>" for w in warnings)
+        return (
+            '<div class="note" style="background:#fffbeb;border:1px solid #fde68a;'
+            "border-radius:8px;padding:10px 14px;color:#92400e;\">"
+            "<strong>Notes:</strong>"
+            f"<ul style=\"margin:6px 0 0 18px;padding:0;\">{items}</ul>"
+            "</div>"
+        )
+
+    def send_result_notification(
+        self,
+        email: str,
+        result_link: str,
+        task_meta: Optional[dict] = None,
+        warnings: Optional[list] = None,
+    ):
+        """Send notification with result download link.
+
+        When `warnings` is provided (e.g. heatmap rendered with
+        caveats), a small notes block is added above the summary
+        tables. Subject and primary action are unchanged — the
+        analysis still succeeded.
+        """
         meta = task_meta or {}
         if result_link:
             safe_link = self._escape(result_link)
@@ -315,16 +346,132 @@ class MailService:
                 "Please contact the PMET administrator.</p>"
             )
 
+        subject_suffix = " (with notes)" if warnings else ""
+        intro = (
+            "The analysis completed successfully and the result archive is "
+            "available for download."
+        )
+        if warnings:
+            intro += " A few non-fatal notes are listed below."
+
         return self._send_email(
             email,
-            f"PMET results ready: {meta.get('task_id', '')}",
+            f"PMET results ready{subject_suffix}: {meta.get('task_id', '')}",
             self._template(
                 "Your PMET results are ready",
-                "The analysis completed successfully and the result archive is available for download.",
-                "Completed",
+                intro,
+                "Completed" if not warnings else "Completed (with notes)",
                 meta,
                 action_html=action,
-                extra_html=extra,
+                extra_html=extra + self._warnings_block(warnings),
+                status_tone="warning" if warnings else "success",
+            ),
+        )
+
+    def send_partial_result_notification(
+        self,
+        email: str,
+        partial_link: str,
+        error_summary: str,
+        warnings: Optional[list],
+        task_meta: Optional[dict] = None,
+    ):
+        """Send notification when the task is marked failed but the
+        pairing stage produced motif_output.txt. The user gets a
+        direct download link to the TSV plus a brief explanation of
+        which late-stage step crashed."""
+        meta = task_meta or {}
+        if partial_link:
+            safe_link = self._escape(partial_link)
+            action = (
+                f'<p><a class="button" href="{safe_link}">'
+                "Download partial result (motif_output.txt)</a></p>"
+            )
+            extra = (
+                f'<p>Direct link: <a href="{safe_link}">{safe_link}</a></p>'
+                "<p style=\"font-size:13px;color:#475569;\">"
+                "The pairing stage finished and wrote the canonical "
+                "motif-pair output. Only a downstream step "
+                "(heatmap rendering or zip packaging) failed — "
+                "your scientific data is intact."
+                "</p>"
+            )
+        else:
+            action = ""
+            extra = (
+                '<p class="status danger">Partial-result URL is not configured. '
+                "Please contact the PMET administrator.</p>"
+            )
+
+        warning_html = self._warnings_block(warnings)
+        error_html = (
+            '<div class="note" style="background:#fef2f2;border:1px solid #fecaca;'
+            "border-radius:8px;padding:10px 14px;color:#991b1b;\">"
+            f"<strong>What went wrong:</strong> {self._escape(error_summary)}"
+            "</div>"
+        ) if error_summary else ""
+
+        return self._send_email(
+            email,
+            f"PMET partial result available: {meta.get('task_id', '')}",
+            self._template(
+                "Your PMET analysis finished with caveats",
+                "The pairing stage produced motif_output.txt successfully, "
+                "but a downstream step failed. Your data is recoverable — "
+                "use the link below to download the partial result.",
+                "Partial success",
+                meta,
+                action_html=action,
+                extra_html=extra + error_html + warning_html,
+                status_tone="warning",
+            ),
+        )
+
+    def send_failed_notification(
+        self,
+        email: str,
+        error_summary: str,
+        task_meta: Optional[dict] = None,
+    ):
+        """Send notification when the task hard-failed (no usable
+        scientific output produced). Includes the error summary and a
+        short list of common causes the user can check."""
+        meta = task_meta or {}
+        error_html = (
+            '<div class="note" style="background:#fef2f2;border:1px solid #fecaca;'
+            "border-radius:8px;padding:10px 14px;color:#991b1b;font-family:monospace;"
+            "font-size:12px;white-space:pre-wrap;word-break:break-word;\">"
+            f"{self._escape(error_summary)}"
+            "</div>"
+        ) if error_summary else ""
+
+        causes_html = (
+            '<div class="note" style="margin-top:14px;">'
+            "<strong>Common causes to check:</strong>"
+            "<ul style=\"margin:6px 0 0 18px;padding:0;color:#475569;\">"
+            "<li>Gene IDs in your input do not match the index universe — "
+            "make sure the species you picked corresponds to your gene-ID "
+            "namespace (e.g. <code>AT*</code> for Arabidopsis).</li>"
+            "<li>Input file format / encoding — gene lists are TSV with "
+            "<code>cluster\\tgene_id</code>, FASTA / GFF3 / MEME files must "
+            "follow their canonical formats.</li>"
+            "<li>Server resources — extremely large motif databases on a "
+            "small worker can exceed the liveness timeout. Try a smaller "
+            "library first to confirm the rest of the inputs.</li>"
+            "</ul></div>"
+        )
+
+        return self._send_email(
+            email,
+            f"PMET task failed: {meta.get('task_id', '')}",
+            self._template(
+                "Your PMET analysis failed",
+                "The task hit an error and could not produce results. "
+                "Please review the message below before re-submitting.",
+                "Failed",
+                meta,
+                extra_html=error_html + causes_html,
+                status_tone="danger",
             ),
         )
 

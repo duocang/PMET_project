@@ -52,6 +52,9 @@ run_one "partial-result rescue link (Python)" \
 run_one "stage status inference (Python)" \
     "$PYTHON" tests/unit/test_stage_status.py
 
+run_one "mail dispatch templates (Python)" \
+    "$PYTHON" tests/unit/test_mail_dispatch.py
+
 printf '\n========================================\n'
 if (( failed == 0 )); then
     printf '[unit] all %d test file(s) passed\n' "$total"

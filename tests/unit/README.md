@@ -78,6 +78,30 @@ patched to a tmp dir:
 - `GET /tasks/{id}/partial-result` streams the TSV with a sensible
   filename, 404s when the file or the task is missing
 
+### `test_mail_dispatch.py`
+
+Companion to `test_stage_status.py` — that one tests status derivation;
+this one tests the worker mail templates do the right thing given an
+effective_status output. Stubs `MailService._send_email` so nothing
+leaves the test process and asserts subject/body content.
+
+- `send_result_notification` clean: no "with notes" suffix, no warnings
+  block, points at the zip
+- `send_result_notification` with warnings: subject gets " (with
+  notes)", warnings list rendered, status badge says
+  `Completed (with notes)`
+- `send_partial_result_notification`: subject says "partial result",
+  body advertises the `/api/tasks/<id>/partial-result` endpoint with
+  an explicit `motif_output.txt` reference and "Partial success" badge
+- `send_partial_result_notification` without link: empty
+  `partial_link` (NGINX_LINK unset) renders a "not configured" notice
+  instead of a button — defensive
+- `send_failed_notification`: "PMET task failed" subject, "Failed"
+  badge, error summary inline, "Common causes" checklist present
+- `_build_partial_result_link` helper (worker-side): https with path
+  / http no trailing slash / empty / unparseable inputs map to the
+  expected partial-result API URL
+
 ### `test_watchdog_staleness.py`
 
 Covers the liveness watchdog (problem 2 in `TODO.md`). The watchdog
