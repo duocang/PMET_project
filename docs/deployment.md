@@ -50,13 +50,19 @@ Six services. Only `nginx` is published to the host (`5960`). The others are rea
 ## 2. Health checks
 
 ```bash
-# nginx → API round-trip (the actual user-facing path)
+# Test the full nginx → API round-trip (the path users actually take).
 curl -sf http://localhost:5960/api/health && echo OK
 
-# Inside the docker network — needs `docker compose exec`
+# All the rest run from deploy/ to use docker compose exec.
 cd deploy
-docker compose exec redis redis-cli ping       # → PONG
+
+# Redis liveness — should print PONG.
+docker compose exec redis redis-cli ping
+
+# API liveness from inside the docker network.
 docker compose exec api curl -sf http://localhost:8000/health && echo OK
+
+# Frontend liveness (just checks the dev/prod server returns the home page).
 docker compose exec frontend curl -sf http://localhost:3000 >/dev/null && echo OK
 ```
 
@@ -72,10 +78,18 @@ docker compose exec frontend curl -sf http://localhost:3000 >/dev/null && echo O
 
 ```bash
 cd deploy
-docker compose logs -f                       # all services, live
-docker compose logs -f api worker            # just these two
-docker compose logs --tail=200 worker        # last 200 lines, exit
-docker compose logs --since=10m nginx        # last 10 minutes
+
+# Tail all services live (Ctrl-C to detach).
+docker compose logs -f
+
+# Same but only api + worker.
+docker compose logs -f api worker
+
+# Last 200 lines from worker, then exit.
+docker compose logs --tail=200 worker
+
+# Last 10 minutes from nginx, then exit.
+docker compose logs --since=10m nginx
 ```
 
 Common patterns to grep for:
@@ -94,10 +108,11 @@ Common patterns to grep for:
 Two knobs:
 
 ```bash
-# A) raise per-worker concurrency (single container, more parallel tasks)
-PMET_WORKERS=4 make up                # default 2
+# Knob A — raise per-worker concurrency (single container, more parallel
+# tasks). Default is 2.
+PMET_WORKERS=4 make up
 
-# B) horizontal scale (multiple worker containers, separate process trees)
+# Knob B — horizontal scale (N worker containers, each its own process tree).
 cd deploy && docker compose up -d --scale worker=3
 ```
 
@@ -190,11 +205,14 @@ nginx limit. Edit [`deploy/nginx/nginx.conf`](../deploy/nginx/), bump `client_ma
 ### Email not sending
 
 ```bash
-# Verify the file is readable and well-formed
-cat data/configure/email_credential.txt   # 5 lines, no extra whitespace
+# Eyeball the credentials file: it must be exactly 5 lines, no leading/trailing whitespace.
+cat data/configure/email_credential.txt
 
-# Test the SMTP path directly from the worker container's network
+# Move into deploy/ so docker compose can find compose.yml.
 cd deploy
+
+# Test the SMTP path from inside the worker container — same network the
+# worker uses, so any host firewall / DNS shenanigans show up here.
 docker compose exec worker python -c "
 import smtplib
 s = smtplib.SMTP('smtp.gmail.com', 587)
@@ -212,9 +230,18 @@ For Gmail, you need an **app password**, not your account password.
 
 ```bash
 cd deploy
-make rebuild-frontend          # if you only edited apps/pmet_frontend/
-make rebuild-backend           # if you only edited Dockerfile or requirements.txt
-make restart-worker            # if you only edited apps/pmet_backend/worker/ Python (bind-mounted; no rebuild needed)
+
+# Rebuild ONLY the frontend image — pick this if you only edited
+# anything under apps/pmet_frontend/.
+make rebuild-frontend
+
+# Rebuild ONLY the backend image — pick this if you only edited
+# Dockerfile or requirements.txt.
+make rebuild-backend
+
+# No rebuild, just restart the worker — pick this if you only edited
+# Python under apps/pmet_backend/worker/ (bind-mounted into the image).
+make restart-worker
 ```
 
 The frontend image is the slow one (full Next.js build). Backend code changes don't require a rebuild — only Dockerfile/requirements changes do.
@@ -265,13 +292,19 @@ The frontend image is the slow one (full Next.js build). Backend code changes do
 ## 2. 健康检查
 
 ```bash
-# nginx → API 的回路（用户实际走的路径）
+# 测完整的 nginx → API 回路（用户实际走的路径）。
 curl -sf http://localhost:5960/api/health && echo OK
 
-# docker 网络内 —— 要 `docker compose exec`
+# 剩下的从 deploy/ 跑，因为要 docker compose exec。
 cd deploy
-docker compose exec redis redis-cli ping       # → PONG
+
+# Redis 存活 —— 应该打 PONG。
+docker compose exec redis redis-cli ping
+
+# 从 docker 网络内部测 API 存活。
 docker compose exec api curl -sf http://localhost:8000/health && echo OK
+
+# 前端存活（仅检查 dev/prod 服务返回首页）。
 docker compose exec frontend curl -sf http://localhost:3000 >/dev/null && echo OK
 ```
 
@@ -287,10 +320,18 @@ docker compose exec frontend curl -sf http://localhost:3000 >/dev/null && echo O
 
 ```bash
 cd deploy
-docker compose logs -f                       # 所有服务，实时
-docker compose logs -f api worker            # 只这两个
-docker compose logs --tail=200 worker        # 末 200 行，退出
-docker compose logs --since=10m nginx        # 最近 10 分钟
+
+# 实时跟所有服务的日志（Ctrl-C 退出）。
+docker compose logs -f
+
+# 同样但只跟 api + worker。
+docker compose logs -f api worker
+
+# worker 末 200 行，然后退出。
+docker compose logs --tail=200 worker
+
+# nginx 最近 10 分钟，然后退出。
+docker compose logs --since=10m nginx
 ```
 
 常见 grep 模式：
@@ -309,10 +350,10 @@ docker compose logs --since=10m nginx        # 最近 10 分钟
 两个旋钮：
 
 ```bash
-# A) 提高单 worker 的并发（一个容器，更多并行任务）
-PMET_WORKERS=4 make up                # 默认 2
+# 旋钮 A —— 提高单 worker 的并发（一个容器，更多并行任务）。默认 2。
+PMET_WORKERS=4 make up
 
-# B) 横向扩（多 worker 容器，独立进程树）
+# 旋钮 B —— 横向扩（N 个 worker 容器，每个一个独立进程树）。
 cd deploy && docker compose up -d --scale worker=3
 ```
 
@@ -405,11 +446,14 @@ nginx 限制。编辑 [`deploy/nginx/nginx.conf`](../deploy/nginx/) 调大 `clie
 ### 邮件发不出
 
 ```bash
-# 验证文件可读、格式对
-cat data/configure/email_credential.txt   # 5 行，无多余空白
+# 看一眼凭据文件：必须正好 5 行，前后无空白。
+cat data/configure/email_credential.txt
 
-# 直接从 worker 容器的网络里测 SMTP 路径
+# 进 deploy/ 让 docker compose 找得到 compose.yml。
 cd deploy
+
+# 从 worker 容器内部测 SMTP 路径 —— 跟 worker 同一份网络，
+# host 防火墙 / DNS 问题在这里都会暴露出来。
 docker compose exec worker python -c "
 import smtplib
 s = smtplib.SMTP('smtp.gmail.com', 587)
@@ -427,9 +471,16 @@ Gmail 要的是 **app password**，不是你账号密码。
 
 ```bash
 cd deploy
-make rebuild-frontend          # 只动了 apps/pmet_frontend/
-make rebuild-backend           # 只动了 Dockerfile 或 requirements.txt
-make restart-worker            # 只动了 apps/pmet_backend/worker/ 下的 Python（bind-mount，不用 rebuild）
+
+# 只重建前端镜像 —— 适用于只改了 apps/pmet_frontend/ 下的内容。
+make rebuild-frontend
+
+# 只重建后端镜像 —— 适用于只改了 Dockerfile 或 requirements.txt。
+make rebuild-backend
+
+# 不重建，只重启 worker —— 适用于只改了 apps/pmet_backend/worker/
+# 下的 Python（bind-mount 进镜像了）。
+make restart-worker
 ```
 
 前端镜像是慢的那个（完整 Next.js build）。后端 Python 改了不用 rebuild —— 只有 Dockerfile / requirements 改了才要。

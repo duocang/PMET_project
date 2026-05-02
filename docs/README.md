@@ -72,11 +72,34 @@ docs/
 The four `workflows/*.md` files are not pure prose — the verification tables in them (file hashes, sizes, presence checks, PASS/FAIL verdicts) come from actually re-running each workflow. After any change to a workflow script:
 
 ```bash
-make test-audit                                # regenerate all four
-python3 tests/audit/generate.py promoter       # just one
+# Regenerate all four docs/workflows/*.md  (~7 min total)
+make test-audit
+
+# Or refresh just one (faster — useful while iterating on a single workflow)
+python3 tests/audit/generate.py promoter
 ```
 
-Narrative parts stay; the tables get refreshed. If a check went PASS → FAIL, either fix the workflow or update the doc to reflect the intentional new behavior. See [tests/audit/README.md](../tests/audit/README.md) for how the data flow works.
+### What gets generated
+
+Each run rewrites `docs/workflows/<name>.md` (one of `promoter.md` / `intervals.md` / `elements.md` / `pair_only.md`). The structure inside each is the same:
+
+- **Narrative sections** (Purpose / Biological setup / What the script does step by step / Reproducing this audit) — hand-written prose pulled from the matching template under [`tests/audit/templates/`](../tests/audit/templates/). These are what *you* maintain when the workflow changes meaning.
+- **Run snapshot** — fresh on every run: the exact command that was invoked, where the output landed, file counts (`fimohits/*.bin`, `binomial_thresholds.txt` rows, etc.), the first 3 lines of `motif_output.txt`, total enriched-pair count, wall time.
+- **Verification table** — the same machine, with one row per check (`OVERALL`, `motif_output.txt deterministic vs anchor`, `binomial_thresholds rows == motifs`, ...) marked PASS / WARN / FAIL.
+
+Working files for the run land under `tests/audit/runs/<name>/` (gitignored — useful when you want to inspect what the workflow actually produced for that audit).
+
+### What the result means
+
+The single most useful thing on the page is the **OVERALL** line at the top of the verification section:
+
+- **OVERALL: PASS** → numbers in the doc match what the workflow currently produces. Commit the regenerated `docs/workflows/<name>.md` along with whatever change you made.
+- **OVERALL: WARN** → something non-blocking (e.g. an `elements` per-task SHA anchor was deliberately left blank waiting for first capture). The WARN row says exactly which value to paste into `tests/audit/workflows/<name>.py` to bless it.
+- **OVERALL: FAIL** → a workflow output drifted from its anchor or a cross-file invariant broke. **Either** revert the workflow change (the doc was right, the code regressed), **or** update the anchor in the spec at `tests/audit/workflows/<name>.py` to record the new intentional behavior. The FAIL row tells you which file's SHA changed.
+
+`git diff docs/workflows/` after the run is the auditable record of how the regeneration changed each doc — that's what reviewers look at in PRs.
+
+For the data flow (how `tests/audit/lib.py` glues the spec, the template, and the `<<PLACEHOLDER>>` substitutions together) see [tests/audit/README.md](../tests/audit/README.md).
 
 <a id="en-5"></a>
 
@@ -156,11 +179,34 @@ docs/
 `workflows/*.md` 那四份不是纯散文 —— 文档里的 verification 表（文件 hash、大小、存在性、PASS/FAIL）是真的把每个 workflow 跑一遍跑出来的。改完 workflow 脚本后：
 
 ```bash
-make test-audit                                # 重生成全部四份
-python3 tests/audit/generate.py promoter       # 只重生成一份
+# 重生成全部四份 docs/workflows/*.md（~7 分钟）
+make test-audit
+
+# 或只刷一份（更快，调单个 workflow 时常用）
+python3 tests/audit/generate.py promoter
 ```
 
-叙事部分保留；表会刷新。某项 check 从 PASS 翻成 FAIL 的话，要么修 workflow、要么改文档承认是有意的新行为。数据流见 [tests/audit/README.md](../tests/audit/README.md)。
+### 会生成什么
+
+每次跑都会覆盖写一份 `docs/workflows/<name>.md`（`promoter.md` / `intervals.md` / `elements.md` / `pair_only.md` 之一）。每份的结构都一样：
+
+- **叙事段落**（用途 / 生物学背景 / 脚本逐步做了什么 / 重跑此审计）—— 手写散文，从 [`tests/audit/templates/`](../tests/audit/templates/) 下对应的模板拉出来。这部分是 workflow 含义变了时**你**要维护的。
+- **运行快照** —— 每次跑都新的：本次实际调用的命令、输出落到哪、文件计数（`fimohits/*.bin`、`binomial_thresholds.txt` 行数等）、`motif_output.txt` 前 3 行、富集对总数、wall time。
+- **验证表** —— 同上，每条 check 一行（`OVERALL`、`motif_output.txt deterministic vs anchor`、`binomial_thresholds rows == motifs` 等），标 PASS / WARN / FAIL。
+
+跑的工作文件落在 `tests/audit/runs/<name>/`（gitignored —— 想看本次审计 workflow 实际产出什么的时候有用）。
+
+### 结果怎么读
+
+页面里最有用的一条是验证段顶部的 **OVERALL** 行：
+
+- **OVERALL: PASS** → 文档里的数字跟 workflow 现在产出的一致。把这次重生成的 `docs/workflows/<name>.md` 跟你的改动一起 commit。
+- **OVERALL: WARN** → 非阻塞问题（比如某个 `elements` per-task SHA anchor 故意留空等首次抓取）。WARN 那一行会明确告诉你该把哪个值粘到 `tests/audit/workflows/<name>.py` 里去 bless。
+- **OVERALL: FAIL** → 某个 workflow 输出偏离 anchor，或某条跨文件不变量挂了。**要么** revert workflow 改动（文档是对的，代码回归了），**要么** 改 `tests/audit/workflows/<name>.py` 里的 anchor 来登记新的有意行为。FAIL 那一行会说哪个文件的 SHA 变了。
+
+跑完后 `git diff docs/workflows/` 是审计 - 重生成 - 文档变化的可审记录 —— PR review 时看的就是这个 diff。
+
+数据流（`tests/audit/lib.py` 怎么把 spec、模板、`<<PLACEHOLDER>>` 替换粘起来）见 [tests/audit/README.md](../tests/audit/README.md)。
 
 <a id="cn-5"></a>
 

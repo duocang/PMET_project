@@ -156,12 +156,20 @@ The bash unit test at [`tests/unit/test_minhash_resolver.sh`](../../tests/unit/t
 
 ## 8. How to re-run
 
+Three commands, run in order. The trailing `\` is a bash line continuation — lines joined by `\` are one command; a line without `\` ends the command.
+
 ```bash
-make build                                       # ensure pair_parallel is fresh
+# 1. Make sure pair_parallel is freshly compiled.
+make build
+
+# 2. Run the sweep — one command, four lines glued by `\`.
+#    Positional args after the script: <index_dir> <gene_list> <m_values…>
 NUM_THREADS=8 apps/cli/scripts/bench/calibrate_minhash.sh \
     data/precomputed_indexes/Arabidopsis_thaliana/CIS-BP2 \
     data/genes/random_genes_300.txt \
     0 3 5 10 20
+
+# 3. Analyse the sweep output — one command, two lines glued by `\`.
 apps/cli/scripts/bench/analyze_minhash_calibration.py \
     results/bench/calibrate/Arabidopsis_thaliana__CIS-BP2__random_genes_300
 ```
@@ -324,12 +332,20 @@ bash 单元测试 [`tests/unit/test_minhash_resolver.sh`](../../tests/unit/test_
 
 ## 8. 怎么重跑
 
+三条命令，按顺序跑。行尾的 `\` 是 bash 行延续符 —— 用 `\` 粘起来的算同一条；不带 `\` 的那行就是命令结束。
+
 ```bash
-make build                                       # 保证 pair_parallel 是新的
+# 1. 确保 pair_parallel 是新编的。
+make build
+
+# 2. 跑 sweep —— 一条命令，4 行用 `\` 粘成。
+#    脚本后的位置参数：<索引目录> <基因列表> <m 值…>
 NUM_THREADS=8 apps/cli/scripts/bench/calibrate_minhash.sh \
     data/precomputed_indexes/Arabidopsis_thaliana/CIS-BP2 \
     data/genes/random_genes_300.txt \
     0 3 5 10 20
+
+# 3. 分析 sweep 输出 —— 一条命令，2 行用 `\` 粘成。
 apps/cli/scripts/bench/analyze_minhash_calibration.py \
     results/bench/calibrate/Arabidopsis_thaliana__CIS-BP2__random_genes_300
 ```

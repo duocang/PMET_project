@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 12:17:55 UTC on this machine — workflow `intervals`, exit 0, 15.0s_
+_Audit refreshed 2026-05-02 13:31:26 UTC on this machine — workflow `intervals`, exit 0, 15.1s_
 
 **Source:** [`scripts/workflows/intervals.sh`](../../scripts/workflows/intervals.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs · web `intervals` mode
@@ -63,8 +63,11 @@ After indexing + pairing, only the user-facing text outputs (`motif_output.txt`,
 ## 4. Reproducing this audit
 
 ```bash
-make test-audit                            # all four workflows
-python3 tests/audit/generate.py intervals  # just this one
+# Full audit run — regenerates all four docs/workflows/*.md
+make test-audit
+
+# Or just this workflow's doc (~16 s for intervals alone)
+python3 tests/audit/generate.py intervals
 ```
 
 **Needs** — built host binaries (`make build`); the bundled demo inputs at `data/demos/intervals/` (ship with the repo, no fetch needed); Python 3 standard library; optionally `Rscript`.
@@ -129,8 +132,11 @@ indexing + pairing 之后，只有用户面文本输出（`motif_output.txt`、`
 ## 4. 重跑此审计
 
 ```bash
-make test-audit                            # 全部四个 workflow
-python3 tests/audit/generate.py intervals  # 只跑这一个
+# 完整审计 —— 重新生成全部四份 docs/workflows/*.md
+make test-audit
+
+# 或者只跑这一个 workflow 的文档（intervals 单跑 ~16 秒）
+python3 tests/audit/generate.py intervals
 ```
 
 **需要** —— 编好的 host 二进制（`make build`）；`data/demos/intervals/` 下自带的 demo 输入（随仓库走，不用 fetch）；Python 3 标准库；可选 `Rscript`。

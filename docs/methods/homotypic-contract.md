@@ -20,13 +20,23 @@ The exact files indexing must produce so pairing can consume them. This is the s
 
 ## 1. Why the contract exists
 
-The pairing binary (`build/pair_parallel`, also `build/pmetParallel`, `build/pmet`) reads a directory written by indexing and assumes a fixed shape: five files at the top, plus one `fimohits/` subdirectory. If indexing writes the wrong shape — wrong column order, missing motif, gene IDs that don't agree across files — pairing fails late, in confusing ways. Codifying the contract here gives:
+### What "contract" means here
 
-1. A target for any new indexer (e.g. `index_fimo_fused`, `index_fimo_batched`) to satisfy.
-2. A fail-fast validator (`check_homotypic_contract.py`) that pipelines run at the end of indexing.
-3. A reference for downstream consumers (the Python audit code, anyone reading the index manually).
+A **contract**, in software engineering, is just a written-down agreement between two pieces of code: "if you produce X in shape Y, I promise to read it; conversely, if you change shape Y without telling me, I'm allowed to break." It's the same idea as a function signature, an HTTP API spec, or a file format spec — but at the granularity of a *directory* of files.
 
-The contract is **flat**: only the five files + `fimohits/` are part of the contract. Pipelines may write other intermediate files (`memefiles/`, `genome_stripped.fa`, etc.) but **nothing outside the producing pipeline may rely on them**.
+PMET has two stages — indexing (the slow scan) and pairing (the per-cluster test) — that talk to each other through a directory on disk. The indexing stage **writes** a directory; the pairing binary **reads** that directory. They don't share memory or a function call. So the only thing keeping them in sync is an agreement on **what files exist, what columns they have, and what the values mean**. That agreement is this document.
+
+### Why we have to write it down
+
+The pairing binary (`build/pair_parallel`, also `build/pmetParallel`, `build/pmet`) assumes a fixed shape: five files at the top, plus one `fimohits/` subdirectory. If indexing writes the wrong shape — wrong column order, missing motif, gene IDs that don't agree across files — pairing fails *late*, in confusing ways: a bizarre segfault deep in C++, or "0 enriched pairs" that's actually a silent data mismatch.
+
+Codifying the contract here gives three concrete things:
+
+1. **A target** for any new indexer (`index_fimo_fused`, `index_fimo_batched`, anything someone writes next year) to satisfy. As long as the new indexer produces this shape, any existing pairing binary can consume its output.
+2. **A fail-fast validator**: [`scripts/python/check_homotypic_contract.py`](../../scripts/python/check_homotypic_contract.py) runs at the end of every indexing pipeline and crashes immediately if the shape is wrong — rather than passing a bad index downstream and waiting for pairing to misbehave.
+3. **A reference** for downstream consumers (the Python audit code, anyone reading an index manually with `head` / `awk`).
+
+The contract is **flat**: only the five top-level files + `fimohits/` are part of it. Pipelines may write other intermediate files (`memefiles/`, `genome_stripped.fa`, etc.) but **nothing outside the producing pipeline may rely on them** — they're scratch and could disappear in a refactor without warning.
 
 <a id="en-2"></a>
 
@@ -141,13 +151,23 @@ When a task has insufficient significant pairs after R filtering, only the histo
 
 ## 1. 为什么要这个契约
 
-pairing 二进制（`build/pair_parallel`，也包括 `build/pmetParallel`、`build/pmet`）读 indexing 写出来的目录，假定一个固定形态：顶层 5 个文件 + 一个 `fimohits/` 子目录。indexing 若写出不符的形态 —— 列序错、缺 motif、跨文件 gene ID 不一致 —— pairing 会很晚才挂、报错也很费解。把契约写在这里就有了：
+### 这里的"契约"是什么意思
 
-1. 任何新的 indexer（如 `index_fimo_fused`、`index_fimo_batched`）要满足的目标。
-2. 一份 fail-fast 的 validator（`check_homotypic_contract.py`），pipeline 在 indexing 末尾跑一次。
-3. 给下游消费者（Python 审计代码、人工读索引的人）的参考。
+软件工程里所谓"**契约**"（contract），就是两段代码之间一份**写下来的约定**："你按 Y 形态产出 X，我就保证能读；反过来你不通知就改了 Y 形态，我可以坏给你看。" 跟函数签名、HTTP API spec、文件格式规范是同一个思路，只不过粒度是一**整个目录**的文件。
 
-契约是**扁平**的：只有那 5 个文件 + `fimohits/` 算契约的一部分。Pipeline 写其它中间文件（`memefiles/`、`genome_stripped.fa` 等）随意，但**写它们的那条 pipeline 之外，谁都不能依赖**。
+PMET 有两个阶段 —— indexing（重扫描）和 pairing（per-cluster 检验） —— 它们之间通过盘上一个目录来交流。indexing 阶段**写**这个目录；pairing 二进制**读**这个目录。它们不共享内存、不互相函数调用。所以让两者同步的唯一东西，就是一份关于**有哪些文件、什么列、值是什么含义**的约定。这份约定就是本文档。
+
+### 为什么必须写下来
+
+pairing 二进制（`build/pair_parallel`，也包括 `build/pmetParallel`、`build/pmet`）假定一个固定形态：顶层 5 个文件 + 一个 `fimohits/` 子目录。indexing 若写出不符的形态 —— 列序错、缺 motif、跨文件 gene ID 不一致 —— pairing 会**很晚才挂**、报错也费解：可能是 C++ 深处一个莫名其妙的 segfault，也可能是"0 个富集对"——其实是数据没对上，silently 出了错。
+
+把契约写在这里能给三样具体东西：
+
+1. **一个目标**：任何新写的 indexer（`index_fimo_fused`、`index_fimo_batched`、明年某人新写的）都按这份形态产出，现有任何 pairing 二进制都能消费。
+2. **一份 fail-fast validator**：[`scripts/python/check_homotypic_contract.py`](../../scripts/python/check_homotypic_contract.py) 在每条 indexing pipeline 末尾跑一次，形态不对立刻挂 —— 而不是把坏索引传到下游、等 pairing 出怪事。
+3. **一份参考**：给下游消费者（Python 审计代码、用 `head` / `awk` 手翻索引的人）。
+
+契约是**扁平**的：只有那 5 个顶层文件 + `fimohits/` 算契约的一部分。Pipeline 写其它中间文件（`memefiles/`、`genome_stripped.fa` 等）随意，但**写它们的那条 pipeline 之外，谁都不能依赖** —— 那些是 scratch，下次重构可能不打招呼就消失。
 
 <a id="cn-2"></a>
 

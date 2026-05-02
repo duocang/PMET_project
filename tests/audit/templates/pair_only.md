@@ -62,8 +62,11 @@ The schema is defined in [`docs/methods/homotypic-contract.md`](../methods/homot
 ## 4. Reproducing this audit
 
 ```bash
-make test-audit                              # all four workflows
-python3 tests/audit/generate.py pair_only    # just this one
+# Full audit run — regenerates all four docs/workflows/*.md
+make test-audit
+
+# Or just this workflow's doc (~15 s for pair_only — fastest of the four)
+python3 tests/audit/generate.py pair_only
 ```
 
 **Needs** — built host binaries (`make build`); the bundled demo index at `data/demos/promoters/pairing/demo/` (ships with the repo); Python 3 standard library; optionally `Rscript`.
@@ -135,8 +138,11 @@ schema 定义在 [`docs/methods/homotypic-contract.md`](../methods/homotypic-con
 ## 4. 重跑此审计
 
 ```bash
-make test-audit                              # 全部四个 workflow
-python3 tests/audit/generate.py pair_only    # 只跑这一个
+# 完整审计 —— 重新生成全部四份 docs/workflows/*.md
+make test-audit
+
+# 或者只跑这一个 workflow 的文档（pair_only ~15 秒，是四个里最快的）
+python3 tests/audit/generate.py pair_only
 ```
 
 **需要** —— 编好的 host 二进制（`make build`）；`data/demos/promoters/pairing/demo/` 下的 demo 索引（仓库自带）；Python 3 标准库；可选 `Rscript`。

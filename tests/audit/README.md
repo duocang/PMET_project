@@ -70,9 +70,14 @@ The driver:
 ## 3. Running
 
 ```bash
-make test-audit                                       # all four
-python3 tests/audit/generate.py promoter              # just one
-python3 tests/audit/generate.py promoter intervals    # any subset
+# Run all four workflow audits and rewrite docs/workflows/*.md  (~7 min total)
+make test-audit
+
+# Or scope to one workflow (faster, useful while iterating)
+python3 tests/audit/generate.py promoter
+
+# Or run any subset by name (in order — the driver dispatches each)
+python3 tests/audit/generate.py promoter intervals
 ```
 
 **Needs** — host binaries (`make build`), Python 3 with the standard library (no extra `pip install`), and the inputs that each workflow expects: pair_only and intervals run on demos under `data/demos/`, promoter and elements run on TAIR10 + Franco-Zorrilla (`make fetch-data` → fetches TAIR10; the motif library is in-repo under `data/motifs/`).
@@ -224,9 +229,14 @@ def checks(data: dict) -> list[Check]:
 ## 3. 运行
 
 ```bash
-make test-audit                                       # 全部四个
-python3 tests/audit/generate.py promoter              # 只跑一个
-python3 tests/audit/generate.py promoter intervals    # 任意子集
+# 跑全部四个 workflow 审计、重写 docs/workflows/*.md（~7 分钟）
+make test-audit
+
+# 或只跑一个（更快，调单个 workflow 时常用）
+python3 tests/audit/generate.py promoter
+
+# 或按名跑任意子集（按顺序，驱动程序逐个 dispatch）
+python3 tests/audit/generate.py promoter intervals
 ```
 
 **需要** —— host 二进制（`make build`）、Python 3（标准库够用，无需额外 `pip install`），以及各 workflow 需要的输入：pair_only 和 intervals 跑 `data/demos/` 下的 demo，promoter 和 elements 跑 TAIR10

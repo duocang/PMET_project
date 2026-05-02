@@ -23,7 +23,11 @@ You changed something in the C/C++ engines — a refactor, a perf tweak, a bug f
 This directory holds the "before" snapshot. `capture.sh` runs the demo indexing and pairing pipelines on tiny inputs from `data/demos/`, hashes every output file with sha256, and writes the whole hash list to `fingerprints.txt`. After your change, re-run and check the diff:
 
 ```bash
+# Re-capture: hashes every demo output and overwrites fingerprints.txt.
 make baseline
+
+# Compare against the fingerprints.txt that's committed — any line that
+# changed = a file whose bytes shifted since the last commit.
 git diff tests/baseline/fingerprints.txt
 ```
 
@@ -37,8 +41,11 @@ A full capture takes ~30 s once the host binaries are built.
 ## 2. Run
 
 ```bash
-make baseline                              # writes fingerprints.txt
-git diff tests/baseline/fingerprints.txt   # see what changed (if anything)
+# Capture a fresh fingerprint set into tests/baseline/fingerprints.txt.
+make baseline
+
+# Diff against the version git knows about.
+git diff tests/baseline/fingerprints.txt
 ```
 
 **Needs** — `build/index_fimo_fused` and `build/pair_parallel` (run `make build` once if missing). The demo inputs under `data/demos/` ship with the repo, so no `make fetch-data` required.
@@ -124,7 +131,11 @@ The original `fingerprints.txt` was captured at commit `123a39b` on the `refacto
 这个目录就是用来抓"改之前"那一份快照的。`capture.sh` 用 `data/demos/` 下的小输入跑 demo 的 indexing 和 pairing，给每个生成的文件算 sha256，全部写到 `fingerprints.txt`。改完后重新跑一次，看看 diff：
 
 ```bash
+# 重新抓：把所有 demo 输出 hash 一遍，覆盖写 fingerprints.txt。
 make baseline
+
+# 跟仓库里 commit 过的 fingerprints.txt 对比 —— 任何变了的行 = 那个
+# 文件的字节自上次 commit 以来变了。
 git diff tests/baseline/fingerprints.txt
 ```
 
@@ -138,8 +149,11 @@ git diff tests/baseline/fingerprints.txt
 ## 2. 运行
 
 ```bash
-make baseline                              # 写 fingerprints.txt
-git diff tests/baseline/fingerprints.txt   # 看哪里变了（有的话）
+# 抓一份新的 fingerprint 写到 tests/baseline/fingerprints.txt。
+make baseline
+
+# 跟 git 里那一份对比。
+git diff tests/baseline/fingerprints.txt
 ```
 
 **需要** —— `build/index_fimo_fused` 和 `build/pair_parallel`（缺就先 `make build` 一次）。`data/demos/` 下的 demo 输入随仓库一起带着，**不**需要 `make fetch-data`。

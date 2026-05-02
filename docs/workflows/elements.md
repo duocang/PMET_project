@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 12:28:05 UTC on this machine — workflow `elements`, exit 0, 145.7s_
+_Audit refreshed 2026-05-02 13:35:31 UTC on this machine — workflow `elements`, exit 0, 140.4s_
 
 **Source:** [`scripts/workflows/elements.sh`](../../scripts/workflows/elements.sh)
 &nbsp;&nbsp;**Helper sub-workflow:** [`scripts/workflows/cli/_pmet_index_element.sh`](../../scripts/workflows/cli/_pmet_index_element.sh)
@@ -79,8 +79,12 @@ Both strategies typically produce multiple intervals per gene (e.g. 3 exons → 
 ## 4. Reproducing this audit
 
 ```bash
-make test-audit                            # all four workflows
-python3 tests/audit/generate.py elements   # just this one
+# Full audit run — regenerates all four docs/workflows/*.md
+make test-audit
+
+# Or just this workflow's doc (elements alone takes ~5 min — the
+# slowest of the four)
+python3 tests/audit/generate.py elements
 ```
 
 **Needs** — built host binaries (`make build`); TAIR10 (`make fetch-data`); Franco-Zorrilla MEME at `data/motifs/Franco-Zorrilla_et_al_2014.meme` (in-repo); Python 3 standard library; optionally `Rscript`.
@@ -166,8 +170,11 @@ R `ggsave` enforces a hard 50-inch dimension cap. Some gene tasks (e.g. `random_
 ## 4. 重跑此审计
 
 ```bash
-make test-audit                            # 全部四个 workflow
-python3 tests/audit/generate.py elements   # 只跑这一个
+# 完整审计 —— 重新生成全部四份 docs/workflows/*.md
+make test-audit
+
+# 或者只跑这一个 workflow 的文档（elements 单跑 ~5 分钟，是四个里最慢的）
+python3 tests/audit/generate.py elements
 ```
 
 **需要** —— 编好的 host 二进制（`make build`）；TAIR10（`make fetch-data`）；Franco-Zorrilla MEME 在 `data/motifs/Franco-Zorrilla_et_al_2014.meme`（仓库自带）；Python 3 标准库；可选 `Rscript`。

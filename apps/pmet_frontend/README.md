@@ -30,11 +30,20 @@ The production stack runs in docker behind nginx (`make up` from the repo root).
 ## 2. Quick start
 
 ```bash
-npm install        # install deps
-npm run dev        # dev server, http://localhost:3000
-npm run build      # production bundle
-npm start          # serve the production bundle
-npm run test:unit  # Zustand store unit tests via tsx
+# Install JS deps (one-time, after a fresh checkout).
+npm install
+
+# Dev server with hot-reload at http://localhost:3000.
+npm run dev
+
+# Build a production bundle into .next/.
+npm run build
+
+# Serve the production bundle (after `npm run build`).
+npm start
+
+# Run the Zustand store unit tests via tsx.
+npm run test:unit
 ```
 
 **Needs** — Node 18+ (Next.js 14 requirement) and `npm` on `$PATH`. For `npm run dev` to talk to a real backend you also need either the docker stack up (`make up` from repo root) or a local backend on port 8000 (`uvicorn api.main:app` from `apps/pmet_backend/`).
@@ -94,7 +103,10 @@ For end-to-end behaviour against the real backend, use the composed stack: `make
 ## 5. Docker
 
 ```bash
+# Build the frontend image standalone (the composed stack does this for you).
 docker build -t pmet-frontend .
+
+# Run it pointing at a backend (`api:8000` is the docker-network name when run alongside the api container).
 docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://api:8000 pmet-frontend
 ```
 
@@ -136,11 +148,20 @@ In the composed stack the image is built by `cd deploy && make build-images`. Ed
 ## 2. Quick start
 
 ```bash
-npm install        # 装依赖
-npm run dev        # 开发服务器，http://localhost:3000
-npm run build      # 生产包
-npm start          # 跑生产包
-npm run test:unit  # Zustand store 单元测试（用 tsx）
+# 装 JS 依赖（首次 clone 之后跑一次）。
+npm install
+
+# 开发服务器（带热加载）http://localhost:3000。
+npm run dev
+
+# 构建生产 bundle 到 .next/。
+npm run build
+
+# 伺服生产 bundle（先跑 `npm run build`）。
+npm start
+
+# 跑 Zustand store 单元测试（用 tsx）。
+npm run test:unit
 ```
 
 **需要** —— Node 18+（Next.js 14 要求）和 `$PATH` 上的 `npm`。 `npm run dev` 想跟真后端说话还需要：要么 docker 栈起着（仓库根 `make up`），要么本地后端在 8000 端口（在 `apps/pmet_backend/` 里跑 `uvicorn api.main:app`）。
@@ -200,7 +221,10 @@ npm run test:unit  # Zustand store 单元测试（用 tsx）
 ## 5. Docker
 
 ```bash
+# 单独构建前端镜像（合成栈里它会自己构建）。
 docker build -t pmet-frontend .
+
+# 跑起来，指向后端（`api:8000` 是和 api 容器一起跑时 docker 网络里的名字）。
 docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://api:8000 pmet-frontend
 ```
 

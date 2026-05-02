@@ -68,8 +68,11 @@ celery -A worker.celery_app worker --loglevel=info
 A 5-stage import-and-load check that catches the obvious "did I break something" cases without needing docker. Hits each of the five top-level pieces (config, Pydantic models, storage service, executor, FastAPI app object) and reports per-stage PASS/FAIL.
 
 ```bash
-python test_api.py                     # on the host
-cd deploy && make test                 # inside the backend image
+# Run on the host (needs `pip install -r requirements.txt` first).
+python test_api.py
+
+# Or run inside the backend docker image (no host deps needed; image already has them).
+cd deploy && make test
 ```
 
 **Needs** — `python3` plus the backend deps (`pip install -r requirements.txt`), since each stage actually imports the production module. Doesn't need Redis or a running Celery worker.
@@ -221,8 +224,11 @@ celery -A worker.celery_app worker --loglevel=info
 5 stage 的 import + load 检查，不用 docker 就能逮住"我是不是把什么弄坏了"这类常见问题。逐个戳后端的 5 大件（config、Pydantic 模型、存储服务、executor、FastAPI app 对象），逐 stage 报 PASS/FAIL。
 
 ```bash
-python test_api.py                     # host 上跑
-cd deploy && make test                 # 在后端镜像里跑
+# host 上跑（先 `pip install -r requirements.txt`）。
+python test_api.py
+
+# 或在后端 docker 镜像里跑（无需 host 依赖；镜像里都装了）。
+cd deploy && make test
 ```
 
 **需要** —— `python3` 加后端依赖（`pip install -r requirements.txt`），因为每个 stage 都真的 import 生产模块。不需要 Redis、不需要 Celery worker 在跑。
