@@ -18,7 +18,8 @@ or the numbered `06_elements_longest.sh` / `07_elements_merged.sh` is
 
 The pre-monorepo pipeline story pack used to live here as
 `pre-monorepo-pipeline-story/`. It moved to
-[`docs/workflows/legacy/`](../workflows/legacy/) — same content (frozen
-snapshot, paths still pre-monorepo), now sitting next to its current
-auto-regenerated equivalents under [`docs/workflows/`](../workflows/) so
-the two are easy to compare side by side.
+[`docs/workflows/walkthroughs/`](../workflows/walkthroughs/) — same
+content (frozen snapshot, paths still pre-monorepo), now sitting next
+to its current auto-regenerated equivalents under
+[`docs/workflows/`](../workflows/) so the two are easy to compare side
+by side.

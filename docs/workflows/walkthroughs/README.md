@@ -1,4 +1,4 @@
-# docs/workflows/legacy/ — pipeline story pack (conceptual reference)
+# docs/workflows/walkthroughs/ — step-by-step pipeline walkthroughs (conceptual reference)
 
 **[English](#en) · [汉文](#cn)**
 
@@ -38,13 +38,13 @@ Three uses:
 
 ## Files
 
-| Pre-monorepo script | Current equivalent | Story doc |
+| Walkthrough | Current equivalent script | Pre-monorepo script (referenced inside the doc) |
 |---|---|---|
-| `03_promoter.sh` | `scripts/workflows/promoter.sh` | [`03_promoter.md`](03_promoter.md) |
-| `04_intervals.sh` | `scripts/workflows/intervals.sh` | [`04_intervals.md`](04_intervals.md) |
-| `05_promoter_gap.sh` | `scripts/workflows/cli/05_promoter_gap.sh` | [`05_promoter_gap.md`](05_promoter_gap.md) |
-| `06_elements_longest.sh` | `scripts/workflows/elements.sh -s longest` | [`06_elements_longest.md`](06_elements_longest.md) |
-| `07_elements_merged.sh` | `scripts/workflows/elements.sh -s merged` | [`07_elements_merged.md`](07_elements_merged.md) |
+| [`promoter.md`](promoter.md) | `scripts/workflows/promoter.sh` | `scripts/pipeline/03_promoter.sh` |
+| [`intervals.md`](intervals.md) | `scripts/workflows/intervals.sh` | `scripts/pipeline/04_intervals.sh` |
+| [`promoter-gap.md`](promoter-gap.md) | `scripts/workflows/cli/05_promoter_gap.sh` | `scripts/pipeline/05_promoter_gap.sh` |
+| [`elements-longest.md`](elements-longest.md) | `scripts/workflows/elements.sh -s longest` | `scripts/pipeline/06_elements_longest.sh` |
+| [`elements-merged.md`](elements-merged.md) | `scripts/workflows/elements.sh -s merged` | `scripts/pipeline/07_elements_merged.sh` |
 
 For the **current**, **auto-regenerated** workflow docs see the sibling [`docs/workflows/`](../) directory.
 
@@ -84,12 +84,12 @@ For the **current**, **auto-regenerated** workflow docs see the sibling [`docs/w
 
 ## 文件
 
-| Monorepo 前的脚本 | 今天对应 | 故事文档 |
+| 走读文档 | 今天对应的脚本 | 文档里引用的 monorepo 前脚本 |
 |---|---|---|
-| `03_promoter.sh` | `scripts/workflows/promoter.sh` | [`03_promoter.md`](03_promoter.md) |
-| `04_intervals.sh` | `scripts/workflows/intervals.sh` | [`04_intervals.md`](04_intervals.md) |
-| `05_promoter_gap.sh` | `scripts/workflows/cli/05_promoter_gap.sh` | [`05_promoter_gap.md`](05_promoter_gap.md) |
-| `06_elements_longest.sh` | `scripts/workflows/elements.sh -s longest` | [`06_elements_longest.md`](06_elements_longest.md) |
-| `07_elements_merged.sh` | `scripts/workflows/elements.sh -s merged` | [`07_elements_merged.md`](07_elements_merged.md) |
+| [`promoter.md`](promoter.md) | `scripts/workflows/promoter.sh` | `scripts/pipeline/03_promoter.sh` |
+| [`intervals.md`](intervals.md) | `scripts/workflows/intervals.sh` | `scripts/pipeline/04_intervals.sh` |
+| [`promoter-gap.md`](promoter-gap.md) | `scripts/workflows/cli/05_promoter_gap.sh` | `scripts/pipeline/05_promoter_gap.sh` |
+| [`elements-longest.md`](elements-longest.md) | `scripts/workflows/elements.sh -s longest` | `scripts/pipeline/06_elements_longest.sh` |
+| [`elements-merged.md`](elements-merged.md) | `scripts/workflows/elements.sh -s merged` | `scripts/pipeline/07_elements_merged.sh` |
 
 **当前**、**自动重生成**的 workflow 文档见兄弟目录 [`docs/workflows/`](../)。
