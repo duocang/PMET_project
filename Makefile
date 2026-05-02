@@ -2,7 +2,8 @@
 
 .PHONY: help build build-core clean-core-binaries build-indexing build-pairing demo demo-indexing demo-pairing baseline clean \
         clean-results clean-results-app clean-results-cli \
-        fetch-data build-app up down logs ps rebuild test-pairing test-indexing test-core
+        fetch-data build-app up down logs ps rebuild \
+        test test-core test-pairing test-indexing test-unit test-integration test-audit
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD := $(ROOT)/build
@@ -12,17 +13,23 @@ help:
 	@echo "PMET monorepo targets:"
 	@echo ""
 	@echo "  Local CLI / dev — host-side, no docker"
-	@echo "    build        - compile core C/C++ engines into ./build/  (NOT the web app)"
-	@echo "    test-pairing - build + run C++ unit tests for the pairing math kernels"
-	@echo "    test-indexing - build + run unit tests for the PMET indexing C code"
-	@echo "    test-core    - run both test-pairing and test-indexing"
-	@echo "    demo         - run demo indexing + pairing against data/"
-	@echo "    baseline     - capture fingerprints to tests/baseline/fingerprints.txt"
-	@echo "    fetch-data   - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
-	@echo "    clean        - remove ./build/ (compiled core binaries)"
+	@echo "    build            - compile core C/C++ engines into ./build/  (NOT the web app)"
+	@echo "    demo             - run demo indexing + pairing against data/"
+	@echo "    fetch-data       - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
+	@echo "    clean            - remove ./build/ (compiled core binaries)"
 	@echo "    clean-results-app - wipe results/app/ (web-app task outputs)"
 	@echo "    clean-results-cli - wipe results/cli/ (CLI / pipeline outputs)"
-	@echo "    clean-results     - both of the above"
+	@echo "    clean-results    - both of the above"
+	@echo ""
+	@echo "  Tests — every track has a make target; 'make test' chains the fast ones"
+	@echo "    test             - test-core + test-unit + test-integration  (~10 s, gate before commit)"
+	@echo "    test-core        - C/C++ math kernels (test-pairing + test-indexing, ~5 s)"
+	@echo "    test-pairing     - just the pairing kernel tests"
+	@echo "    test-indexing    - just the indexing kernel tests"
+	@echo "    test-unit        - repo-wide unit tests (Python / R / bash / TS, ~5 s)"
+	@echo "    test-integration - integration smoke (~3 s; other tests/integration/*.sh need real data)"
+	@echo "    test-audit       - workflow audit; renders docs/workflows/*.md (minutes)"
+	@echo "    baseline         - CLI baseline fingerprints to tests/baseline/fingerprints.txt"
 	@echo ""
 	@echo "  Web app stack — docker-compose, exposes nginx on http://localhost:5960"
 	@echo "    build-app    - build the docker images only (api + worker + frontend)"
@@ -87,6 +94,29 @@ test-indexing:
 
 # Run both core test suites end-to-end.
 test-core: test-pairing test-indexing
+
+# Repo-wide unit tests — Python / R / bash / TS, < 5 s, no docker.
+# Auto-skips R / TS rows when their toolchains aren't installed.
+test-unit:
+	@bash tests/unit/run.sh
+
+# Integration smoke — bedtools / samtools invariants on tiny fixtures,
+# plus a TAIR10 strand check that auto-skips when the reference isn't
+# present. The other scripts under tests/integration/ are heavier (need
+# the full pipeline) and stay opt-in — see tests/integration/README.md.
+test-integration:
+	@bash tests/integration/run_smoke.sh
+
+# Workflow audit — runs each workflow against canonical inputs and
+# renders the per-workflow docs at docs/workflows/*.md. Minutes
+# (pair_only ~15 s, intervals ~16 s, promoter ~2 min, elements ~5 min),
+# so kept out of the default `make test` aggregator.
+test-audit:
+	@python3 tests/audit/generate.py
+
+# Default aggregator: all the fast tracks. Audit + baseline write
+# files to disk, so they remain explicit opt-ins.
+test: test-core test-unit test-integration
 
 demo: demo-indexing demo-pairing
 
