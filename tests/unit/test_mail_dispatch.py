@@ -119,7 +119,7 @@ class MailDispatchTests(unittest.TestCase):
         self.assertIn('class="status warning"', body)
 
     def test_partial_result_notification_without_link(self):
-        """Defensive: NGINX_LINK unset → empty partial_link → email
+        """Defensive: PUBLIC_BASE_URL unset → empty partial_link → email
         still sends with a warning block instead of a button."""
         self.mail.send_partial_result_notification(
             "u@example.com",
@@ -155,10 +155,11 @@ class MailDispatchTests(unittest.TestCase):
 
 
 # ----------------------------------------------------------------------
-# _build_partial_result_link is a worker helper that turns NGINX_LINK
-# (a zip-base URL like https://pmet.online/results/) into a partial-
-# result API URL. Validate it independently because the worker imports
-# it into a celery task we don't want to instantiate in a unit test.
+# _build_partial_result_link is a worker helper that turns
+# PUBLIC_BASE_URL (the bare-domain deployment URL, e.g.
+# https://pmet.online) into the partial-result API URL. Validate it
+# independently because the worker imports it into a celery task we
+# don't want to instantiate in a unit test.
 # ----------------------------------------------------------------------
 class BuildPartialLinkTests(unittest.TestCase):
     def setUp(self):
@@ -166,29 +167,36 @@ class BuildPartialLinkTests(unittest.TestCase):
         self.fn = pmet_task._build_partial_result_link
         self.config_mod = pmet_task.config
 
-    def _with_nginx_link(self, value):
-        return patch.object(self.config_mod, "NGINX_LINK", value)
+    def _with_public_base_url(self, value):
+        return patch.object(self.config_mod, "PUBLIC_BASE_URL", value)
 
-    def test_https_with_path(self):
-        with self._with_nginx_link("https://pmet.online/results/"):
+    def test_https(self):
+        with self._with_public_base_url("https://pmet.online"):
             self.assertEqual(
                 self.fn("pmet_abc"),
                 "https://pmet.online/api/tasks/pmet_abc/partial-result",
             )
 
     def test_http_no_trailing_slash(self):
-        with self._with_nginx_link("http://localhost:5960/result"):
+        with self._with_public_base_url("http://localhost:5960"):
             self.assertEqual(
                 self.fn("pmet_xyz"),
                 "http://localhost:5960/api/tasks/pmet_xyz/partial-result",
             )
 
+    def test_trailing_slash_tolerated(self):
+        with self._with_public_base_url("https://pmet.online/"):
+            self.assertEqual(
+                self.fn("pmet_x"),
+                "https://pmet.online/api/tasks/pmet_x/partial-result",
+            )
+
     def test_empty_returns_empty(self):
-        with self._with_nginx_link(""):
+        with self._with_public_base_url(""):
             self.assertEqual(self.fn("pmet_x"), "")
 
     def test_unparseable_returns_empty(self):
-        with self._with_nginx_link("not-a-url"):
+        with self._with_public_base_url("not-a-url"):
             self.assertEqual(self.fn("pmet_x"), "")
 
 

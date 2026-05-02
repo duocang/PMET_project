@@ -124,7 +124,7 @@ A `✗` in any stage means that stage failed; the line right after it is the act
 | `PMET_MINHASH_MIN`        | unset                             | force MinHash prefilter K (opt-in; off by default — see [docs/perf/minhash_calibration.md](../../docs/perf/minhash_calibration.md)) |
 | `PMET_MINHASH_THRESHOLD`  | `500`                             | motif-count threshold for auto-enabling MinHash |
 | `PMET_MINHASH_DEFAULT`    | `0`                               | K used when auto-enabled (0 disables) |
-| `NGINX_LINK`              | unset                             | base URL written into per-task email bodies (e.g. `https://pmet.example.org`) |
+| `PUBLIC_BASE_URL`         | unset (read from `data/configure/public_base_url.txt`) | bare-domain deployment URL (e.g. `https://pmet.example.org`); used to build absolute links in outbound emails (task-detail page + partial-result API). Unset → emails ship without a clickable button |
 
 <a id="en-6"></a>
 
@@ -280,7 +280,7 @@ RESULTS: 5/5 passed
 | `PMET_MINHASH_MIN`          | 未设                       | 强制启用 MinHash 粗筛 K（opt-in；默认关闭，详见 [docs/perf/minhash_calibration.md](../../docs/perf/minhash_calibration.md)） |
 | `PMET_MINHASH_THRESHOLD`    | `500`                      | 自动启用 MinHash 的 motif 数门槛 |
 | `PMET_MINHASH_DEFAULT`      | `0`                        | 自动启用时使用的 K（0 即不启用） |
-| `NGINX_LINK`                | 未设                       | 写进任务邮件正文的 base URL（例如 `https://pmet.example.org`） |
+| `PUBLIC_BASE_URL`           | 未设（读 `data/configure/public_base_url.txt`） | 部署的裸域名 URL（例如 `https://pmet.example.org`）；用来在外发邮件里拼绝对链接（任务详情页 + partial-result API）。未设 → 邮件照发，但没有可点的按钮 |
 
 <a id="cn-6"></a>
 

@@ -111,7 +111,7 @@ Companion to `test_stage_status.py` — that one tests status derivation; this o
 - `send_result_notification` clean: no "with notes" suffix, no warnings block, points at the zip
 - `send_result_notification` with warnings: subject gets " (with notes)", warnings list rendered, status badge says `Completed (with notes)`
 - `send_partial_result_notification`: subject says "partial result", body advertises the `/api/tasks/<id>/partial-result` endpoint with an explicit `motif_output.txt` reference and "Partial success" badge
-- `send_partial_result_notification` without link: empty `partial_link` (NGINX_LINK unset) renders a "not configured" notice instead of a button — defensive
+- `send_partial_result_notification` without link: empty `partial_link` (PUBLIC_BASE_URL unset) renders a "not configured" notice instead of a button — defensive
 - `send_failed_notification`: "PMET task failed" subject, "Failed" badge, error summary inline, "Common causes" checklist present
 - `_build_partial_result_link` helper (worker-side): https with path / http no trailing slash / empty / unparseable inputs map to the expected partial-result API URL
 
@@ -291,7 +291,7 @@ SKIP 是提示，不是失败 —— 常见的："`Rscript not found`"、 "`apps
 - `send_result_notification` 干净 case：subject 没有 " (with notes)" 尾巴、没有 warnings 段、指向 zip
 - `send_result_notification` 有 warning：subject 加 " (with notes)"、渲染 warning 列表、状态徽章是 `Completed (with notes)`
 - `send_partial_result_notification`：subject 含 "partial result"、正文广告 `/api/tasks/<id>/partial-result` 端点 + 显式 `motif_output.txt` 引用 + "Partial success" 徽章
-- `send_partial_result_notification` 无 link：空 `partial_link` （NGINX_LINK 未设）渲染 "not configured" 提示而不是按钮 —— 防御
+- `send_partial_result_notification` 无 link：空 `partial_link` （PUBLIC_BASE_URL 未设）渲染 "not configured" 提示而不是按钮 —— 防御
 - `send_failed_notification`："PMET task failed" subject、"Failed" 徽章、错误摘要内联、"Common causes" 清单到位
 - `_build_partial_result_link` 辅助函数（worker 侧）：含 path 的 https / 无尾斜杠的 http / 空串 / 不可解析输入都映射到对的 partial-result API URL
 

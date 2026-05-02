@@ -277,10 +277,14 @@ def _compute_task_view(task_data: dict, task_id: str) -> dict:
         persisted_status = TaskStatus.COMPLETED.value
         completed_at = datetime.fromtimestamp(result_zip.stat().st_mtime).isoformat()
 
-    # Result zip link + size
+    # Result link + size. The link points at the frontend task-detail page
+    # (which exposes a Download button backed by /api/tasks/<id>/download),
+    # not at the zip directly — keeps emails decoupled from the static-file
+    # path nginx happens to expose. Filled whenever a public base URL is
+    # configured; the page renders progress before the zip lands.
     result_link = task_data.get("result_link")
-    if not result_link and config.NGINX_LINK and result_zip.exists():
-        result_link = f"{config.NGINX_LINK.rstrip('/')}/{task_id}.zip"
+    if not result_link and config.PUBLIC_BASE_URL:
+        result_link = f"{config.PUBLIC_BASE_URL.rstrip('/')}/tasks/{task_id}"
     result_size_bytes: Optional[int] = None
     if result_zip.exists():
         try:
@@ -389,8 +393,12 @@ async def create_task(task: TaskCreate):
     meta_file.parent.mkdir(parents=True, exist_ok=True)
     meta_file.write_text(json.dumps(task_meta, indent=2))
 
-    # Build result link
-    result_link = f"{config.NGINX_LINK}{task_id}.zip" if config.NGINX_LINK else None
+    # Build result link — points at the frontend task-detail page so the
+    # email is independent of any zip-download path.
+    result_link = (
+        f"{config.PUBLIC_BASE_URL.rstrip('/')}/tasks/{task_id}"
+        if config.PUBLIC_BASE_URL else None
+    )
 
     # Submit to Celery (import here to avoid circular dependency)
     from ...worker.tasks.pmet import run_pmet_task

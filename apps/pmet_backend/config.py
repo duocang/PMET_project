@@ -69,7 +69,11 @@ class Config:
 
     # Server
     NCPU: int = 4
-    NGINX_LINK: str = ""
+    # Public base URL of this deployment (e.g. "https://pmet.online"), used
+    # to build absolute links emitted in outbound emails. The detail-page
+    # path (/tasks/<id>) and the API paths are owned by the backend, so the
+    # config carries only the bare scheme + host.
+    PUBLIC_BASE_URL: str = ""
 
     # Liveness watchdog: a running task whose progress.json hasn't been
     # touched for this many seconds is killed and marked failed by the
@@ -103,9 +107,9 @@ class Config:
         if cpu_file.exists():
             self.NCPU = int(cpu_file.read_text().strip().split()[0])
 
-        nginx_file = self.PROJECT_ROOT / "data" / "configure" / "nginx_link.txt"
-        if nginx_file.exists():
-            self.NGINX_LINK = nginx_file.read_text().strip()
+        base_url_file = self.PROJECT_ROOT / "data" / "configure" / "public_base_url.txt"
+        if base_url_file.exists():
+            self.PUBLIC_BASE_URL = base_url_file.read_text().strip()
 
         email_file = self.PROJECT_ROOT / "data" / "configure" / "email_credential.txt"
         if email_file.exists():

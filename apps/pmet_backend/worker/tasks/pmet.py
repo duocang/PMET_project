@@ -61,16 +61,16 @@ def is_retryable_task_error(message: str) -> bool:
 
 def _build_partial_result_link(task_id: str) -> str:
     """Public URL for /api/tasks/<id>/partial-result, derived from
-    NGINX_LINK. NGINX_LINK is the result-zip base (e.g.
-    https://pmet.online/results/) — strip its path to get the host
-    root, then append the API path. Empty when NGINX_LINK is unset."""
-    base = (config.NGINX_LINK or "").strip()
+    PUBLIC_BASE_URL (the bare scheme + host of this deployment, e.g.
+    https://pmet.online). Empty when PUBLIC_BASE_URL is unset or
+    malformed."""
+    base = (config.PUBLIC_BASE_URL or "").strip().rstrip("/")
     if not base:
         return ""
     parsed = urlparse(base)
     if not parsed.scheme or not parsed.netloc:
         return ""
-    return f"{parsed.scheme}://{parsed.netloc}/api/tasks/{task_id}/partial-result"
+    return f"{base}/api/tasks/{task_id}/partial-result"
 
 
 def _summarize_error(msg: str) -> str:
@@ -211,11 +211,13 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
             result_dir = Path(task_dir)
             storage.zip_results(result_dir, task_id)
 
-            # Build the public download link from the configured nginx base
-            # (data/configure/nginx_link.txt) and persist it to task_meta so
-            # both the email and later GET /tasks/{id} return the same URL.
-            base = config.NGINX_LINK.rstrip("/")
-            result_link = f"{base}/{task_id}.zip" if base else ""
+            # Build the public link from the configured deployment URL
+            # (data/configure/public_base_url.txt) and persist it to
+            # task_meta so both the email and later GET /tasks/{id} return
+            # the same URL. Points at the frontend task-detail page, which
+            # exposes the actual zip Download button.
+            base = config.PUBLIC_BASE_URL.rstrip("/")
+            result_link = f"{base}/tasks/{task_id}" if base else ""
 
             # Update status to completed
             task_meta["status"] = "completed"

@@ -337,12 +337,12 @@ class MailService:
         meta = task_meta or {}
         if result_link:
             safe_link = self._escape(result_link)
-            action = f'<p><a class="button" href="{safe_link}">Download results</a></p>'
+            action = f'<p><a class="button" href="{safe_link}">View results</a></p>'
             extra = f'<p>Direct link: <a href="{safe_link}">{safe_link}</a></p>'
         else:
             action = ""
             extra = (
-                '<p class="status danger">Download URL is not configured. '
+                '<p class="status danger">Result URL is not configured. '
                 "Please contact the PMET administrator.</p>"
             )
 
