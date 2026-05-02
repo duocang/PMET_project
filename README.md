@@ -227,13 +227,14 @@ make rebuild     # rebuild images after editing app code
 
 When `make up` finishes, open **http://localhost:5960** — nginx fronts the frontend (`/`) and the API (`/api/...`).
 
-| Service  | Role                           | Host port       |
-| -------- | ------------------------------ | --------------- |
-| nginx    | reverse proxy                  | **5960**        |
-| frontend | Next.js                        | (internal 3000) |
-| api      | FastAPI                        | (internal 8000) |
-| worker   | Celery worker                  | —               |
-| redis    | Celery broker + result backend | —               |
+| Service           | Role                                                       | Host port       |
+| ----------------- | ---------------------------------------------------------- | --------------- |
+| nginx             | reverse proxy                                              | **5960**        |
+| frontend          | Next.js                                                    | (internal 3000) |
+| api               | FastAPI                                                    | (internal 8000) |
+| worker            | Celery worker                                              | —               |
+| liveness-watchdog | Kills tasks idle > 15 min (no progress.json update)        | —               |
+| redis             | Celery broker + result backend                             | —               |
 
 **Bind mounts** (host edits take effect without rebuild):
 
@@ -292,12 +293,12 @@ Five tracks at different levels — fastest first:
 | Track | Command | What it covers |
 |---|---|---|
 | Core math kernels (C/C++) | `make test-core` (or `make test-pairing` / `make test-indexing`) | ~96 unit cases over the pure-math pieces of both engines: BH correction, hypergeometric coloc, binomial / Poisson CDF, MinHash sketch, motif-overlap geometry, load-balancing partition, indexing-side string utils. Test binary links the same OBJECT library production uses → tests never drift from what ships. **< 5 s combined.** |
-| Repo-wide unit tests (Python / R / bash) | `bash tests/unit/run.sh` | Stage-status inference, partial-result API, mail dispatch, error classification, watchdog staleness, heatmap dim cap (R), minhash workflow resolver (bash). **< 5 s.** |
+| Repo-wide unit tests (Python / R / bash / TS) | `bash tests/unit/run.sh` | Stage-status inference, partial-result API, mail dispatch, error classification, watchdog staleness, list_tasks pagination + filter, heatmap dim cap (R), minhash workflow resolver (bash), frontend Zustand store actions (TypeScript via tsx — auto-skipped if `apps/pmet_frontend/node_modules` absent). **< 5 s.** |
 | Pipeline-level integration | `bash tests/integration/<name>.sh` | Smoke (`run_smoke.sh`), per-pipeline scripts (`run_pipeline02_one_combo.sh`, `run_pipeline08_ic_sweep.sh`), strand-handling on real data (`test_pipeline02_strand_realdata.sh`), baseline diff (`verify_baseline.sh`). Minutes. |
 | Workflow audit ([`tests/audit/`](tests/audit/)) | `python3 tests/audit/generate.py [<name> ...]` | Runs each workflow against canonical inputs, renders dict→template into [`docs/workflows/*.md`](docs/workflows/), records PASS / WARN / FAIL per verification check, SHA-256 anchors as regression sentinels. pair_only ~15 s, intervals ~16 s, promoter ~2 min, elements ~5 min. |
 | CLI baseline ([`tests/baseline/`](tests/baseline/)) | `make baseline` | Fingerprints `apps/cli/scripts/*` outputs. `tests/baseline/fingerprints.txt` is the anchor to diff against. |
 
-`apps/pmet_backend/test_api.py` is covered separately by pytest inside the backend's docker image.
+`apps/pmet_backend/test_api.py` is a 5-stage smoke (imports / TaskCreate / StorageService / PMETExecutor / app load). Run on the host with `python apps/pmet_backend/test_api.py`, or inside the backend image with `cd deploy && make test`.
 
 <a id="en-10"></a>
 
@@ -536,13 +537,14 @@ make rebuild     # 改了代码后重建
 
 `make up` 完成后开 **http://localhost:5960** — nginx 反代前端 (`/`) 和 API (`/api/...`)。
 
-| 服务     | 角色                           | host port   |
-| -------- | ------------------------------ | ----------- |
-| nginx    | reverse proxy                  | **5960**    |
-| frontend | Next.js                        | (内部 3000) |
-| api      | FastAPI                        | (内部 8000) |
-| worker   | Celery worker                  | —           |
-| redis    | Celery broker + result backend | —           |
+| 服务              | 角色                                              | host port   |
+| ----------------- | ------------------------------------------------- | ----------- |
+| nginx             | reverse proxy                                     | **5960**    |
+| frontend          | Next.js                                           | (内部 3000) |
+| api               | FastAPI                                           | (内部 8000) |
+| worker            | Celery worker                                     | —           |
+| liveness-watchdog | 杀掉 15 分钟无 progress.json 更新的任务           | —           |
+| redis             | Celery broker + result backend                    | —           |
 
 **Bind mount**（host 改文件即生效，无需 rebuild）：
 
@@ -601,12 +603,12 @@ openssl rand -hex 32 > data/configure/admin_token.txt
 | 轨道 | 命令 | 覆盖范围 |
 |---|---|---|
 | Core 数学 kernel（C/C++） | `make test-core`（或 `make test-pairing` / `make test-indexing`） | ~96 个单元测试，覆盖两套引擎的纯数学部分：BH correction、hypergeometric coloc、binomial / Poisson CDF、MinHash sketch、motif overlap 几何、负载均衡分区、indexing 侧字符串工具。测试二进制与生产共享同一份 OBJECT library，保证"测的代码 = 跑的代码"。**总计 < 5 秒。** |
-| 仓库级单元测试（Python / R / bash） | `bash tests/unit/run.sh` | stage-status 推断、partial-result API、邮件分发、错误分类、watchdog staleness、heatmap 尺寸 cap (R)、minhash workflow resolver (bash)。**< 5 秒。** |
+| 仓库级单元测试（Python / R / bash / TS） | `bash tests/unit/run.sh` | stage-status 推断、partial-result API、邮件分发、错误分类、watchdog staleness、list_tasks 分页+过滤、heatmap 尺寸 cap (R)、minhash workflow resolver (bash)、前端 Zustand store 动作（TypeScript via tsx，没装 `apps/pmet_frontend/node_modules` 自动跳过）。**< 5 秒。** |
 | Pipeline 级集成 | `bash tests/integration/<name>.sh` | smoke（`run_smoke.sh`）、单 pipeline（`run_pipeline02_one_combo.sh`、`run_pipeline08_ic_sweep.sh`）、真实数据 strand 处理（`test_pipeline02_strand_realdata.sh`）、baseline diff（`verify_baseline.sh`）。分钟级。 |
 | Workflow audit（[`tests/audit/`](tests/audit/)） | `python3 tests/audit/generate.py [<name> ...]` | 每个 workflow 跑一遍真实输入，用 dict→template 渲染出 [`docs/workflows/*.md`](docs/workflows/)，每条 verification check 都给 PASS/WARN/FAIL，SHA-256 anchor 当回归哨兵。pair_only ~15 s，intervals ~16 s，promoter ~2 min，elements ~5 min。 |
 | CLI baseline（[`tests/baseline/`](tests/baseline/)） | `make baseline` | 对 `apps/cli/scripts/*` 输出做 fingerprint，`tests/baseline/fingerprints.txt` 当 anchor 对比。 |
 
-`apps/pmet_backend/test_api.py` 由后端 docker 镜像里的 pytest 单独覆盖。
+`apps/pmet_backend/test_api.py` 是 5 stage smoke（imports / TaskCreate / StorageService / PMETExecutor / app load）。host 直接 `python apps/pmet_backend/test_api.py`，或在镜像里 `cd deploy && make test`。
 
 <a id="cn-10"></a>
 
