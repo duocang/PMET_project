@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# Run pipeline 08 (pair-only) across a grid of IC thresholds against a single
-# pre-built homotypic index. Intended use: parameter exploration on a fixed
-# gene list — measure how the heterotypic motif-pair set shifts as you tighten
+# Run pair_only across a grid of IC thresholds against a single pre-built
+# homotypic index. Intended use: parameter exploration on a fixed gene
+# list — measure how the heterotypic motif-pair set shifts as you tighten
 # / relax the IC threshold, without paying for the homotypic indexing each
 # time.
 #
 # Usage:
-#   bash scripts/tests/run_pipeline08_ic_sweep.sh
-#   IC_VALUES="2 4 6 8 10" bash scripts/tests/run_pipeline08_ic_sweep.sh
-#   HOMOTYPIC=results/05_promoter_gap/01_homotypic \
+#   bash tests/integration/run_pipeline08_ic_sweep.sh
+#   IC_VALUES="2 4 6 8 10" bash tests/integration/run_pipeline08_ic_sweep.sh
+#   HOMOTYPIC=results/cli/promoter/01_homotypic \
 #       GENE_LIST=data/genes/my_other_list.txt \
-#       OUT_BASE=results/cli/08_pair_only/exp_2026q2 \
+#       OUT_BASE=results/cli/pair_only/exp_2026q2 \
 #       JOBS=2 \
-#       bash scripts/tests/run_pipeline08_ic_sweep.sh
+#       bash tests/integration/run_pipeline08_ic_sweep.sh
 #
 # Environment variables (all optional):
 #   IC_VALUES   space-separated list of IC thresholds (default: "2 4 6 8")
-#   HOMOTYPIC   homotypic index dir (default: results/cli/03_promoter/01_homotypic)
+#   HOMOTYPIC   homotypic index dir (default: results/cli/promoter/01_homotypic)
 #   GENE_LIST   gene list (default: data/genes/genes_cell_type_treatment.txt)
-#   OUT_BASE    base output dir (default: results/cli/08_pair_only/sweep_$(date +%Y%m%d_%H%M%S))
+#   OUT_BASE    base output dir (default: results/cli/pair_only/sweep_$(date +%Y%m%d_%H%M%S))
 #   THREADS     pair_parallel threads per run (default: 4)
-#   JOBS        how many 08 runs to launch concurrently (default: 1)
+#   JOBS        how many pair_only runs to launch concurrently (default: 1)
 #               WARNING: each run uses $THREADS CPU; JOBS * THREADS should
 #               not exceed your core count.
 #
@@ -42,9 +42,9 @@ repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)
 cd "$repo_root"
 
 ic_values=${IC_VALUES:-"2 4 6 8"}
-homotypic=${HOMOTYPIC:-results/cli/03_promoter/01_homotypic}
+homotypic=${HOMOTYPIC:-results/cli/promoter/01_homotypic}
 gene_list=${GENE_LIST:-data/genes/genes_cell_type_treatment.txt}
-out_base=${OUT_BASE:-results/cli/08_pair_only/sweep_$(date +%Y%m%d_%H%M%S)}
+out_base=${OUT_BASE:-results/cli/pair_only/sweep_$(date +%Y%m%d_%H%M%S)}
 threads=${THREADS:-4}
 jobs=${JOBS:-1}
 
@@ -80,7 +80,7 @@ run_one_ic() {
     local t0=$SECONDS
     local rc=0
     rm -rf "$out_dir"
-    bash scripts/scripts/08_pair_only.sh \
+    bash scripts/workflows/pair_only.sh \
         -d "$homotypic" \
         -g "$gene_list" \
         -o "$out_dir" \

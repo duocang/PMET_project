@@ -8,6 +8,8 @@
 set -uo pipefail
 
 script_dir=$(cd -- "$(dirname "$0")" && pwd)
+repo_root=$(cd -- "$script_dir/../.." && pwd)
+pipeline_dir="$repo_root/scripts/workflows/cli"
 cd "$script_dir"
 
 failed=0
@@ -17,11 +19,11 @@ fail()    { printf '  FAIL  %s\n' "$1"; failed=$((failed + 1)); }
 
 # ---------------------------------------------------------------------------
 # Test 1: bedtools getfasta with -s reverse-complements minus-strand entries.
-# This guards against scripts/02_benchmark_parameters.sh regressing to the
+# This guards against the perf-params pipeline regressing to the
 # strand-unaware extraction that produced wrong promoter sequences for
 # minus-strand genes.
 # ---------------------------------------------------------------------------
-section "bedtools getfasta strand-awareness (relevant to scripts/02 P0 fix)"
+section "bedtools getfasta strand-awareness (P0 strand fix)"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -77,22 +79,15 @@ else
     fail "- strand fixture is palindromic — test cannot detect the strand bug"
 fi
 
-# Path helpers — script_dir is scripts/tests/.
-#   $script_dir/../pipeline    → scripts/pipeline
-#   $script_dir/../python      → scripts/python
-#   $script_dir/../../data     → repo-root data
-repo_root="$script_dir/../.."
-pipeline_dir="$script_dir/../pipeline"
-
 # ---------------------------------------------------------------------------
 # Test 2: build_promoters.py invokes bedtools getfasta with -s.
-# Static check — keeps the P0-02 strand fix visible. After Stage 4 the
-# `bedtools getfasta` call lives in build_promoters.py; it is shared by
-# pipelines 02, 03 and 08 by construction.
+# Static check — keeps the P0 strand fix visible. The `bedtools getfasta`
+# call lives in build_promoters.py; it is shared by promoter.sh,
+# pair_only.sh, and the perf-params pipeline by construction.
 # ---------------------------------------------------------------------------
 section "build_promoters.py invokes bedtools getfasta with -s"
 
-bp="$script_dir/../python/build_promoters.py"
+bp="$repo_root/scripts/python/build_promoters.py"
 if [[ ! -f "$bp" ]]; then
     fail "build_promoters.py not found at $bp"
 else
@@ -106,11 +101,11 @@ else
     fi
 fi
 
-section "01_benchmark_cpu inputs sanity"
+section "01_perf_cpu inputs sanity"
 
-p1="$pipeline_dir/01_benchmark_cpu.sh"
+p1="$pipeline_dir/01_perf_cpu.sh"
 if [[ ! -f "$p1" ]]; then
-    fail "01_benchmark_cpu.sh not found at $p1"
+    fail "01_perf_cpu.sh not found at $p1"
 else
     gene_path=$(awk -F'=' '/^gene_input_file=/ { print $2; exit }' "$p1" | tr -d '"')
     if [[ -n "$gene_path" && -f "$repo_root/$gene_path" ]]; then
@@ -143,29 +138,26 @@ fi
 # ---------------------------------------------------------------------------
 # Test 4: every promoter pipeline that uses TAIR10.fasta + TAIR10.gff3 must
 # guard against silent chromosome-name mismatch (e.g. "1" vs "Chr1").
-# Pipelines 03 and 08 added the preflight; this regression-tests 02, 06, 07.
-# Static check + synthetic mismatch detection.
+# After the monorepo merge, the elements pipeline lives in
+# scripts/workflows/elements.sh (consolidating the old 06/07 split).
 # ---------------------------------------------------------------------------
 section "chromosome-name preflight on promoter+anno pipelines"
 
-for name in 02_benchmark_parameters.sh \
-            05_promoter_gap.sh \
-            06_elements_longest.sh \
-            07_elements_merged.sh; do
-    full="$pipeline_dir/$name"
+# (path, label) pairs — the elements pipeline now sits one level up.
+chr_targets=(
+    "$pipeline_dir/02_perf_params.sh|02_perf_params.sh"
+    "$pipeline_dir/05_promoter_gap.sh|05_promoter_gap.sh"
+    "$repo_root/scripts/workflows/elements.sh|elements.sh"
+)
+for entry in "${chr_targets[@]}"; do
+    full=${entry%%|*}
+    name=${entry##*|}
     if [[ ! -f "$full" ]]; then
         fail "$name not found"
         continue
     fi
-    # 06 and 07 source _elements_common.sh; the preflight body lives
-    # there. Check the entry script itself first; if not found, follow a
-    # single `source …_elements_common.sh` and check that body too.
     if grep -q 'Chromosome name mismatch' "$full"; then
         pass "$name contains chromosome-name preflight"
-    elif grep -q 'source.*_elements_common.sh' "$full" \
-        && grep -q 'Chromosome name mismatch' \
-            "$pipeline_dir/_elements_common.sh"; then
-        pass "$name inherits chromosome-name preflight from _elements_common.sh"
     else
         fail "$name missing chromosome-name preflight"
     fi
@@ -202,7 +194,7 @@ chr1	3500	3600	GENE_W	1	+
 chr1	3800	4000	GENE_Z	1	-
 BED
 
-if python3 "$script_dir/../python/assess_integrity.py" "$ai_tmp/promoters.bed" \
+if python3 "$repo_root/scripts/python/assess_integrity.py" "$ai_tmp/promoters.bed" \
         > "$ai_tmp/run.log" 2>&1; then
     # Expectation: GENE_X collapses to its right (TSS-side) fragment 1700-2000;
     # GENE_Z collapses to its left (TSS-side) fragment 3000-3300; GENE_Y, GENE_W

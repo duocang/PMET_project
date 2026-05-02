@@ -3,9 +3,16 @@
 # recorded baseline hashes.
 #
 # Usage:
-#   scripts/tests/run_with_verify.sh <NN>
+#   bash tests/integration/run_with_verify.sh <NN> [<element>]
 #
-# where <NN> is the pipeline number (00, 01, 02, 03, 04, 06, 07, 08).
+# where <NN> is the pipeline number (00, 01, 02, 03, 04, 05, 06, 07, 08)
+# inherited from the pre-monorepo numbering. The runner paths below have
+# been updated to the post-monorepo file layout (scripts/workflows/...);
+# the recorded baselines under tests/integration/baselines/ were captured
+# pre-monorepo and still reference the OLD dir names — see
+# tests/integration/README.md "Baseline staleness" for the recapture
+# procedure. Use this script for "did the runner stay invokable" smoke
+# checking until the baselines are refreshed.
 #
 # What it does, per <NN>:
 #   1. Removes any existing results/<results_dir>/ to ensure a fresh run.
@@ -13,9 +20,6 @@
 #   3. Hashes the output and diffs against the recorded baseline via
 #      verify_baseline.sh, with the standard exclude list.
 #   4. Exits non-zero on any unexpected change.
-#
-# This is the single supported entrypoint for the "modify → run → verify"
-# loop required before commit.
 
 set -uo pipefail
 
@@ -37,14 +41,15 @@ cd "$repo_root"
 baselines_dir="$script_dir/baselines"
 verify="$script_dir/verify_baseline.sh"
 
-# Map <element> shorthand → menu choice fed to the interactive prompt
-# inside scripts/scripts/_elements_common.sh.
+# Map <element> shorthand → (-e flag value, results-dir suffix).
+# `-e CDS` produces dir `..._CDS`; `-e 3UTR` is canonicalised inside
+# elements.sh to `three_prime_UTR` for the dir name.
 case "$element" in
-    3utr) elem_choice=1 ;;
-    5utr) elem_choice=2 ;;
-    mrna) elem_choice=3 ;;
-    cds)  elem_choice=4 ;;
-    exon) elem_choice=5 ;;
+    3utr) elem_flag="3UTR"; elem_suffix="three_prime_UTR" ;;
+    5utr) elem_flag="5UTR"; elem_suffix="five_prime_UTR"  ;;
+    mrna) elem_flag="mRNA"; elem_suffix="mRNA"            ;;
+    cds)  elem_flag="CDS";  elem_suffix="CDS"             ;;
+    exon) elem_flag="exon"; elem_suffix="exon"            ;;
     *)
         echo "error: unknown element '$element' (expected cds,mrna,exon,3utr,5utr)" >&2
         exit 2
@@ -58,33 +63,33 @@ case "$nn" in
         exec bash "$script_dir/run_smoke.sh"
         ;;
     01)
-        runner=(bash scripts/scripts/01_benchmark_cpu.sh)
-        results_dir=results/01_benchmark_cpu
+        runner=(bash scripts/workflows/cli/01_perf_cpu.sh)
+        results_dir=results/cli/01_perf_cpu
         baseline=$baselines_dir/01_baseline.hashes.txt
         ;;
     02)
-        runner=(bash scripts/tests/run_pipeline02_one_combo.sh)
-        results_dir=results/cli/02_benchmark_parameters
+        runner=(bash tests/integration/run_pipeline02_one_combo.sh)
+        results_dir=results/02_perf_params
         baseline=$baselines_dir/02_one_combo_baseline.hashes.txt
         ;;
     03)
-        runner=(bash scripts/scripts/03_promoter.sh)
-        results_dir=results/cli/03_promoter
+        runner=(bash scripts/workflows/promoter.sh)
+        results_dir=results/cli/promoter
         baseline=$baselines_dir/03_baseline.hashes.txt
         ;;
     04)
-        runner=(bash scripts/scripts/04_intervals.sh)
-        results_dir=results/cli/04_intervals
+        runner=(bash scripts/workflows/intervals.sh)
+        results_dir=results/cli/intervals
         baseline=$baselines_dir/04_baseline.hashes.txt
         ;;
     05)
-        runner=(bash scripts/scripts/05_promoter_gap.sh)
+        runner=(bash scripts/workflows/cli/05_promoter_gap.sh)
         results_dir=results/05_promoter_gap
         baseline=$baselines_dir/05_baseline.hashes.txt
         ;;
     06)
-        runner=(bash -c "printf '${elem_choice}\n' | bash scripts/scripts/06_elements_longest.sh")
-        results_dir=results/06_elements_longest
+        runner=(bash scripts/workflows/elements.sh -s longest -e "$elem_flag")
+        results_dir=results/cli/elements_longest_${elem_suffix}
         # CDS keeps its existing canonical 06_baseline.* name (most-tested).
         # Other elements use a per-element suffix.
         if [[ "$element" == "cds" ]]; then
@@ -94,8 +99,8 @@ case "$nn" in
         fi
         ;;
     07)
-        runner=(bash -c "printf '${elem_choice}\n' | bash scripts/scripts/07_elements_merged.sh")
-        results_dir=results/07_elements_merged
+        runner=(bash scripts/workflows/elements.sh -s merged -e "$elem_flag")
+        results_dir=results/cli/elements_merged_${elem_suffix}
         if [[ "$element" == "cds" ]]; then
             baseline=$baselines_dir/07_baseline.hashes.txt
         else
@@ -105,16 +110,16 @@ case "$nn" in
     08)
         # 08 needs 03's homotypic index. If it's missing, point the user to
         # run 03 first instead of producing an opaque preflight error.
-        if [[ ! -f results/cli/03_promoter/01_homotypic/universe.txt ]]; then
-            echo "error: 08 needs results/cli/03_promoter/01_homotypic/ — run 'bash scripts/tests/run_with_verify.sh 03' first" >&2
+        if [[ ! -f results/cli/promoter/01_homotypic/universe.txt ]]; then
+            echo "error: 08 needs results/cli/promoter/01_homotypic/ — run 'bash tests/integration/run_with_verify.sh 03' first" >&2
             exit 2
         fi
-        runner=(bash scripts/scripts/08_pair_only.sh
-                -d results/cli/03_promoter/01_homotypic
+        runner=(bash scripts/workflows/pair_only.sh
+                -d results/cli/promoter/01_homotypic
                 -g data/genes/genes_cell_type_treatment.txt
-                -o results/cli/08_pair_only/cell_type_treatment_ic4
+                -o results/cli/pair_only/cell_type_treatment_ic4
                 -i 4 -t 4)
-        results_dir=results/cli/08_pair_only/cell_type_treatment_ic4
+        results_dir=results/cli/pair_only/cell_type_treatment_ic4
         baseline=$baselines_dir/08_baseline.hashes.txt
         ;;
     *)

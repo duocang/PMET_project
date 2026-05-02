@@ -30,7 +30,7 @@ fi
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-scripts/gff3sort/gff3sort.pl "$anno" > "$work/sorted.gff3" 2>/dev/null
+scripts/third_party/gff3sort/gff3sort.pl "$anno" > "$work/sorted.gff3" 2>/dev/null
 
 python3 scripts/python/gff3_to_gene_bed.py \
     --gff3           "$work/sorted.gff3" \
