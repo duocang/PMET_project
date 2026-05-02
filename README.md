@@ -54,6 +54,39 @@ head results/cli/demo/pairing/motif_output.txt
 
 You should see a TAB-separated table with one row per `(cluster, motif pair)`. [§6](#en-6) walks through what each column means and what counts as a "significant" pair; [§4](#en-4) covers the four workflows you'll reach for once you graduate to real data.
 
+### Run a workflow on your own data
+
+`make demo` is just a shortcut. The four CLI entry points live under [`scripts/workflows/`](scripts/workflows/) — one per analysis style (see [§4](#en-4) for which to pick). Each takes the same kind of inputs and accepts `-h` for the full option list.
+
+Minimal real-data invocation, using `promoter.sh` (the canonical case):
+
+```bash
+# See every option this workflow accepts
+bash scripts/workflows/promoter.sh -h
+
+# Run on your own genome / annotation / motif library / gene clusters,
+# writing all outputs under results/cli/myrun/ instead of the default.
+bash scripts/workflows/promoter.sh \
+    -s my_genome.fa \
+    -a my_annot.gff3 \
+    -m my_motifs.meme \
+    -g my_clusters.txt \
+    -o results/cli/myrun/01_homotypic \
+    -x results/cli/myrun/02_heterotypic
+
+# Or — same call wired to the real inputs already in this repo
+# (TAIR10 reference + Franco-Zorrilla 2014 motif library + a real heat-stress gene cluster). Copy-paste runnable as-is.
+bash scripts/workflows/promoter.sh \
+    -s data/reference/TAIR10.fasta \
+    -a data/reference/TAIR10.gff3 \
+    -m data/motifs/Franco-Zorrilla_et_al_2014.meme \
+    -g data/genes/heat_top300.txt \
+    -o results/cli/heat_top300/01_homotypic \
+    -x results/cli/heat_top300/02_heterotypic
+```
+
+`-g` is a TSV of `<cluster_label> <gene_id>` per line; the other three are standard FASTA / GFF3 / MEME files. Outputs land under `results/cli/<workflow>/` by default; [§6](#en-6) explains how to read `motif_output.txt`.
+
 ### What you need installed
 
 System tools the workflows assume on `$PATH`. `00_env_check.sh` sanity-checks the same list:
@@ -472,6 +505,39 @@ head results/cli/demo/pairing/motif_output.txt
 ```
 
 应该看到一张 TAB 分隔的表，每行一个 `(cluster, motif 对)`。 [§6](#cn-6) 讲每列什么意思、什么算"显著协同"；[§4](#cn-4) 讲跑真实数据时该挑哪个 workflow。
+
+### 用 CLI 跑自己的数据
+
+`make demo` 只是个捷径。4 个 CLI 入口都在 [`scripts/workflows/`](scripts/workflows/) 下（哪种分析挑哪个见 [§4](#cn-4)），输入形式一致，`-h` 看完整选项。
+
+最小可跑的真实数据调用，以最有代表性的 `promoter.sh` 为例：
+
+```bash
+# 看这个 workflow 接受的所有选项
+bash scripts/workflows/promoter.sh -h
+
+# 用自己的基因组 / 注释 / motif 库 / gene cluster 跑，
+# 输出全部落到 results/cli/myrun/，而不是默认目录。
+bash scripts/workflows/promoter.sh \
+    -s my_genome.fa \
+    -a my_annot.gff3 \
+    -m my_motifs.meme \
+    -g my_clusters.txt \
+    -o results/cli/myrun/01_homotypic \
+    -x results/cli/myrun/02_heterotypic
+
+# 或者 —— 同一条命令换成仓库里已有的真实数据
+# （TAIR10 参考 + Franco-Zorrilla 2014 motif 库 + 一份真实热胁迫基因 cluster）。拷过去就能直接跑。
+bash scripts/workflows/promoter.sh \
+    -s data/reference/TAIR10.fasta \
+    -a data/reference/TAIR10.gff3 \
+    -m data/motifs/Franco-Zorrilla_et_al_2014.meme \
+    -g data/genes/heat_top300.txt \
+    -o results/cli/heat_top300/01_homotypic \
+    -x results/cli/heat_top300/02_heterotypic
+```
+
+`-g` 是每行 `<cluster_label> <gene_id>` 的 TSV，其余三项就是标准 FASTA / GFF3 / MEME。输出默认落到 `results/cli/<workflow>/`；`motif_output.txt` 怎么读见 [§6](#cn-6)。
 
 ### 需要装的工具
 
