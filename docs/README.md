@@ -59,8 +59,10 @@ docs/
 ├── perf/                       performance investigations
 │   └── minhash_calibration.md     CIS-BP2 sweep, why MinHash prefilter ships off
 ├── figures/                    SVG flowcharts and example outputs
-└── archive/                    pre-monorepo material kept for historical reference
-    ├── pre-monorepo-pipeline-story/   the 03..07 audit docs that workflows/ replaces
+├── workflows/legacy/           frozen pre-monorepo pipeline story pack — conceptual
+│                               reference for "what depth of step-by-step audit is
+│                               possible"; not auto-updated, paths are stale
+└── archive/                    other pre-monorepo material kept for historical reference
     ├── core-reports/                  PMET_project benchmark / optimisation reports
     └── verification_log.md            2641-line migration journal
 ```
@@ -166,8 +168,9 @@ docs/
 ├── perf/                       性能研究
 │   └── minhash_calibration.md     CIS-BP2 sweep，为什么 MinHash 粗筛默认关闭
 ├── figures/                    SVG 流程图与示例输出
-└── archive/                    迁 monorepo 之前的材料，留作参考
-    ├── pre-monorepo-pipeline-story/   workflows/ 取代的 03..07 审计文档
+├── workflows/legacy/           冻结的 monorepo 前 pipeline 故事包 —— 作"step-by-step
+│                               审计能做到多深"的概念参考；不自动更新，路径已过期
+└── archive/                    其它迁 monorepo 之前的材料归档
     ├── core-reports/                  PMET_project benchmark / 优化报告
     └── verification_log.md            2641 行迁移日志
 ```
