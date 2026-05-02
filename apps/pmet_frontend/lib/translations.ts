@@ -36,6 +36,8 @@ const en = {
   'home.hero.cta_secondary': 'Visualize Results',
   'home.hero.stat_species': 'plant species',
   'home.hero.stat_dbs': 'motif databases',
+  'home.hero.expand_hint': 'Click to expand',
+  'home.hero.expand_alt': 'PMET workflow overview — FIMO scan, pairwise enrichment test, ranked output',
   // home: modes
   'home.modes.eyebrow': 'Analysis entry points',
   'home.modes.heading': 'Choose the run that matches your inputs',
@@ -485,6 +487,8 @@ const zh: Record<keyof typeof en, string> = {
   'home.hero.cta_secondary': '可视化结果',
   'home.hero.stat_species': '种植物物种',
   'home.hero.stat_dbs': '个 motif 数据库',
+  'home.hero.expand_hint': '点击查看图示',
+  'home.hero.expand_alt': 'PMET 流程示意 — FIMO 扫描、motif 对富集检验、结果排序',
   // home: modes
   'home.modes.eyebrow': '分析入口',
   'home.modes.heading': '选择与你输入匹配的运行模式',

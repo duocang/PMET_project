@@ -167,3 +167,19 @@ body {
   animation: tab-fade-in 180ms ease-out;
 }
 
+/* Hero "click to expand" badge: outward ripple plus a subtle bobbing
+   highlight to draw the eye without being noisy. Hover pauses the
+   pulse so it doesn't fight the user's deliberate interaction. */
+@keyframes hero-zoom-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); }
+  60%      { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); }
+  100%     { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+.hero-zoom-hint {
+  animation: hero-zoom-pulse 2.6s ease-out infinite;
+}
+.hero-zoom-hint:hover,
+.hero-zoom-hint:focus-visible {
+  animation-play-state: paused;
+}
+

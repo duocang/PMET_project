@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { TranslationKey } from '@/lib/translations';
 import ZoomableImage from '@/components/ZoomableImage';
+import HeroFigureZoom from '@/components/HeroFigureZoom';
 
 function DatabaseIcon() {
   return (
@@ -111,6 +112,7 @@ export default function HomePage() {
   return (
     <div className="space-y-16 pb-14">
       <section className="hero-stage">
+        <HeroFigureZoom src="/figures/pmet-hero-bg.svg" />
         <div className="hero-content">
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-teal-100">{t('home.hero.eyebrow')}</p>
           <h1 className="text-5xl font-bold leading-tight text-white md:text-6xl">PMET</h1>
