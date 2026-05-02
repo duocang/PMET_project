@@ -26,7 +26,7 @@ Goals: **predictable** (a name should hint at what the file does), **mechanicall
 
 ```
 .
-├── README.md / CLAUDE.md / Makefile / TODO.md / .gitignore
+├── README.md / Makefile / TODO.md / .gitignore
 ├── apps/                  CLI + web backend + web frontend
 ├── core/                  C/C++ engines (indexing + pairing) + CMake
 ├── scripts/               bash / python / R helpers + workflow scripts
@@ -227,7 +227,7 @@ These exist in the repo and predate this document. They're not failures; they ge
 
 ```
 .
-├── README.md / CLAUDE.md / Makefile / TODO.md / .gitignore
+├── README.md / Makefile / TODO.md / .gitignore
 ├── apps/                  CLI + web 后端 + web 前端
 ├── core/                  C/C++ 引擎（indexing + pairing）+ CMake
 ├── scripts/               bash / python / R helper + workflow 脚本
