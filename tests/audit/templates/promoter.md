@@ -16,7 +16,7 @@
 | | |
 |---|---|
 | [1. Purpose](#en-1) | [4. Reproducing this audit](#en-4) |
-| [2. Biological setup](#en-2) | [→ Run snapshot & verification](#run) |
+| [2. Biological setup](#en-2) | [→ Run snapshot, worked example & verification](#run) |
 | [3. What the script does, step by step](#en-3) | |
 
 <a id="en-1"></a>
@@ -97,7 +97,7 @@ python3 tests/audit/generate.py promoter
 | | |
 |---|---|
 | [1. 用途](#cn-1) | [4. 重跑此审计](#cn-4) |
-| [2. 生物学背景](#cn-2) | [→ 运行快照与验证](#run) |
+| [2. 生物学背景](#cn-2) | [→ 运行快照、推导示例、验证](#run) |
 | [3. 脚本逐步做了什么](#cn-3) | |
 
 <a id="cn-1"></a>
@@ -204,6 +204,10 @@ Indexing landed at `<<HOMOTYPIC_DIR>>/`, pairing at `<<HETEROTYPIC_DIR>>/`, plot
 Total enriched pair rows · 富集对总行数：**<<MOTIF_OUTPUT_LINES>>** — these are the per-cluster motif pairs that survived `pair_parallel`'s binomial pre-filter and the cluster-level hypergeometric test at the canonical IC and FIMO thresholds.
 
 This run took **<<SECONDS>>s** at 4 threads. The dominant cost is stage 4 (FIMO scanning 113 motifs across ~30k 1 kb promoters); pair testing in stage 6 takes <30s of that.
+
+### Worked example · 推导示例
+
+<<WORKED_EXAMPLE>>
 
 <a id="verification"></a>
 

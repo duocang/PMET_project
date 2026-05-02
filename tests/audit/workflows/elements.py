@@ -19,6 +19,7 @@ from pathlib import Path
 from lib import (
     Check, at_least_check, contract_invariant_checks, equal_check,
     count_dir_files, head_lines, linecount, reset_dir, run_workflow, sha256,
+    worked_example_block,
 )
 
 
@@ -108,6 +109,21 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
         task_table_rows.append(f"| `{task}` | {n} | `{sha[:16]}` | {match} |")
     task_table = "\n".join(task_table_rows)
 
+    # Worked example: pick the first per-task motif_output.txt that
+    # actually exists (some gene lists have zero overlap with the 5'UTR
+    # universe → no motif_output written for them).
+    worked = "_(no per-task motif_output.txt produced — worked example skipped)_"
+    for d in het_dirs:
+        mo = d / "motif_output.txt"
+        if mo.exists() and mo.stat().st_size > 0:
+            worked = worked_example_block(
+                motif_output=mo,
+                universe=universe,
+                binomial_thresholds=binomial,
+                workflow_label=f"the elements audit (task `{d.name.removeprefix('02_heterotypic_')}`)",
+            )
+            break
+
     return {
         "run_label": "elements",
         "returncode": rc["returncode"],
@@ -124,6 +140,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
         "total_het_lines": total_het_lines,
         "task_table": task_table,
         "command_displayed": " ".join(cmd),
+        "worked_example": worked,
         "_index_dir": homo,
         "_task_results": task_results,
     }

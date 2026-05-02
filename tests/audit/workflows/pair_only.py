@@ -10,6 +10,7 @@ from pathlib import Path
 from lib import (
     Check, at_least_check, contract_invariant_checks, equal_check,
     head_lines, linecount, reset_dir, run_workflow, sha256,
+    worked_example_block,
 )
 
 
@@ -30,6 +31,18 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     pmet_log = out_dir / "pmet.log"
     genes_used = out_dir / "genes_used_PMET.txt"
 
+    # The input index lives at data/demos/promoters/pairing/demo — that's
+    # what supplies universe.txt and binomial_thresholds.txt for the
+    # worked example.
+    index_dir = repo_root / "data" / "demos" / "promoters" / "pairing" / "demo"
+
+    worked = worked_example_block(
+        motif_output=motif_output,
+        universe=index_dir / "universe.txt",
+        binomial_thresholds=index_dir / "binomial_thresholds.txt",
+        workflow_label="the pair_only audit",
+    )
+
     return {
         "run_label": "pair_only",
         "returncode": rc["returncode"],
@@ -43,9 +56,10 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
         "genes_used_lines": linecount(genes_used),
         "pmet_log_lines": linecount(pmet_log),
         "command_displayed": " ".join(cmd),
+        "worked_example": worked,
         # held for the contract invariant check (uses the INPUT index dir,
         # not the output, since pair_only doesn't write a homotypic dir)
-        "_index_dir": repo_root / "data" / "pairing" / "demo",
+        "_index_dir": index_dir,
     }
 
 

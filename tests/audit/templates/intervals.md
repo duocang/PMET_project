@@ -16,7 +16,7 @@
 | | |
 |---|---|
 | [1. Purpose](#en-1) | [4. Reproducing this audit](#en-4) |
-| [2. Biological setup](#en-2) | [→ Run snapshot & verification](#run) |
+| [2. Biological setup](#en-2) | [→ Run snapshot, worked example & verification](#run) |
 | [3. What the script does, step by step](#en-3) | |
 
 <a id="en-1"></a>
@@ -85,7 +85,7 @@ python3 tests/audit/generate.py intervals
 | | |
 |---|---|
 | [1. 用途](#cn-1) | [4. 重跑此审计](#cn-4) |
-| [2. 生物学背景](#cn-2) | [→ 运行快照与验证](#run) |
+| [2. 生物学背景](#cn-2) | [→ 运行快照、推导示例、验证](#run) |
 | [3. 脚本逐步做了什么](#cn-3) | |
 
 <a id="cn-1"></a>
@@ -178,6 +178,10 @@ Indexing landed at `<<INDEXING_DIR>>/`, pairing at `<<PAIRING_DIR>>/`.
 ```
 
 Total enriched pair rows · 富集对总行数：**<<MOTIF_OUTPUT_LINES>>**.
+
+### Worked example · 推导示例
+
+<<WORKED_EXAMPLE>>
 
 <a id="verification"></a>
 

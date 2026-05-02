@@ -10,7 +10,7 @@ from pathlib import Path
 from lib import (
     Check, at_least_check, contract_invariant_checks, equal_check,
     count_dir_files, head_lines, linecount, r_invocation_checks,
-    reset_dir, run_workflow, sha256,
+    reset_dir, run_workflow, sha256, worked_example_block,
 )
 
 
@@ -35,6 +35,13 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     universe = homo / "universe.txt"
     promoter_lengths = homo / "promoter_lengths.txt"
 
+    worked = worked_example_block(
+        motif_output=motif_output,
+        universe=universe,
+        binomial_thresholds=binomial,
+        workflow_label="the promoter audit",
+    )
+
     return {
         "run_label": "promoter",
         "returncode": rc["returncode"],
@@ -53,6 +60,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
         "motif_output_head": head_lines(motif_output, 3),
         "plot_pngs": count_dir_files(plot, "*.png"),
         "command_displayed": " ".join(cmd),
+        "worked_example": worked,
         "_index_dir": homo,
         "_plot_dir": plot,
     }

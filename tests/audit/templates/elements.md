@@ -18,7 +18,7 @@
 |---|---|
 | [1. Purpose](#en-1) | [4. Reproducing this audit](#en-4) |
 | [2. Biological setup](#en-2) | [5. Known limitation](#en-5) |
-| [3. What the script does, step by step](#en-3) | [→ Run snapshot & verification](#run) |
+| [3. What the script does, step by step](#en-3) | [→ Run snapshot, worked example & verification](#run) |
 
 <a id="en-1"></a>
 
@@ -109,7 +109,7 @@ R `ggsave` enforces a hard 50-inch dimension cap. Some gene tasks (e.g. `random_
 |---|---|
 | [1. 用途](#cn-1) | [4. 重跑此审计](#cn-4) |
 | [2. 生物学背景](#cn-2) | [5. 已知限制](#cn-5) |
-| [3. 脚本逐步做了什么](#cn-3) | [→ 运行快照与验证](#run) |
+| [3. 脚本逐步做了什么](#cn-3) | [→ 运行快照、推导示例、验证](#run) |
 
 <a id="cn-1"></a>
 
@@ -222,6 +222,10 @@ The script loops over every `data/genes/*.txt` file. Per-task results:
 (`missing` rows = the gene list had zero overlap with the 5'UTR universe, so the script skipped `pair_parallel` for that task — that's expected biology, not a failure.)
 
 Total enriched pair rows across all tasks · 所有 task 的富集对总行数：**<<TOTAL_HET_LINES>>**.
+
+### Worked example · 推导示例
+
+<<WORKED_EXAMPLE>>
 
 <a id="verification"></a>
 

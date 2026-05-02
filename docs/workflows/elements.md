@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 13:35:31 UTC on this machine — workflow `elements`, exit 0, 140.4s_
+_Audit refreshed 2026-05-02 14:18:41 UTC on this machine — workflow `elements`, exit 0, 132.6s_
 
 **Source:** [`scripts/workflows/elements.sh`](../../scripts/workflows/elements.sh)
 &nbsp;&nbsp;**Helper sub-workflow:** [`scripts/workflows/cli/_pmet_index_element.sh`](../../scripts/workflows/cli/_pmet_index_element.sh)
@@ -18,7 +18,7 @@ _Audit refreshed 2026-05-02 13:35:31 UTC on this machine — workflow `elements`
 |---|---|
 | [1. Purpose](#en-1) | [4. Reproducing this audit](#en-4) |
 | [2. Biological setup](#en-2) | [5. Known limitation](#en-5) |
-| [3. What the script does, step by step](#en-3) | [→ Run snapshot & verification](#run) |
+| [3. What the script does, step by step](#en-3) | [→ Run snapshot, worked example & verification](#run) |
 
 <a id="en-1"></a>
 
@@ -109,7 +109,7 @@ R `ggsave` enforces a hard 50-inch dimension cap. Some gene tasks (e.g. `random_
 |---|---|
 | [1. 用途](#cn-1) | [4. 重跑此审计](#cn-4) |
 | [2. 生物学背景](#cn-2) | [5. 已知限制](#cn-5) |
-| [3. 脚本逐步做了什么](#cn-3) | [→ 运行快照与验证](#run) |
+| [3. 脚本逐步做了什么](#cn-3) | [→ 运行快照、推导示例、验证](#run) |
 
 <a id="cn-1"></a>
 
@@ -229,6 +229,37 @@ The script loops over every `data/genes/*.txt` file. Per-task results:
 (`missing` rows = the gene list had zero overlap with the 5'UTR universe, so the script skipped `pair_parallel` for that task — that's expected biology, not a failure.)
 
 Total enriched pair rows across all tasks · 所有 task 的富集对总行数：**297422**.
+
+### Worked example · 推导示例
+
+Workflow output written one row per `(cluster, motif1, motif2)`. Picking the first data row of `motif_output.txt` from the elements audit (task `gene_cortex_epidermis_pericycle`) (prefers a row with k > 0 when one exists) and unpacking what each number means + how the reported p-value would be derived from the inputs.
+
+**The row:**
+
+```
+cortex	AHL12	AHL12_2	3	73	434	1.6330277211e-01	7.2479882924e-01	1.0000000000e+00	1.0000000000e+00	AT3G15750;AT4G20260;AT5G47560;
+```
+
+**Reading the columns** — quantities the workflow saw at the moment of the test:
+
+- **N** (universe size) = `22,733` — every gene listed in `universe.txt`.
+- **n** (cluster size) = `434` — column 6, total genes in cluster `cortex`.
+- **K** (universe positives) = `73` — column 5, genes anywhere in the universe whose `AHL12` and `AHL12_2` hits both passed the per-motif binomial threshold.
+- **k** (cluster positives) = `3` — column 4, the subset of those that fall inside cluster `cortex`. Specific genes (column 11): `AT3G15750;AT4G20260;AT5G47560`
+- Per-motif thresholds (from `binomial_thresholds.txt`): `AHL12` → `2.464721472000000e-01`; `AHL12_2` → `2.921008666000000e-01`. These are the per-motif p-value cutoffs that decided which fimohits made it into the K set.
+
+**Hypergeometric computation, from those four numbers:**
+
+```
+P(X >= k | N, K, n) = P(X >= 3 | N=22733, K=73, n=434)
+                    = sum_{i=3}^{min(K,n)=73}  C(K,i) * C(N-K, n-i) / C(N, n)
+                    = 1.633028e-01     ← independently recomputed here from k/K/n/N
+vs reported raw_p   = 1.633028e-01     ← column 7 of the row above
+```
+
+After BH correction across every pair tested in cluster `cortex`, `adj_p_BH` settles at `0.7248` (column 8) — **not significant** at α = 0.05. 
+
+_The recomputed and reported raw-p match to within numerical precision; any drift here would mean the C++ hypergeometric implementation has diverged from the textbook formula._
 
 <a id="verification"></a>
 

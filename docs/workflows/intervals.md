@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 13:31:26 UTC on this machine — workflow `intervals`, exit 0, 15.1s_
+_Audit refreshed 2026-05-02 14:14:47 UTC on this machine — workflow `intervals`, exit 0, 14.4s_
 
 **Source:** [`scripts/workflows/intervals.sh`](../../scripts/workflows/intervals.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs · web `intervals` mode
@@ -16,7 +16,7 @@ _Audit refreshed 2026-05-02 13:31:26 UTC on this machine — workflow `intervals
 | | |
 |---|---|
 | [1. Purpose](#en-1) | [4. Reproducing this audit](#en-4) |
-| [2. Biological setup](#en-2) | [→ Run snapshot & verification](#run) |
+| [2. Biological setup](#en-2) | [→ Run snapshot, worked example & verification](#run) |
 | [3. What the script does, step by step](#en-3) | |
 
 <a id="en-1"></a>
@@ -85,7 +85,7 @@ python3 tests/audit/generate.py intervals
 | | |
 |---|---|
 | [1. 用途](#cn-1) | [4. 重跑此审计](#cn-4) |
-| [2. 生物学背景](#cn-2) | [→ 运行快照与验证](#run) |
+| [2. 生物学背景](#cn-2) | [→ 运行快照、推导示例、验证](#run) |
 | [3. 脚本逐步做了什么](#cn-3) | |
 
 <a id="cn-1"></a>
@@ -180,6 +180,37 @@ U	CCA1	MYB111_2	0	710	18	1.0000000000e+00	1.0000000000e+00	1.0000000000e+00	1.00
 ```
 
 Total enriched pair rows · 富集对总行数：**46**.
+
+### Worked example · 推导示例
+
+Workflow output written one row per `(cluster, motif1, motif2)`. Picking the first data row of `motif_output.txt` from the intervals audit (prefers a row with k > 0 when one exists) and unpacking what each number means + how the reported p-value would be derived from the inputs.
+
+**The row:**
+
+```
+U	MYB111	MYB52	1	426	18	2.5265441579e-01	1.0000000000e+00	1.0000000000e+00	1.0000000000e+00	1:49166-49909(-);
+```
+
+**Reading the columns** — quantities the workflow saw at the moment of the test:
+
+- **N** (universe size) = `26,552` — every gene listed in `universe.txt`.
+- **n** (cluster size) = `18` — column 6, total genes in cluster `U`.
+- **K** (universe positives) = `426` — column 5, genes anywhere in the universe whose `MYB111` and `MYB52` hits both passed the per-motif binomial threshold.
+- **k** (cluster positives) = `1` — column 4, the subset of those that fall inside cluster `U`. Specific genes (column 11): `1:49166-49909(-)`
+- Per-motif thresholds (from `binomial_thresholds.txt`): `MYB111` → `1.129703058000000e-02`; `MYB52` → `1.597146785000000e-02`. These are the per-motif p-value cutoffs that decided which fimohits made it into the K set.
+
+**Hypergeometric computation, from those four numbers:**
+
+```
+P(X >= k | N, K, n) = P(X >= 1 | N=26552, K=426, n=18)
+                    = sum_{i=1}^{min(K,n)=18}  C(K,i) * C(N-K, n-i) / C(N, n)
+                    = 2.526544e-01     ← independently recomputed here from k/K/n/N
+vs reported raw_p   = 2.526544e-01     ← column 7 of the row above
+```
+
+After BH correction across every pair tested in cluster `U`, `adj_p_BH` settles at `1.0000` (column 8) — **not significant** at α = 0.05. 
+
+_The recomputed and reported raw-p match to within numerical precision; any drift here would mean the C++ hypergeometric implementation has diverged from the textbook formula._
 
 <a id="verification"></a>
 

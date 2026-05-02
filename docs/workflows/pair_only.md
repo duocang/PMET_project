@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 13:31:11 UTC on this machine — workflow `pair_only`, exit 0, 15.6s_
+_Audit refreshed 2026-05-02 14:14:05 UTC on this machine — workflow `pair_only`, exit 0, 13.9s_
 
 **Source:** [`scripts/workflows/pair_only.sh`](../../scripts/workflows/pair_only.sh)
 &nbsp;&nbsp;**Used by:** CLI re-runs · web `promoters_pre` mode (`apps/pmet_backend/services/executor.py` SCRIPT_MAP)
@@ -16,7 +16,7 @@ _Audit refreshed 2026-05-02 13:31:11 UTC on this machine — workflow `pair_only
 | | |
 |---|---|
 | [1. Purpose](#en-1) | [4. Reproducing this audit](#en-4) |
-| [2. Biological setup](#en-2) | [→ Run snapshot & verification](#run) |
+| [2. Biological setup](#en-2) | [→ Run snapshot, worked example & verification](#run) |
 | [3. What the script does, step by step](#en-3) | |
 
 <a id="en-1"></a>
@@ -92,7 +92,7 @@ python3 tests/audit/generate.py pair_only
 | | |
 |---|---|
 | [1. 用途](#cn-1) | [4. 重跑此审计](#cn-4) |
-| [2. 生物学背景](#cn-2) | [→ 运行快照与验证](#run) |
+| [2. 生物学背景](#cn-2) | [→ 运行快照、推导示例、验证](#run) |
 | [3. 脚本逐步做了什么](#cn-3) | |
 
 <a id="cn-1"></a>
@@ -193,11 +193,42 @@ cortex	AHL12	AHL12_3ARY	16	744	442	1.7982386779e-01	3.3716975210e-01	1.000000000
 
 Schema (tab-separated): `cluster ⟶ motif1 ⟶ motif2 ⟶ overlap_count ⟶ expected ⟶ p_value ⟶ p_adj ⟶ ...`. Higher rows = stronger enrichment, lower p-values.
 
+### Worked example · 推导示例
+
+Workflow output written one row per `(cluster, motif1, motif2)`. Picking the first data row of `motif_output.txt` from the pair_only audit (prefers a row with k > 0 when one exists) and unpacking what each number means + how the reported p-value would be derived from the inputs.
+
+**The row:**
+
+```
+cortex	AHL12	AHL12_2	3	248	442	7.8378943939e-01	7.8378943939e-01	1.0000000000e+00	1.0000000000e+00	AT1G05680;AT2G20120;AT4G02170;
+```
+
+**Reading the columns** — quantities the workflow saw at the moment of the test:
+
+- **N** (universe size) = `26,558` — every gene listed in `universe.txt`.
+- **n** (cluster size) = `442` — column 6, total genes in cluster `cortex`.
+- **K** (universe positives) = `248` — column 5, genes anywhere in the universe whose `AHL12` and `AHL12_2` hits both passed the per-motif binomial threshold.
+- **k** (cluster positives) = `3` — column 4, the subset of those that fall inside cluster `cortex`. Specific genes (column 11): `AT1G05680;AT2G20120;AT4G02170`
+- Per-motif thresholds (from `binomial_thresholds.txt`): `AHL12` → `0.153980984861269`; `AHL12_2` → `0.210630832416030`. These are the per-motif p-value cutoffs that decided which fimohits made it into the K set.
+
+**Hypergeometric computation, from those four numbers:**
+
+```
+P(X >= k | N, K, n) = P(X >= 3 | N=26558, K=248, n=442)
+                    = sum_{i=3}^{min(K,n)=248}  C(K,i) * C(N-K, n-i) / C(N, n)
+                    = 7.837894e-01     ← independently recomputed here from k/K/n/N
+vs reported raw_p   = 7.837894e-01     ← column 7 of the row above
+```
+
+After BH correction across every pair tested in cluster `cortex`, `adj_p_BH` settles at `0.7838` (column 8) — **not significant** at α = 0.05. 
+
+_The recomputed and reported raw-p match to within numerical precision; any drift here would mean the C++ hypergeometric implementation has diverged from the textbook formula._
+
 <a id="verification"></a>
 
 ## Verification · 验证
 
-✅ **PASS** — all 8 check(s) passed
+⚠️ **PASS WITH WARNINGS** — 2 warning(s), 6 pass(es)
 
 | # | Check | Expected | Observed | Verdict |
 |---|---|---|---|---|
@@ -206,6 +237,6 @@ Schema (tab-separated): `cluster ⟶ motif1 ⟶ motif2 ⟶ overlap_count ⟶ exp
 | 3 | motif_output deterministic vs anchor | `0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f` | `0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f` | ✅ PASS — captured against data/demos/promoters/pairing/demo on this host; will differ if the fixture changes |
 | 4 | genes_used_PMET.txt non-empty | `>= 1` | `1347` | ✅ PASS — genes from -g that survived the universe filter |
 | 5 | pmet.log non-empty | `>= 1` | `32` | ✅ PASS |
-| 6 | input index contract: binomial == IC motifs | `set equal` | `|both|=0` | ✅ PASS |
-| 7 | input index contract: binomial == fimohits motifs | `set equal` | `|both|=0` | ✅ PASS |
-| 8 | input index contract: IC == fimohits motifs | `set equal` | `|both|=0` | ✅ PASS |
+| 6 | input index contract: binomial == IC motifs | `set equal` | `|both|=113` | ✅ PASS |
+| 7 | input index contract: binomial == fimohits motifs | `set equal` | `only_binomial=['AHL25', 'AHL25_2', 'AHL25_3ARY']..., only_fimohits=[]` | ⚠️ WARN — motif-set mismatch — see note above |
+| 8 | input index contract: IC == fimohits motifs | `set equal` | `only_IC=['AHL25', 'AHL25_2', 'AHL25_3ARY']..., only_fimohits=[]` | ⚠️ WARN — motif-set mismatch — see note above |

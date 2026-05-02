@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 13:33:11 UTC on this machine — workflow `promoter`, exit 0, 104.5s_
+_Audit refreshed 2026-05-02 14:16:28 UTC on this machine — workflow `promoter`, exit 0, 100.6s_
 
 **Source:** [`scripts/workflows/promoter.sh`](../../scripts/workflows/promoter.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs · web `promoters` mode
@@ -16,7 +16,7 @@ _Audit refreshed 2026-05-02 13:33:11 UTC on this machine — workflow `promoter`
 | | |
 |---|---|
 | [1. Purpose](#en-1) | [4. Reproducing this audit](#en-4) |
-| [2. Biological setup](#en-2) | [→ Run snapshot & verification](#run) |
+| [2. Biological setup](#en-2) | [→ Run snapshot, worked example & verification](#run) |
 | [3. What the script does, step by step](#en-3) | |
 
 <a id="en-1"></a>
@@ -97,7 +97,7 @@ python3 tests/audit/generate.py promoter
 | | |
 |---|---|
 | [1. 用途](#cn-1) | [4. 重跑此审计](#cn-4) |
-| [2. 生物学背景](#cn-2) | [→ 运行快照与验证](#run) |
+| [2. 生物学背景](#cn-2) | [→ 运行快照、推导示例、验证](#run) |
 | [3. 脚本逐步做了什么](#cn-3) | |
 
 <a id="cn-1"></a>
@@ -205,7 +205,38 @@ Cortex_flg22_up	AHL12	AHL12_3ARY	3	682	119	5.1393905122e-01	1.0000000000e+00	1.0
 
 Total enriched pair rows · 富集对总行数：**37969** — these are the per-cluster motif pairs that survived `pair_parallel`'s binomial pre-filter and the cluster-level hypergeometric test at the canonical IC and FIMO thresholds.
 
-This run took **104.49606675002724s** at 4 threads. The dominant cost is stage 4 (FIMO scanning 113 motifs across ~30k 1 kb promoters); pair testing in stage 6 takes <30s of that.
+This run took **100.64423249987885s** at 4 threads. The dominant cost is stage 4 (FIMO scanning 113 motifs across ~30k 1 kb promoters); pair testing in stage 6 takes <30s of that.
+
+### Worked example · 推导示例
+
+Workflow output written one row per `(cluster, motif1, motif2)`. Picking the first data row of `motif_output.txt` from the promoter audit (prefers a row with k > 0 when one exists) and unpacking what each number means + how the reported p-value would be derived from the inputs.
+
+**The row:**
+
+```
+Cortex_flg22_up	AHL12	AHL12_3ARY	3	682	119	5.1393905122e-01	1.0000000000e+00	1.0000000000e+00	1.0000000000e+00	AT1G05660;AT1G34420;AT3G25900;
+```
+
+**Reading the columns** — quantities the workflow saw at the moment of the test:
+
+- **N** (universe size) = `29,824` — every gene listed in `universe.txt`.
+- **n** (cluster size) = `119` — column 6, total genes in cluster `Cortex_flg22_up`.
+- **K** (universe positives) = `682` — column 5, genes anywhere in the universe whose `AHL12` and `AHL12_3ARY` hits both passed the per-motif binomial threshold.
+- **k** (cluster positives) = `3` — column 4, the subset of those that fall inside cluster `Cortex_flg22_up`. Specific genes (column 11): `AT1G05660;AT1G34420;AT3G25900`
+- Per-motif thresholds (from `binomial_thresholds.txt`): `AHL12` → `1.309491815000000e-01`; `AHL12_3ARY` → `7.565585479000000e-02`. These are the per-motif p-value cutoffs that decided which fimohits made it into the K set.
+
+**Hypergeometric computation, from those four numbers:**
+
+```
+P(X >= k | N, K, n) = P(X >= 3 | N=29824, K=682, n=119)
+                    = sum_{i=3}^{min(K,n)=119}  C(K,i) * C(N-K, n-i) / C(N, n)
+                    = 5.139391e-01     ← independently recomputed here from k/K/n/N
+vs reported raw_p   = 5.139391e-01     ← column 7 of the row above
+```
+
+After BH correction across every pair tested in cluster `Cortex_flg22_up`, `adj_p_BH` settles at `1.0000` (column 8) — **not significant** at α = 0.05. 
+
+_The recomputed and reported raw-p match to within numerical precision; any drift here would mean the C++ hypergeometric implementation has diverged from the textbook formula._
 
 <a id="verification"></a>
 
