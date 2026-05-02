@@ -50,7 +50,7 @@ def run(repo_root: Path, runs_dir: Path) -> dict:
     # elements.sh embeds strategy + element in its OWN output path
     # (results/cli/elements_<strategy>_<element>/) so we can't redirect it
     # via -o; just delete + let the script create.
-    canonical_dir = repo_root / "results" / "elements_longest_five_prime_UTR"
+    canonical_dir = repo_root / "results" / "cli" / "elements_longest_five_prime_UTR"
     if canonical_dir.exists():
         import shutil
         shutil.rmtree(canonical_dir)

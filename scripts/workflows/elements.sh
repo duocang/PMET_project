@@ -163,19 +163,17 @@ print_fluorescent_yellow "Delete temps:    $delete_temp"
 
 # ==================== Pin the canonical Franco-Zorrilla / TAIR10 inputs ====================
 
-data_dir=data
+genome=data/reference/TAIR10.fasta
+anno=data/reference/TAIR10.gff3
+meme=data/motifs/Franco-Zorrilla_et_al_2014.meme
 fetch_script=scripts/fetch_reference.sh
 
-if [[ ! -s "$data_dir/TAIR10.fasta" || ! -s "$data_dir/TAIR10.gff3" ]]; then
+if [[ ! -s "$genome" || ! -s "$anno" ]]; then
     print_fluorescent_yellow "Downloading genome and annotation...\n"
     bash "$fetch_script"
 else
     print_green "Genome and annotation are ready!"
 fi
-
-genome=$data_dir/TAIR10.fasta
-anno=$data_dir/TAIR10.gff3
-meme=$data_dir/Franco-Zorrilla_et_al_2014.meme
 
 # Chromosome naming preflight (saves 30+ minutes of "succeeded but empty"
 # downstream work when GFF3 uses '1' against a FASTA using 'Chr1').
@@ -197,7 +195,7 @@ mkdir -p "$homotypic_output"
 
 # ==================== Indexing parameters (canonical defaults) ====================
 
-toolDir=pipeline
+toolDir=scripts
 HOMOTYPIC=$toolDir/workflows/cli/_pmet_index_element.sh
 HETEROTYPIC=build/pair_parallel
 
