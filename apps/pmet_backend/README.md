@@ -18,26 +18,15 @@
 
 ## 1. What this is
 
-The server-side of the PMET web app: a FastAPI HTTP layer plus a
-Celery worker that does the actual heavy lifting. The HTTP layer
-takes task submissions from the UI, drops them on a Redis queue;
-the worker picks them up, runs the corresponding workflow script
-(under `scripts/workflows/`), tracks progress, mails the user when
-done. A side process (`liveness-watchdog`) kills any task that
-goes silent for more than 15 minutes.
+The server-side of the PMET web app: a FastAPI HTTP layer plus a Celery worker that does the actual heavy lifting. The HTTP layer takes task submissions from the UI, drops them on a Redis queue; the worker picks them up, runs the corresponding workflow script (under `scripts/workflows/`), tracks progress, mails the user when done. A side process (`liveness-watchdog`) kills any task that goes silent for more than 15 minutes.
 
-Production runs in docker (`make up` from the repo root). This
-README covers the case where you want to bypass docker — iterate
-on Python code with auto-reload, run the smoke test, or just look
-up an env var or endpoint.
+Production runs in docker (`make up` from the repo root). This README covers the case where you want to bypass docker — iterate on Python code with auto-reload, run the smoke test, or just look up an env var or endpoint.
 
 <a id="en-2"></a>
 
 ## 2. Quick start
 
-The docker stack at [../../deploy/](../../deploy/) is the canonical
-entrypoint. Use the local bring-up below when you want fast feedback
-on Python edits without rebuilding the image.
+The docker stack at [../../deploy/](../../deploy/) is the canonical entrypoint. Use the local bring-up below when you want fast feedback on Python edits without rebuilding the image.
 
 ```bash
 # 1. Redis (Celery broker + result backend)
@@ -76,22 +65,16 @@ celery -A worker.celery_app worker --loglevel=info
 
 ## 4. Smoke test
 
-A 5-stage import-and-load check that catches the obvious "did I
-break something" cases without needing docker. Hits each of the
-five top-level pieces (config, Pydantic models, storage service,
-executor, FastAPI app object) and reports per-stage PASS/FAIL.
+A 5-stage import-and-load check that catches the obvious "did I break something" cases without needing docker. Hits each of the five top-level pieces (config, Pydantic models, storage service, executor, FastAPI app object) and reports per-stage PASS/FAIL.
 
 ```bash
 python test_api.py                     # on the host
 cd deploy && make test                 # inside the backend image
 ```
 
-**Needs** — `python3` plus the backend deps (`pip install -r requirements.txt`),
-since each stage actually imports the production module. Doesn't need
-Redis or a running Celery worker.
+**Needs** — `python3` plus the backend deps (`pip install -r requirements.txt`), since each stage actually imports the production module. Doesn't need Redis or a running Celery worker.
 
-**Produces** — stdout only. Exits 0 if all 5 stages pass, non-zero
-otherwise.
+**Produces** — stdout only. Exits 0 if all 5 stages pass, non-zero otherwise.
 
 **How to read it**
 
@@ -122,10 +105,7 @@ RESULTS: 5/5 passed
 ============================================================
 ```
 
-A `✗` in any stage means that stage failed; the line right after it
-is the actual exception. The most common host failure is
-`ModuleNotFoundError: No module named 'pydantic'` — install backend
-deps and retry.
+A `✗` in any stage means that stage failed; the line right after it is the actual exception. The most common host failure is `ModuleNotFoundError: No module named 'pydantic'` — install backend deps and retry.
 
 <a id="en-5"></a>
 
@@ -191,22 +171,15 @@ pmet_backend/
 
 ## 1. 这是什么
 
-PMET web 应用的服务端：FastAPI 这层 HTTP 接口加一个 Celery worker
-干重活。HTTP 接收前端提交的任务、扔到 Redis 队列；worker 把它捡起来、
-跑对应的 workflow 脚本（在 `scripts/workflows/` 下）、跟进进度、跑完
-给用户发邮件。一个守护进程（`liveness-watchdog`）会杀掉任何超过 15
-分钟没动静的任务。
+PMET web 应用的服务端：FastAPI 这层 HTTP 接口加一个 Celery worker 干重活。HTTP 接收前端提交的任务、扔到 Redis 队列；worker 把它捡起来、跑对应的 workflow 脚本（在 `scripts/workflows/` 下）、跟进进度、跑完给用户发邮件。一个守护进程（`liveness-watchdog`）会杀掉任何超过 15 分钟没动静的任务。
 
-生产环境是 docker 栈（仓库根 `make up`）。这份 README 是给想绕开
-docker 的场景看的 —— 改 Python 代码要热加载、跑 smoke、或只是查一下
-某个 env var、某个端点。
+生产环境是 docker 栈（仓库根 `make up`）。这份 README 是给想绕开 docker 的场景看的 —— 改 Python 代码要热加载、跑 smoke、或只是查一下某个 env var、某个端点。
 
 <a id="cn-2"></a>
 
 ## 2. Quick start
 
-[../../deploy/](../../deploy/) 下的 docker 栈是首选入口。下面这种本地
-起法适合只想对 Python 改动拿到快速反馈、不想重建镜像的场景。
+[../../deploy/](../../deploy/) 下的 docker 栈是首选入口。下面这种本地起法适合只想对 Python 改动拿到快速反馈、不想重建镜像的场景。
 
 ```bash
 # 1. Redis（Celery broker + result backend）
@@ -245,18 +218,14 @@ celery -A worker.celery_app worker --loglevel=info
 
 ## 4. Smoke 测试
 
-5 stage 的 import + load 检查，不用 docker 就能逮住"我是不是把什么
-弄坏了"这类常见问题。逐个戳后端的 5 大件（config、Pydantic 模型、
-存储服务、executor、FastAPI app 对象），逐 stage 报 PASS/FAIL。
+5 stage 的 import + load 检查，不用 docker 就能逮住"我是不是把什么弄坏了"这类常见问题。逐个戳后端的 5 大件（config、Pydantic 模型、存储服务、executor、FastAPI app 对象），逐 stage 报 PASS/FAIL。
 
 ```bash
 python test_api.py                     # host 上跑
 cd deploy && make test                 # 在后端镜像里跑
 ```
 
-**需要** —— `python3` 加后端依赖（`pip install -r requirements.txt`），
-因为每个 stage 都真的 import 生产模块。不需要 Redis、不需要
-Celery worker 在跑。
+**需要** —— `python3` 加后端依赖（`pip install -r requirements.txt`），因为每个 stage 都真的 import 生产模块。不需要 Redis、不需要 Celery worker 在跑。
 
 **产出** —— 仅 stdout。5 stage 全过 exit 0，否则非 0。
 
@@ -289,10 +258,7 @@ RESULTS: 5/5 passed
 ============================================================
 ```
 
-任一 stage 出现 `✗` 就是那个 stage 挂了；紧跟着那行就是真正的
-异常。host 上最常见的失败是
-`ModuleNotFoundError: No module named 'pydantic'` —— 先装后端依赖
-再重试。
+任一 stage 出现 `✗` 就是那个 stage 挂了；紧跟着那行就是真正的异常。host 上最常见的失败是 `ModuleNotFoundError: No module named 'pydantic'` —— 先装后端依赖再重试。
 
 <a id="cn-5"></a>
 

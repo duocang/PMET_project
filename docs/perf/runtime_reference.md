@@ -2,10 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-A handful of representative wall-clock numbers, so you have a sense of
-"is my run normal" before you panic. All numbers are from the project's
-canonical inputs; your mileage will vary with motif library size, gene
-list count, and CPU.
+A handful of representative wall-clock numbers, so you have a sense of "is my run normal" before you panic. All numbers are from the project's canonical inputs; your mileage will vary with motif library size, gene list count, and CPU.
 
 ---
 
@@ -25,22 +22,13 @@ list count, and CPU.
 | `make baseline` | demo data only, after `make build` | any | ~30 s |
 | Production-style promoter scan | TAIR10 + CIS-BP2 (~5000 motifs), 1 cluster | 16 threads (Apple M2 Pro) | ~30 min |
 
-The promoter scan number is the rough floor — at full CIS-BP2 size,
-indexing dominates wall-clock. `pair_only` against a pre-built index
-brings any subsequent re-pairing run down to seconds.
+The promoter scan number is the rough floor — at full CIS-BP2 size, indexing dominates wall-clock. `pair_only` against a pre-built index brings any subsequent re-pairing run down to seconds.
 
 ## When to expect surprises
 
-- **First-time MinHash run** — the prefilter is opt-in and untuned for
-  your motif library; see [`minhash_calibration.md`](minhash_calibration.md)
-  for what we found on CIS-BP2 and why we ship with it off.
-- **Heatmap stage** — proportional to (motif pairs × clusters); on
-  pathological inputs (1000+ motifs) the R `ggsave` was the bottleneck
-  until [`scripts/r/heatmap.R::compute_dims`](../../scripts/r/heatmap.R)
-  added a size cap.
-- **Disk I/O on `elements`** — splits into per-fragment FASTA records
-  before FIMO; on a slow disk this can dominate. The `-t` thread flag
-  doesn't help for I/O.
+- **First-time MinHash run** — the prefilter is opt-in and untuned for your motif library; see [`minhash_calibration.md`](minhash_calibration.md) for what we found on CIS-BP2 and why we ship with it off.
+- **Heatmap stage** — proportional to (motif pairs × clusters); on pathological inputs (1000+ motifs) the R `ggsave` was the bottleneck until [`scripts/r/heatmap.R::compute_dims`](../../scripts/r/heatmap.R) added a size cap.
+- **Disk I/O on `elements`** — splits into per-fragment FASTA records before FIMO; on a slow disk this can dominate. The `-t` thread flag doesn't help for I/O.
 
 ---
 
@@ -60,18 +48,10 @@ brings any subsequent re-pairing run down to seconds.
 | `make baseline` | 只 demo 数据，`make build` 之后 | 任意 | ~30 秒 |
 | 生产规模启动子扫描 | TAIR10 + CIS-BP2（~5000 motif），1 个 cluster | 16 线程（Apple M2 Pro） | ~30 分钟 |
 
-启动子扫描那个数字是粗略下限 —— 完整 CIS-BP2 量级时 indexing 是
-wall-clock 主导。后面拿现成索引跑 `pair_only`，重新配对都是秒级。
+启动子扫描那个数字是粗略下限 —— 完整 CIS-BP2 量级时 indexing 是 wall-clock 主导。后面拿现成索引跑 `pair_only`，重新配对都是秒级。
 
 ## 哪些情况会有意外
 
-- **首次跑 MinHash** —— 粗筛是 opt-in 的，没针对你的 motif 库调过；
-  我们在 CIS-BP2 上做过的事和为什么默认关，看
-  [`minhash_calibration.md`](minhash_calibration.md)。
-- **heatmap 阶段** —— 与 (motif 对 × cluster) 成正比；病态输入
-  （1000+ motif）下 R 的 `ggsave` 曾经是瓶颈，
-  [`scripts/r/heatmap.R::compute_dims`](../../scripts/r/heatmap.R)
-  加了尺寸 cap 之后才稳。
-- **`elements` 的磁盘 I/O** —— 在跑 FIMO 之前把序列按 fragment 拆
-  成多条 FASTA record；慢盘上这一步可能是主导。`-t` 线程数对 I/O
-  无济于事。
+- **首次跑 MinHash** —— 粗筛是 opt-in 的，没针对你的 motif 库调过；我们在 CIS-BP2 上做过的事和为什么默认关，看 [`minhash_calibration.md`](minhash_calibration.md)。
+- **heatmap 阶段** —— 与 (motif 对 × cluster) 成正比；病态输入（1000+ motif）下 R 的 `ggsave` 曾经是瓶颈， [`scripts/r/heatmap.R::compute_dims`](../../scripts/r/heatmap.R) 加了尺寸 cap 之后才稳。
+- **`elements` 的磁盘 I/O** —— 在跑 FIMO 之前把序列按 fragment 拆成多条 FASTA record；慢盘上这一步可能是主导。`-t` 线程数对 I/O 无济于事。

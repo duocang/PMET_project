@@ -18,13 +18,9 @@
 
 ## 1. What this is
 
-The web UI users see at PMET's URL — submit form, task list, result
-visualisation, admin console. Built with Next.js + React + Tailwind;
-heavy charts use Plotly; submit-form state lives in Zustand so it
-survives in-app navigation.
+The web UI users see at PMET's URL — submit form, task list, result visualisation, admin console. Built with Next.js + React + Tailwind; heavy charts use Plotly; submit-form state lives in Zustand so it survives in-app navigation.
 
-The production stack runs in docker behind nginx (`make up` from the
-repo root). This README is for the two cases where you bypass docker:
+The production stack runs in docker behind nginx (`make up` from the repo root). This README is for the two cases where you bypass docker:
 
 - iterate on `app/` or `components/` with hot reload (`npm run dev`)
 - know what env vars and pages the app exposes
@@ -41,29 +37,18 @@ npm start          # serve the production bundle
 npm run test:unit  # Zustand store unit tests via tsx
 ```
 
-**Needs** — Node 18+ (Next.js 14 requirement) and `npm` on `$PATH`.
-For `npm run dev` to talk to a real backend you also need either
-the docker stack up (`make up` from repo root) or a local backend on
-port 8000 (`uvicorn api.main:app` from `apps/pmet_backend/`).
+**Needs** — Node 18+ (Next.js 14 requirement) and `npm` on `$PATH`. For `npm run dev` to talk to a real backend you also need either the docker stack up (`make up` from repo root) or a local backend on port 8000 (`uvicorn api.main:app` from `apps/pmet_backend/`).
 
 **Produces**
 
-- `npm run dev` — long-running dev server on `http://localhost:3000`,
-  hot-reloads on edits to `app/` / `components/` / `lib/`. No files
-  written.
-- `npm run build` — production bundle under `.next/` (~50 MB,
-  gitignored). `npm start` then serves it on port 3000.
-- `npm run test:unit` — stdout PASS/FAIL per Zustand store action;
-  exit 0 if all pass.
+- `npm run dev` — long-running dev server on `http://localhost:3000`, hot-reloads on edits to `app/` / `components/` / `lib/`. No files written.
+- `npm run build` — production bundle under `.next/` (~50 MB, gitignored). `npm start` then serves it on port 3000.
+- `npm run test:unit` — stdout PASS/FAIL per Zustand store action; exit 0 if all pass.
 
 **How to read it**
 
-- Dev server should print `▲ Next.js 14.x.x · Local: http://localhost:3000`
-  within ~2 s, then `compiled / in NN ms` on every save. A red
-  TypeScript-error overlay in the browser means there's a type error;
-  the file + line are both in the overlay and in the terminal.
-- `test:unit` prints one `ok` line per case and a final
-  `[settings_store] N passed, 0 failed`:
+- Dev server should print `▲ Next.js 14.x.x · Local: http://localhost:3000` within ~2 s, then `compiled / in NN ms` on every save. A red TypeScript-error overlay in the browser means there's a type error; the file + line are both in the overlay and in the terminal.
+- `test:unit` prints one `ok` line per case and a final `[settings_store] N passed, 0 failed`:
 
   ```
   [settings_store] running settings-store form-state actions
@@ -73,8 +58,7 @@ port 8000 (`uvicorn api.main:app` from `apps/pmet_backend/`).
   [settings_store] 8 passed, 0 failed
   ```
 
-For end-to-end behaviour against the real backend, use the composed
-stack: `make up` from the repo root. See [deploy/](../../deploy/).
+For end-to-end behaviour against the real backend, use the composed stack: `make up` from the repo root. See [deploy/](../../deploy/).
 
 <a id="en-3"></a>
 
@@ -114,10 +98,7 @@ docker build -t pmet-frontend .
 docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://api:8000 pmet-frontend
 ```
 
-In the composed stack the image is built by `cd deploy && make build-images`.
-Edit anything under this directory and you have to rebuild — the frontend
-is baked into its image, there's no bind mount. The shortcut is
-`cd deploy && make rebuild-frontend`.
+In the composed stack the image is built by `cd deploy && make build-images`. Edit anything under this directory and you have to rebuild — the frontend is baked into its image, there's no bind mount. The shortcut is `cd deploy && make rebuild-frontend`.
 
 <a id="en-6"></a>
 
@@ -143,12 +124,9 @@ is baked into its image, there's no bind mount. The shortcut is
 
 ## 1. 这是什么
 
-用户访问 PMET URL 时看到的 web 界面 —— 提交表单、任务列表、结果
-可视化、管理员控制台。技术栈是 Next.js + React + Tailwind；重一点
-的图用 Plotly；提交表单的状态放在 Zustand 里，所以应用内跳转不会丢。
+用户访问 PMET URL 时看到的 web 界面 —— 提交表单、任务列表、结果可视化、管理员控制台。技术栈是 Next.js + React + Tailwind；重一点的图用 Plotly；提交表单的状态放在 Zustand 里，所以应用内跳转不会丢。
 
-生产环境是 docker 栈、nginx 在前面挡着（仓库根 `make up`）。这份
-README 是给绕开 docker 的两种场景看的：
+生产环境是 docker 栈、nginx 在前面挡着（仓库根 `make up`）。这份 README 是给绕开 docker 的两种场景看的：
 
 - 边改 `app/` 或 `components/` 边热加载预览（`npm run dev`）
 - 查应用暴露了哪些 env var 和哪些页面
@@ -165,24 +143,17 @@ npm start          # 跑生产包
 npm run test:unit  # Zustand store 单元测试（用 tsx）
 ```
 
-**需要** —— Node 18+（Next.js 14 要求）和 `$PATH` 上的 `npm`。
-`npm run dev` 想跟真后端说话还需要：要么 docker 栈起着（仓库根
-`make up`），要么本地后端在 8000 端口（在 `apps/pmet_backend/` 里
-跑 `uvicorn api.main:app`）。
+**需要** —— Node 18+（Next.js 14 要求）和 `$PATH` 上的 `npm`。 `npm run dev` 想跟真后端说话还需要：要么 docker 栈起着（仓库根 `make up`），要么本地后端在 8000 端口（在 `apps/pmet_backend/` 里跑 `uvicorn api.main:app`）。
 
 **产出**
 
-- `npm run dev` —— 常驻开发服务器，跑在 `http://localhost:3000`，
-  改 `app/` / `components/` / `lib/` 自动热加载。不写文件。
-- `npm run build` —— 生产 bundle 落在 `.next/`（~50 MB，gitignored）。
-  之后 `npm start` 把它伺服到 3000 端口。
+- `npm run dev` —— 常驻开发服务器，跑在 `http://localhost:3000`，改 `app/` / `components/` / `lib/` 自动热加载。不写文件。
+- `npm run build` —— 生产 bundle 落在 `.next/`（~50 MB，gitignored）。之后 `npm start` 把它伺服到 3000 端口。
 - `npm run test:unit` —— stdout 逐 case PASS/FAIL；全过 exit 0。
 
 **怎么解读**
 
-- 开发服务器 ~2 秒内应该打 `▲ Next.js 14.x.x · Local: http://localhost:3000`，
-  然后每次保存打 `compiled / in NN ms`。浏览器里弹红色 TypeScript
-  错误浮层意味着有类型错；文件 + 行号 浮层和终端都有。
+- 开发服务器 ~2 秒内应该打 `▲ Next.js 14.x.x · Local: http://localhost:3000`，然后每次保存打 `compiled / in NN ms`。浏览器里弹红色 TypeScript 错误浮层意味着有类型错；文件 + 行号在浮层和终端都有。
 - `test:unit` 每个 case 一行 `ok`，最后 `[settings_store] N passed, 0 failed`：
 
   ```
@@ -193,8 +164,7 @@ npm run test:unit  # Zustand store 单元测试（用 tsx）
   [settings_store] 8 passed, 0 failed
   ```
 
-要对真实后端做端到端测试，用合成栈：仓库根 `make up`。见
-[deploy/](../../deploy/)。
+要对真实后端做端到端测试，用合成栈：仓库根 `make up`。见 [deploy/](../../deploy/)。
 
 <a id="cn-3"></a>
 
@@ -234,9 +204,7 @@ docker build -t pmet-frontend .
 docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://api:8000 pmet-frontend
 ```
 
-合成栈里镜像由 `cd deploy && make build-images` 构建。本目录下任何
-文件改了都得重建 —— 前端被 baked 进镜像，没 bind mount。快捷方式
-是 `cd deploy && make rebuild-frontend`。
+合成栈里镜像由 `cd deploy && make build-images` 构建。本目录下任何文件改了都得重建 —— 前端被 baked 进镜像，没 bind mount。快捷方式是 `cd deploy && make rebuild-frontend`。
 
 <a id="cn-6"></a>
 
