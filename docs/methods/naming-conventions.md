@@ -140,7 +140,7 @@ Naming inside each:
 | `verify_<thing>.sh` | compare output against a recorded contract / baseline | `tests/integration/verify_baseline.sh` |
 | `<workflow>.py`, `<workflow>.md` (under `audit/`) | workflow audit specs and templates | `tests/audit/workflows/promoter.py` |
 
-Subdirs: `tests/integration/fixtures/` for synthetic inputs, `tests/integration/baselines/` for recorded `{exit, hashes, stdout, stderr}` per pipeline.
+Subdirs: `tests/integration/fixtures/` for synthetic inputs (and a small motif_output.txt for the heatmap consistency check). The pre-monorepo `tests/integration/baselines/` directory was retired in favour of inline binary calls in `tests/baseline/capture.sh` and the data-level `verify_heatmap_consistency.py` regression check.
 
 <a id="en-6"></a>
 
@@ -205,7 +205,6 @@ Commit subjects use Conventional Commits prefixes (`feat`, `fix`, `docs`, `refac
 These exist in the repo and predate this document. They're not failures; they get cleaned up opportunistically when the file is next substantively edited.
 
 - `scripts/python/calculateICfrommeme_IC_to_csv.py` — camel-mash. Functional; rename when next substantively edited.
-- `tests/integration/baselines/0{1,3,4}_baseline.*` and similar — pre-rule artefacts; preserved as history. New baselines follow the §5 shape.
 
 ---
 
@@ -341,7 +340,7 @@ tests/
 | `verify_<thing>.sh` | 输出对录制的契约 / baseline 做 diff | `tests/integration/verify_baseline.sh` |
 | `<workflow>.py`、`<workflow>.md`（在 `audit/` 下） | workflow 审计 spec 与模板 | `tests/audit/workflows/promoter.py` |
 
-子目录：`tests/integration/fixtures/` 放合成输入，`tests/integration/baselines/` 放每条 pipeline 录的 `{exit, hashes, stdout, stderr}`。
+子目录：`tests/integration/fixtures/` 放合成输入（含一份小的 motif_output.txt 给热图一致性检查用）。monorepo 之前的 `tests/integration/baselines/` 已退役 —— 由 `tests/baseline/capture.sh` 内联二进制调用 + 数据级 `verify_heatmap_consistency.py` 接管。
 
 <a id="cn-6"></a>
 
@@ -406,4 +405,3 @@ Commit subject 用 Conventional Commits 前缀（`feat`、`fix`、`docs`、`refa
 下面这些存在于仓库里、早于本文档。不算失败；下一次因为别的原因实质性编辑该文件时顺手清理。
 
 - `scripts/python/calculateICfrommeme_IC_to_csv.py` —— camelCase 混搭。功能正常；下次实质性编辑再改名。
-- `tests/integration/baselines/0{1,3,4}_baseline.*` 等 —— 规则之前的产物；保留作历史。新 baseline 按 §5 形态。

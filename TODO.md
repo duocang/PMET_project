@@ -275,10 +275,6 @@ worker_concurrency = max(1, multiprocessing.cpu_count() // 2)
 
 或暴露成 Makefile knob：`make up CONCURRENCY=4`。
 
-### Tests / baseline 重抓
-
-`tests/integration/baselines/01_baseline.stdout` 仍指向 `data/homotypic_promoters/...`（2026-04-30 重组已删）。修完 `01_perf_cpu.sh` 让它走新 `results/cli/promoter/01_homotypic` 路径后，重抓 fingerprint。
-
 ### 仓库小整理
 
 - `data/configure/` 语义上属于部署期配置 → 该挪到 `deploy/configure/`（实际引用 ~30 处：backend/frontend/README/docs），等当前手头工作收尾后做

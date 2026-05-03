@@ -76,8 +76,7 @@ Neither breaks any actual tested functionality — the test_api.py file itself r
 |---|---|---|
 | `bash scripts/workflows/cli/00_env_check.sh` | README §2 | ✅ reports all required tools present (R / Rscript / python3 / parallel / bedtools / samtools / fasta-get-markov), TAIR10 ready |
 | `python3 scripts/python/check_homotypic_contract.py <indexing_dir>` | docs/methods/homotypic-contract.md §4 | ✅ behaves correctly: PASSes on a full contract dir, FAILs with a clear list of missing files on a partial / demo dir (verified both cases). |
-| `bash tests/integration/verify_baseline.sh` (no args) | tests/integration/README.md | ✅ prints documented usage and exits non-zero |
-| `bash tests/integration/run_with_verify.sh 99` (invalid NN) | tests/integration/README.md §4 | ✅ prints `error: unknown pipeline number '99' (expected 00,01,02,03,04,05,06,07,08)` and exits 2 |
+| `bash tests/integration/verify_baseline.sh` (no args) | tests/integration/README.md §9 | ✅ prints documented usage and exits non-zero |
 
 ### 2.4 Backend smoke (the only failures)
 
@@ -290,8 +289,7 @@ python3 apps/pmet_backend/test_api.py       # actual working form (after pip ins
 |---|---|---|
 | `bash scripts/workflows/cli/00_env_check.sh` | README §2 | ✅ 报所有要装的工具都在（R / Rscript / python3 / parallel / bedtools / samtools / fasta-get-markov），TAIR10 就绪 |
 | `python3 scripts/python/check_homotypic_contract.py <indexing_dir>` | docs/methods/homotypic-contract.md §4 | ✅ 行为符合文档：完整契约目录 PASS，部分 / demo 目录 FAIL 并清晰列出缺的文件（两种情况都验过） |
-| `bash tests/integration/verify_baseline.sh`（无参） | tests/integration/README.md | ✅ 打文档写的 usage 并非 0 退出 |
-| `bash tests/integration/run_with_verify.sh 99`（无效 NN） | tests/integration/README.md §4 | ✅ 打 `error: unknown pipeline number '99' (expected 00,01,02,03,04,05,06,07,08)` 并 exit 2 |
+| `bash tests/integration/verify_baseline.sh`（无参） | tests/integration/README.md §9 | ✅ 打文档写的 usage 并非 0 退出 |
 
 ### 2.4 后端 smoke（仅有的两处失败）
 
