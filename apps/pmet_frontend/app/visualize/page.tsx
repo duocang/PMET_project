@@ -117,10 +117,34 @@ function markDuplicatePairs(results: MotifResult[]): Set<string> {
   return dups;
 }
 
+// Mirror of scripts/r/process_pmet_result.R::ProcessPmetResult. The
+// previous "top-N pairs, collect motifs from those pairs" heuristic
+// produced a different motif set than the R-rendered PNG used in
+// papers / CLI / QuickLook, so the on-screen heatmap was a different
+// view of the same data. tests/integration/verify_heatmap_consistency.py
+// runs both pipelines on the same fixture and exits non-zero on
+// divergence — keep it green when touching this function.
+//
+// Algorithm (per cluster):
+//   1. Filter pairs by p_adj_bonf <= limit AND gene_num > 5% of the
+//      cluster's gene count (same upstream filters R uses).
+//   2. (optional) drop motif pairs that appear in >1 cluster — the
+//      "unique combination" toggle.
+//   3. Score every motif by sum( -log10(max(p_adj, 1e-300)) ) across
+//      all pairs containing it. The 1e-300 floor protects against
+//      BH-adjusted underflow to 0 → -log10(0) = Inf → broken sums.
+//   4. Per-cluster quota: floor(max_motifs / n_clusters), with a
+//      hard floor of 3 so a crowded plot still shows something for
+//      every cluster.
+//   5. If the union still exceeds max_motifs, secondary global
+//      reshuffle: rank motifs by (n_clusters_present desc, summed
+//      score desc), keep the top max_motifs, intersect each
+//      cluster's list with the kept set. This is what makes the
+//      "All" view's columns line up across clusters.
 function processPmetResult(
   raw: MotifResult[],
   pAdjLimit: number,
-  topN: number,
+  maxMotifs: number,
   uniqueCombination: boolean
 ): { filtered: Record<string, MotifResult[]>; motifs: Record<string, string[]> } {
   // Count genes per cluster for gene_portion filter
@@ -130,8 +154,6 @@ function processPmetResult(
     for (const g of r.genes) genesPerCluster[r.cluster].add(g);
   }
 
-  // Filter by p_adj (Bonferroni — matches scripts/r/draw_heatmap.R's
-  // p_adj_method = "Adjusted p-value (Bonf)") and gene_portion (5%).
   let filtered = raw.filter((r) => {
     if (r.p_adj_bonf > pAdjLimit) return false;
     const geneLimit = 0.05 * (genesPerCluster[r.cluster]?.size || 0);
@@ -139,32 +161,73 @@ function processPmetResult(
     return true;
   });
 
-  // Remove non-unique motif pairs across clusters
   if (uniqueCombination) {
     const dups = markDuplicatePairs(filtered);
     filtered = filtered.filter((r) => !dups.has(r.motif_pair));
   }
 
-  // Split by cluster
   const splitResult: Record<string, MotifResult[]> = {};
   for (const r of filtered) {
     if (!splitResult[r.cluster]) splitResult[r.cluster] = [];
     splitResult[r.cluster].push(r);
   }
 
-  // Get top motifs per cluster (sorted by p_adj ascending, take topN pairs)
-  const motifsMap: Record<string, string[]> = {};
-  for (const clu of Object.keys(splitResult).sort()) {
-    const sorted = [...splitResult[clu]].sort((a, b) => a.p_adj_bonf - b.p_adj_bonf).slice(0, topN);
-    const motifSet = new Set<string>();
-    for (const r of sorted) {
-      motifSet.add(r.motif1);
-      motifSet.add(r.motif2);
+  const clusters = Object.keys(splitResult).sort();
+
+  // Per-cluster motif scoring. negLogP is the cluster-local
+  // contribution of a single pair to each of its two motifs.
+  const scorePerCluster: Record<string, Map<string, number>> = {};
+  for (const clu of clusters) {
+    const scores = new Map<string, number>();
+    for (const r of splitResult[clu]) {
+      const negLogP = -Math.log10(Math.max(r.p_adj_bonf, 1e-300));
+      scores.set(r.motif1, (scores.get(r.motif1) ?? 0) + negLogP);
+      scores.set(r.motif2, (scores.get(r.motif2) ?? 0) + negLogP);
     }
-    motifsMap[clu] = [...motifSet];
+    scorePerCluster[clu] = scores;
   }
 
-  return { filtered: splitResult, motifs: motifsMap };
+  const perClusterCap = Math.max(3, Math.floor(maxMotifs / Math.max(1, clusters.length)));
+  const topPerCluster: Record<string, string[]> = {};
+  for (const clu of clusters) {
+    const sorted = [...scorePerCluster[clu].entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, perClusterCap)
+      .map((kv) => kv[0]);
+    topPerCluster[clu] = sorted;
+  }
+
+  // Secondary trim — only kicks in when clusters share few motifs
+  // and the union still exceeds the cap. Motifs hit by more clusters
+  // are preferred since they make cross-cluster columns comparable.
+  const union = new Set<string>();
+  for (const clu of clusters) for (const m of topPerCluster[clu]) union.add(m);
+  if (union.size > maxMotifs) {
+    type Global = { motif: string; nClu: number; globalScore: number };
+    const globalAgg = new Map<string, Global>();
+    for (const clu of clusters) {
+      for (const m of topPerCluster[clu]) {
+        const score = scorePerCluster[clu].get(m) ?? 0;
+        const cur = globalAgg.get(m);
+        if (cur) {
+          cur.nClu += 1;
+          cur.globalScore += score;
+        } else {
+          globalAgg.set(m, { motif: m, nClu: 1, globalScore: score });
+        }
+      }
+    }
+    const ranked = [...globalAgg.values()].sort((a, b) => {
+      if (b.nClu !== a.nClu) return b.nClu - a.nClu;
+      return b.globalScore - a.globalScore;
+    });
+    const kept = new Set(ranked.slice(0, maxMotifs).map((g) => g.motif));
+    for (const clu of clusters) {
+      topPerCluster[clu] = topPerCluster[clu].filter((m) => kept.has(m));
+    }
+  }
+
+  return { filtered: splitResult, motifs: topPerCluster };
 }
 
 // Cached 2d context for measuring label widths in real pixels. Falls back to
@@ -304,7 +367,11 @@ function VisualizePageContent() {
 
   const [uniquePairs, setUniquePairs] = useState(true);
   const [selectedCluster, setSelectedCluster] = useState('All');
-  const [topN, setTopN] = useState(5);
+  // Total motif cap on the heatmap. Was previously called `topN` and
+  // defaulted to 5, matching the old "top-N pair" semantics; with the
+  // new scoring algorithm (see processPmetResult) it's a global motif
+  // cap and 30 is the same default R uses everywhere else.
+  const [maxMotifs, setMaxMotifs] = useState(30);
   const [pAdj, setPAdj] = useState(0.05);
   const [activeTab, setActiveTab] = useState<ActiveTab>('heatmap');
   const [showAxes, setShowAxes] = useState(true);
@@ -437,8 +504,8 @@ function VisualizePageContent() {
   // Process data
   const processed = useMemo(() => {
     if (allResults.length === 0) return null;
-    return processPmetResult(allResults, pAdj, topN, uniquePairs);
-  }, [allResults, pAdj, topN, uniquePairs]);
+    return processPmetResult(allResults, pAdj, maxMotifs, uniquePairs);
+  }, [allResults, pAdj, maxMotifs, uniquePairs]);
 
   const clusters = useMemo(() => (processed ? Object.keys(processed.filtered).sort() : []), [processed]);
 
@@ -1117,6 +1184,43 @@ function VisualizePageContent() {
         </div>
 
         <div className="card space-y-4">
+          {/* Help accordion — collapsible explanation of what the
+              controls below do, including the motif-selection
+              algorithm (sum-of -log10(p_adj) score per motif, with
+              cross-cluster harmonisation) and the unique-pair
+              toggle's semantics. Closed by default; one-time
+              orientation rather than something users want to read
+              every visit. */}
+          <details className="-mx-2 -mt-1 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-700">
+            <summary className="cursor-pointer select-none font-semibold text-slate-800">
+              {t('viz.help.title')}
+            </summary>
+            <div className="mt-2 space-y-2.5 leading-relaxed">
+              <p>
+                <span className="font-semibold text-teal-700">
+                  {t('viz.filter.maxMotifs')}
+                </span>{' '}
+                — {t('viz.help.maxMotifs')}
+              </p>
+              <p>
+                <span className="font-semibold text-teal-700">
+                  {t('viz.filter.padj')}
+                </span>{' '}
+                — {t('viz.help.padj')}
+              </p>
+              <p>
+                <span className="font-semibold text-teal-700">
+                  {t('viz.filter.unique')}
+                </span>{' '}
+                — {t('viz.help.unique')}
+              </p>
+              <p className="rounded bg-amber-50 px-2 py-1.5 text-amber-900">
+                <span className="font-semibold">{t('viz.help.algo.label')}</span>{' '}
+                {t('viz.help.algo.body')}
+              </p>
+            </div>
+          </details>
+
           <div>
             <label className="block text-sm font-semibold mb-1">{t('viz.filter.unique')}</label>
             <select
@@ -1151,17 +1255,17 @@ function VisualizePageContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold mb-1">{t('viz.filter.topn')}</label>
+            <label className="block text-sm font-semibold mb-1">{t('viz.filter.maxMotifs')}</label>
             <input
               type="number"
               className="w-full border rounded px-3 py-1.5 text-sm"
-              value={topN}
-              min={1}
+              value={maxMotifs}
+              min={3}
               step={1}
               onChange={(e) => {
                 const v = parseInt(e.target.value);
-                if (v > 0) {
-                  setTopN(v);
+                if (v >= 3) {
+                  setMaxMotifs(v);
                   setTablePage(0);
                 }
               }}
