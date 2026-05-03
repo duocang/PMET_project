@@ -52,15 +52,22 @@ letter-probability matrix: alength= 4 w= 15 nsites= 147 E= 2.1e-117
 …
 `;
 
-export const EXAMPLE_GENE_LIST = `epidermis\tAT1G05650
-epidermis\tAT3G21620
-epidermis\tAT5G15510
-epidermis\tAT5G45840
-cortex\tAT1G16630
-cortex\tAT3G27490
-cortex\tAT5G03040
-pericycle\tAT4G11050
-pericycle\tAT5G19880
+// Sample drawn from data/genes/genes_cell_type_treatment.txt — the
+// same file the "Use example" button actually downloads. Matching the
+// real fixture (rather than a synthetic one) keeps the preview honest:
+// users see the same cluster naming, the same delimiter, and the same
+// shape they're going to load. Two lines per cluster so the 6-cluster
+// structure of the real file is visible in the preview.
+export const EXAMPLE_GENE_LIST = `Epidermis_flg22_up AT1G53080
+Epidermis_flg22_up AT5G24550
+Cortex_flg22_up AT1G02450
+Cortex_flg22_up AT1G05660
+Epidermis_pep1_up AT1G01180
+Epidermis_pep1_up AT1G02340
+Cortex_pep1_up AT2G41280
+Cortex_pep1_up AT4G02100
+Epidermis_pep1_do AT1G01780
+Cortex_pep1_do AT4G34680
 …
 `;
 
