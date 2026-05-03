@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from ..models.task import TaskCreate, TaskResponse, TaskStatus, TaskMode, TaskListResponse
 from ...config import config
+from ...proc import kill_process_tree
 from ...services.storage import StorageService
 from ...services.mail import MailService
 from ...services.stage_status import infer_stages, derive_warnings, derive_effective_status
@@ -341,38 +342,6 @@ def _locate_motif_output(task_id: str) -> Optional[Path]:
     return candidate if candidate.is_file() and candidate.stat().st_size > 0 else None
 
 
-def _kill_process_tree(pid: int) -> list[int]:
-    """SIGTERM (then SIGKILL after 5s) the process and every descendant.
-
-    Used to make a task termination *thorough* — the worker spawns shell
-    pipelines that fork their own children, so killing only the top PID
-    leaves orphans running. Returns the list of PIDs we attempted to
-    terminate so the caller can audit if needed.
-    """
-    import psutil
-
-    killed: list[int] = []
-    try:
-        parent = psutil.Process(pid)
-    except psutil.NoSuchProcess:
-        return killed
-
-    procs = [parent] + parent.children(recursive=True)
-    for p in procs:
-        try:
-            p.terminate()
-            killed.append(p.pid)
-        except psutil.NoSuchProcess:
-            pass
-    _, alive = psutil.wait_procs(procs, timeout=5)
-    for p in alive:
-        try:
-            p.kill()
-        except psutil.NoSuchProcess:
-            pass
-    return killed
-
-
 @router.post("", response_model=TaskResponse)
 async def create_task(task: TaskCreate):
     """Create a new PMET task"""
@@ -666,7 +635,7 @@ async def cancel_task(task_id: str, payload: CancelPayload):
             pid = 0
         if pid:
             try:
-                killed = _kill_process_tree(pid)
+                killed = kill_process_tree(pid)
             except Exception:
                 # Don't let psutil hiccups block the cancel response —
                 # status is already written, user will get the email.

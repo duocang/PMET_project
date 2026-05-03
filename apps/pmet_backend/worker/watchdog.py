@@ -40,6 +40,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..config import config
+from ..proc import kill_process_tree
 
 
 def _load_meta(path: Path) -> Optional[dict]:
@@ -47,36 +48,6 @@ def _load_meta(path: Path) -> Optional[dict]:
         return json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return None
-
-
-def _kill_process_tree(pid: int) -> list[int]:
-    """SIGTERM (then SIGKILL after 5s) the process and every descendant.
-
-    Mirrors api.routes.tasks._kill_process_tree. Duplicated here to
-    keep the watchdog module independent of the FastAPI app.
-    """
-    import psutil
-
-    killed: list[int] = []
-    try:
-        parent = psutil.Process(pid)
-    except psutil.NoSuchProcess:
-        return killed
-
-    procs = [parent] + parent.children(recursive=True)
-    for p in procs:
-        try:
-            p.terminate()
-            killed.append(p.pid)
-        except psutil.NoSuchProcess:
-            pass
-    _, alive = psutil.wait_procs(procs, timeout=5)
-    for p in alive:
-        try:
-            p.kill()
-        except psutil.NoSuchProcess:
-            pass
-    return killed
 
 
 def _staleness_seconds(task_dir: Path, started_at: Optional[str]) -> Optional[float]:
@@ -129,7 +100,7 @@ def _kill_if_stale(task_json: Path, threshold_sec: int) -> Optional[str]:
     if pid_file.exists():
         try:
             pid = int(pid_file.read_text().strip())
-            _kill_process_tree(pid)
+            kill_process_tree(pid)
         except (ValueError, OSError):
             pass
 

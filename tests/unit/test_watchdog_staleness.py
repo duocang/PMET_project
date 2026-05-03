@@ -63,7 +63,7 @@ class WatchdogStalenessTests(unittest.TestCase):
         # with the right PID, never actually signal a real process.
         self.killed = []
         self.kill_patch = patch.object(
-            wd, "_kill_process_tree", side_effect=lambda pid: self.killed.append(pid) or [pid]
+            wd, "kill_process_tree", side_effect=lambda pid: self.killed.append(pid) or [pid]
         )
         self.kill_patch.start()
 
@@ -191,7 +191,7 @@ class WatchdogStalenessTests(unittest.TestCase):
 
         reason = wd._kill_if_stale(self.tasks_dir / "t_nopid.json", threshold_sec=60)
         self.assertIsNotNone(reason)
-        self.assertEqual(self.killed, [])  # _kill_process_tree never invoked
+        self.assertEqual(self.killed, [])  # kill_process_tree never invoked
 
         meta = json.loads((self.tasks_dir / "t_nopid.json").read_text())
         self.assertEqual(meta["status"], "failed")
