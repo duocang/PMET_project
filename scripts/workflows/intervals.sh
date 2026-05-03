@@ -65,6 +65,14 @@ else
         echo "Time taken: ${d}d ${h}h ${m}m ${sec}s"
     }
 fi
+if [[ -f scripts/lib/fimo_monitor.sh ]]; then
+    # shellcheck source=/dev/null
+    source scripts/lib/fimo_monitor.sh
+else
+    start_fimo_monitor() { echo 0; }
+    stop_fimo_monitor()  { :; }
+    count_meme_motifs()  { echo 0; }
+fi
 
 error_exit() { print_red "ERROR: $1" >&2; exit 1; }
 check_file() { [[ -f "$1" && -s "$1" ]] || error_exit "${2:-$1} missing or empty"; }
@@ -212,6 +220,13 @@ python3 "$PY/calculateICfrommeme_IC_to_csv.py" \
 nummotifs=$(grep -c '^MOTIF' "$meme")
 echo "   └─ $nummotifs motifs"
 
+# Per-motif progress emit while indexing_fimo_fused writes
+# fimohits/<motif>.{txt,bin}. Honest progress: poller refreshes
+# progress.json only on file-count growth, so a wedged FIMO still trips
+# the watchdog at LIVENESS_TIMEOUT_SEC.
+fimo_monitor_pid=$(start_fimo_monitor "$indexing_output/fimohits" \
+    "$nummotifs" "indexing" 1 3 "Interval indexing (FIMO scan)")
+
 # indexing_fimo_fused has internal OpenMP batching; one invocation handles
 # every motif. Replaces the earlier shell-level for-loop that forked one
 # process per motif each with its own OMP team, oversubscribing cores.
@@ -228,6 +243,8 @@ OMP_NUM_THREADS="$threads" \
     "$meme"                             \
     "$genome_sanitized"                 \
     "$indexing_output/promoter_lengths.txt"
+
+stop_fimo_monitor "$fimo_monitor_pid"
 
 # memefiles/ only existed for IC.txt. Sanitized FASTA was a temp.
 rm -rf "$indexing_output/memefiles" "$genome_sanitized"

@@ -21,13 +21,15 @@ Tunables (env, with defaults from config.py):
   - PMET_LIVENESS_TIMEOUT_SEC : staleness threshold (default 900 s)
   - PMET_WATCHDOG_POLL_SEC    : sweep cadence (default 60 s)
 
-Caveat: progress is emitted at *stage boundaries*, not within stages.
-A single fimo scan or pair-test loop can today exceed 15 min on the
-biggest motif libraries (CIS-BP2), so 900 s is conservative; tasks
-inside one long stage that legitimately take longer than the threshold
-will be false-positive-killed. Mitigation: bump the env var per
-deployment, or add finer-grained emit_progress calls inside the
-expensive loops (see TODO.md).
+Per-stage granularity: stage boundaries get an `emit_progress` from each
+workflow script. Inside the homotypic FIMO stage,
+`scripts/lib/fimo_monitor.sh` runs a per-motif poller that refreshes
+progress.json each time the fimohits/ file count grows — only on real
+progress, never as a blind heartbeat, so a wedged FIMO still trips this
+watchdog. The pair-test loop is not yet polled at the inner level; on
+the largest libraries (CIS-BP2) a single pair-test stage can still
+approach 900 s. Bump PMET_LIVENESS_TIMEOUT_SEC per deployment if your
+typical libraries are larger.
 """
 
 from __future__ import annotations

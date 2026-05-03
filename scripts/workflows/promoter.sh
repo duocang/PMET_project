@@ -61,6 +61,14 @@ else
         echo "Time taken: ${d}d ${h}h ${m}m ${sec}s"
     }
 fi
+if [[ -f scripts/lib/fimo_monitor.sh ]]; then
+    # shellcheck source=/dev/null
+    source scripts/lib/fimo_monitor.sh
+else
+    start_fimo_monitor() { echo 0; }
+    stop_fimo_monitor()  { :; }
+    count_meme_motifs()  { echo 0; }
+fi
 
 error_exit() { print_red "ERROR: $1" >&2; exit 1; }
 check_file() { [[ -f "$1" && -s "$1" ]] || error_exit "${2:-$1} missing or empty"; }
@@ -238,6 +246,13 @@ utr_arg=No;                is_yes "$utr"          && utr_arg=Yes
 poisson_flag="";  is_yes "$isPoisson" && poisson_flag="--poisson"
 keep_flag="";     is_yes "$keep_intermediate" && keep_flag="--keep-intermediate"
 
+# Per-motif progress emit while FIMO writes fimohits/<motif>.{txt,bin}.
+# The poller only refreshes progress.json when files actually appear, so a
+# wedged FIMO still trips the watchdog at LIVENESS_TIMEOUT_SEC.
+fimo_total_motifs=$(count_meme_motifs "$meme")
+fimo_monitor_pid=$(start_fimo_monitor "$homotypic_output/fimohits" \
+    "$fimo_total_motifs" "homotypic" 1 3 "Homotypic motif search (FIMO scan)")
+
 python3 "$PY/run_homotypic.py" \
     --genome      "$genome"     \
     --anno        "$anno"       \
@@ -255,6 +270,8 @@ python3 "$PY/run_homotypic.py" \
     --threads     "$threads"    \
     --bin-index   "$BIN_INDEX"  \
     $poisson_flag $keep_flag
+
+stop_fimo_monitor "$fimo_monitor_pid"
 
 print_elapsed_time "$h_start"
 
