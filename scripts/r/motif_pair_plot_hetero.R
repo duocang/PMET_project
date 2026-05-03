@@ -19,12 +19,13 @@ MotifPairPlotHetero <- function(plot.data = NULL,
 
   plot.data$cluster <- factor(plot.data$cluster, levels = names(colors))
 
-  if (length(motifs) > 15){
-    inch_pre_motif <- 20 / length(motifs) * 1.5
-  } else {
-    inch_pre_motif <- 20 / 15 * 1.5
-  }
-  font_size <- inch_pre_motif * 30
+  # Same cell-anchored font sizing as motif_pair_plot_homog.R; see
+  # compute_font_size in heatmap.R for the rationale. The legacy
+  # branch (length <= 15) used a fixed 20/15*1.5 input which floored
+  # the font at 30pt regardless of how few motifs were drawn — that
+  # is the proximate cause of "tiny heatmap, huge text" overflow on
+  # small Overlap views.
+  font_size <- compute_font_size(length(motifs))
 
   p <- plot.data %>%
     ggplot(aes(motif1, motif2, alpha = p_adj, fill = factor(cluster))) +

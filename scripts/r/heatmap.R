@@ -16,6 +16,42 @@ compute_dims <- function(n_motifs, ncol_p, nrow_p, max_inches) {
   )
 }
 
+# Pick axis-label / legend font size proportional to the rendered cell
+# size. The previous heuristic (`inch_pre_motif * 30`) capped at 30pt
+# for any motif count <= ~20, which is way too large for the ~0.18 in
+# (~13 pt tall) cells the heatmap actually draws — text was dwarfing
+# the cells it was labelling. The replacement is anchored to cell
+# size in points (cell_inch * 72), takes ~55% of cell so rotated x-axis
+# labels can still fit between neighbours, and shrinks gracefully when
+# the canvas hits max_inches and cells get squeezed.
+#
+# For very large motif counts the canvas saturates at max_inches and
+# cells start shrinking; the ceiling-aware ratio below mirrors the same
+# squeeze so the font stays proportional to whatever cell size the
+# user actually sees. Floor at 4pt so the labels don't disappear.
+#
+# Top-level for the same reason as compute_dims: a unit test can pin
+# the expected output without re-deriving it from the plot helpers.
+compute_font_size <- function(n_motifs,
+                              max_inches = 40,
+                              cell_inch  = 0.18,
+                              axis_pad   = 3.0,
+                              cell_ratio = 0.55,
+                              floor_pt   = 4.0,
+                              ceiling_pt = 14.0) {
+  panel_in   <- n_motifs * cell_inch + axis_pad
+  scale      <- min(1, max_inches / max(panel_in, 1e-6))
+  raw_pt     <- cell_inch * 72 * cell_ratio * scale
+  min(ceiling_pt, max(floor_pt, raw_pt))
+}
+
+# Title font scales as a multiple of the axis font, so a tiny heatmap
+# also gets a tiny title (the previous fixed `size = 30` produced a
+# title twice the height of a 5-motif panel).
+compute_title_size <- function(font_pt) {
+  font_pt * 1.6
+}
+
 heatmap.func <- function(filename           = NULL,
                          method             = NULL,
                          pmet_out           = NULL,

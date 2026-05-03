@@ -103,18 +103,19 @@ MotifPairPlotHomog <- function( pmet.split       = NULL,
   }) %>% setNames(names(plot_data_list))
   # create ggplot objects (end)
 
-  if (respective.plot) {
-    inch_pre_motif <- 20 / length(motifs.top) * 1.5
-    inch_pre_motif <- ifelse(inch_pre_motif > 1, 1, inch_pre_motif)
-    font_size <- inch_pre_motif * 30
+  # Font sizes are now derived from the cell-size targets in heatmap.R
+  # (see compute_font_size for the rationale). Both branches below
+  # share the same call so per-cluster panels and the merged "All"
+  # panel keep matching label sizes.
+  font_size  <- compute_font_size(length(motifs.top))
+  title_size <- compute_title_size(font_size)
 
+  if (respective.plot) {
     for (clu in names(plot_data_list)) {
       p.list[[clu]] <- p.list[[clu]] +
         ggtitle(clu) +
         theme(
-          plot.title = element_text(size = 30),
-          # legend.title = element_blank(),
-          # legend.position = "top",
+          plot.title = element_text(size = title_size),
           axis.line    = element_blank(),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
@@ -126,25 +127,16 @@ MotifPairPlotHomog <- function( pmet.split       = NULL,
     }
     return(p.list)
   } else {
-    inch_pre_motif <- 10 / length(motifs.top) * 1.3
-    inch_pre_motif <- ifelse(inch_pre_motif > 1, 1, inch_pre_motif)
-    font_size <- inch_pre_motif * 30
-
     # add title
     p.list <- lapply(names(plot_data_list), function(clu) {
       p.list[[clu]] +
         ggtitle(clu) +
         theme(
-          plot.title = element_text(size = 30),
-          # legend.title = element_blank(),
-          # legend.position = "top",
-          # axis.line = element_blank(),
-          # axis.title.x = element_blank(),
-          # axis.title.y = element_blank(),
+          plot.title = element_text(size = title_size),
           axis.text.x  = element_text(angle = 90, size = font_size),
           axis.text.y  = element_text(size = font_size),
           legend.text  = element_text(size = font_size),
-          legend.title = element_text(size = 15, angle = 90, vjust = 1, hjust = -1)
+          legend.title = element_text(size = font_size, angle = 90, vjust = 1, hjust = -1)
         )
     })
 
