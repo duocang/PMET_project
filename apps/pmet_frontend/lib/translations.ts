@@ -329,6 +329,23 @@ const en = {
   'task.file.gff3': 'GFF3 annotation',
   'task.file.meme': 'Motif database (MEME)',
   'task.file.premade': 'Pre-computed index',
+  'task.file.preview': 'Preview',
+
+  // FileDrawer (side panel for user-uploaded input files)
+  'drawer.loading': 'Loading preview…',
+  'drawer.err.failed': 'Could not load preview.',
+  'drawer.empty': 'File is empty.',
+  'drawer.close': 'Close preview',
+  'drawer.lines_suffix': 'lines',
+  'drawer.truncated': 'TRUNCATED',
+  'drawer.truncated.note': 'Showing the first portion of a {size} file. Open it locally for the full content.',
+  'drawer.full': 'Full file shown.',
+  'drawer.col.identifier': 'Identifier',
+  'drawer.col.cluster': 'Cluster',
+  'drawer.col.gene': 'Gene',
+  'drawer.page.range': 'Lines {from}–{to} of {total}',
+  'drawer.page.prev': '← Prev',
+  'drawer.page.next': 'Next →',
 
   // task card
   'taskcard.email': 'Email:',
@@ -767,6 +784,22 @@ const zh: Record<keyof typeof en, string> = {
   'task.file.gff3': 'GFF3 注释',
   'task.file.meme': 'Motif 库 (MEME)',
   'task.file.premade': '预计算索引',
+  'task.file.preview': '预览',
+
+  'drawer.loading': '加载预览中…',
+  'drawer.err.failed': '预览加载失败。',
+  'drawer.empty': '文件为空。',
+  'drawer.close': '关闭预览',
+  'drawer.lines_suffix': '行',
+  'drawer.truncated': '已截断',
+  'drawer.truncated.note': '只显示 {size} 文件的开头部分，完整内容请在本地打开。',
+  'drawer.full': '完整文件已展示。',
+  'drawer.col.identifier': '标识',
+  'drawer.col.cluster': '聚类',
+  'drawer.col.gene': '基因',
+  'drawer.page.range': '第 {from}–{to} 行 / 共 {total}',
+  'drawer.page.prev': '← 上一页',
+  'drawer.page.next': '下一页 →',
 
   // task card
   'taskcard.email': '邮箱：',

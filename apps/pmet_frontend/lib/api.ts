@@ -219,6 +219,27 @@ export const fileApi = {
   deleteUpload: async (path: string): Promise<void> => {
     await api.delete('/api/files/upload', { params: { path } });
   },
+
+  // Size-capped text preview of a user-uploaded file (genes / fasta /
+  // gff3 / meme). Backend rejects anything outside the task's own
+  // upload dir, so passing a slot whose path points at server-side
+  // reference data returns 403 — caller should gate the UI on the
+  // path's location, not on a preview attempt.
+  previewUpload: async (
+    taskId: string,
+    slot: 'genes' | 'fasta' | 'gff3' | 'meme'
+  ): Promise<FilePreview> => {
+    const response = await api.get(`/api/files/preview/${taskId}/${slot}`);
+    return response.data;
+  },
 };
+
+export interface FilePreview {
+  filename: string;
+  size_bytes: number;
+  content: string;
+  truncated: boolean;
+  line_count: number | null;
+}
 
 export default api;

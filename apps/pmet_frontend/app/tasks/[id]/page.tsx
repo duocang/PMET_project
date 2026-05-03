@@ -10,6 +10,22 @@ import { TranslationKey } from '@/lib/translations';
 import { formatBytes, formatRuntimeRange, humanizeIdentifier, summarizeError } from '@/lib/runtime';
 import StageBadge from '@/components/StageBadge';
 import TaskQuickLook from '@/components/TaskQuickLook';
+import FileDrawer from '@/components/FileDrawer';
+
+type PreviewSlot = 'genes' | 'fasta' | 'gff3' | 'meme';
+
+// A path counts as user-uploaded when it lives in any task's `upload/`
+// subdir under `results/`. Be tolerant of both layouts the backend
+// writes — host-CLI default is `results/app/<id>/upload/...` and the
+// docker container (PMET_RESULT_DIR_REL=results, see
+// deploy/docker-compose.yml) drops the `app/` segment to
+// `results/<id>/upload/...`. The `/upload/` segment is the unique
+// discriminator either way; server-side reference data
+// (data/reference/, data/precomputed_indexes/) doesn't go near it.
+function isUserUpload(path: string | null | undefined): boolean {
+  if (!path) return false;
+  return /(?:^|\/)results\/.+\/upload\//.test(path);
+}
 
 interface PageProps {
   params: { id: string };
@@ -28,6 +44,7 @@ export default function TaskDetailPage({ params }: PageProps) {
   const [progress, setProgress] = useState<TaskProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [polling, setPolling] = useState(false);
+  const [previewSlot, setPreviewSlot] = useState<PreviewSlot | null>(null);
 
   useEffect(() => {
     fetchTask();
@@ -310,19 +327,53 @@ export default function TaskDetailPage({ params }: PageProps) {
       {hasInputFiles(task) && (
         <Card title={t('task.section.inputs')}>
           {task.genes_file && (
-            <FileRow label={t('task.file.genes')} path={task.genes_file} />
+            <FileRow
+              label={t('task.file.genes')}
+              path={task.genes_file}
+              slot="genes"
+              onPreview={setPreviewSlot}
+              previewLabel={t('task.file.preview')}
+            />
           )}
           {task.fasta_file && (
-            <FileRow label={t('task.file.fasta')} path={task.fasta_file} />
+            <FileRow
+              label={t('task.file.fasta')}
+              path={task.fasta_file}
+              slot="fasta"
+              onPreview={setPreviewSlot}
+              previewLabel={t('task.file.preview')}
+            />
           )}
           {task.gff3_file && (
-            <FileRow label={t('task.file.gff3')} path={task.gff3_file} />
+            <FileRow
+              label={t('task.file.gff3')}
+              path={task.gff3_file}
+              slot="gff3"
+              onPreview={setPreviewSlot}
+              previewLabel={t('task.file.preview')}
+            />
           )}
-          {task.meme_file && <FileRow label={t('task.file.meme')} path={task.meme_file} />}
+          {task.meme_file && (
+            <FileRow
+              label={t('task.file.meme')}
+              path={task.meme_file}
+              slot="meme"
+              onPreview={setPreviewSlot}
+              previewLabel={t('task.file.preview')}
+            />
+          )}
           {task.premade_index && (
             <FileRow label={t('task.file.premade')} path={task.premade_index} />
           )}
         </Card>
+      )}
+
+      {previewSlot && (
+        <FileDrawer
+          taskId={task.task_id}
+          slot={previewSlot}
+          onClose={() => setPreviewSlot(null)}
+        />
       )}
     </div>
   );
@@ -350,15 +401,44 @@ function DataRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function FileRow({ label, path }: { label: string; path: string }) {
+function FileRow({
+  label,
+  path,
+  slot,
+  onPreview,
+  previewLabel,
+}: {
+  label: string;
+  path: string;
+  slot?: PreviewSlot;
+  onPreview?: (slot: PreviewSlot) => void;
+  previewLabel?: string;
+}) {
   // Show only the basename in the prominent slot; full path is shown small
   // below for debugging — useful when two uploads have the same filename.
   const basename = path.split('/').pop() ?? path;
+  // Preview is only meaningful for user-uploaded files; the backend
+  // refuses to serve anything else (server-side reference data lives
+  // outside the task's upload dir). For previewable files the basename
+  // itself becomes the click target — clearer affordance than a separate
+  // "Preview →" button next to a static label.
+  const previewable = !!slot && !!onPreview && isUserUpload(path);
   return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
       <dt className="text-sm text-slate-500">{label}</dt>
       <dd className="min-w-0 sm:text-right">
-        <div className="break-all font-mono text-sm text-slate-900">{basename}</div>
+        {previewable ? (
+          <button
+            type="button"
+            onClick={() => onPreview!(slot!)}
+            title={previewLabel}
+            className="break-all font-mono text-sm font-medium text-teal-700 hover:text-teal-800 hover:underline"
+          >
+            {basename}
+          </button>
+        ) : (
+          <span className="break-all font-mono text-sm text-slate-900">{basename}</span>
+        )}
         <div className="break-all text-xs text-slate-400">{path}</div>
       </dd>
     </div>

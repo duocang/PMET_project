@@ -1,4 +1,5 @@
 import gzip
+import json
 import re
 import shutil
 import time
@@ -9,6 +10,27 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from ...config import config
 
 router = APIRouter(prefix="/files", tags=["files"])
+
+# Maps the user-facing slot name (genes / fasta / gff3 / meme) to the
+# corresponding key in the persisted task metadata. Must match the keys
+# api/routes/tasks.py writes when a task is created.
+_PREVIEW_SLOT_KEYS = {
+    "genes": "genes_file",
+    "fasta": "fasta_file",
+    "gff3": "gff3_file",
+    "meme": "meme_file",
+}
+
+# Hard cap on how many bytes the preview endpoint streams back. Keeps
+# the response small enough to render without locking up the browser
+# even when the underlying file is several hundred MB (FASTA / GFF3).
+_PREVIEW_BYTE_CAP = 1 * 1024 * 1024  # 1 MiB
+
+# Skip the line-count pass for files larger than this; on a 100 MB GFF3
+# the count costs noticeable wall-clock for no real UX benefit (the UI
+# only uses the count to size pagination on small line-oriented files
+# like a gene list, where the file is well under this threshold).
+_LINE_COUNT_MAX_BYTES = 5 * 1024 * 1024  # 5 MiB
 
 ALLOWED_EXTENSIONS: dict[str, tuple[str, ...]] = {
     "genes": (".txt", ".tsv"),
@@ -143,6 +165,85 @@ async def upload_multiple_files(
         result = _save_uploaded_file(file, task_id, "auto")
         results.append(result)
     return {"files": results}
+
+
+@router.get("/preview/{task_id}/{slot}")
+async def preview_uploaded_file(task_id: str, slot: str):
+    """Serve a size-capped text preview of a user-uploaded input file.
+
+    Strict scope: only files inside `results/app/<task_id>/upload/` are
+    eligible. Server-side reference data (TAIR10 FASTA, motif libraries,
+    precomputed indexes) is *not* served — the path-confinement check
+    will 403 those even if a caller hand-crafts the slot. This keeps the
+    endpoint from turning into a generic file reader and removes the
+    risk of the path-traversal class of bugs.
+
+    The cap (`_PREVIEW_BYTE_CAP`) is intentionally crude: read the first
+    N bytes regardless of structure. For multi-MB FASTA / GFF3 inputs
+    the caller renders a "showing first N MB of M MB" banner; for a
+    short gene list the cap is never hit and the full file comes back.
+    """
+    if slot not in _PREVIEW_SLOT_KEYS:
+        raise HTTPException(status_code=400, detail=f"Unknown preview slot: {slot}")
+
+    _validate_session_id(task_id)
+
+    task_file = config.TASKS_DIR / f"{task_id}.json"
+    if not task_file.exists():
+        raise HTTPException(status_code=404, detail="Task not found")
+    try:
+        task_data = json.loads(task_file.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(status_code=500, detail="Task metadata unreadable") from exc
+
+    rel_path = task_data.get(_PREVIEW_SLOT_KEYS[slot])
+    if not rel_path:
+        raise HTTPException(status_code=404, detail=f"No {slot} file for this task")
+
+    # Resolve to an absolute path, then assert it lies inside this
+    # task's upload directory. realpath() on both sides defends against
+    # symlink games on the filesystem (the upload area is normally
+    # non-symlinked but cheap insurance is still cheap).
+    target = (config.PROJECT_ROOT / rel_path).resolve()
+    upload_root = (config.RESULT_DIR / task_id / "upload").resolve()
+    try:
+        target.relative_to(upload_root)
+    except ValueError as exc:
+        # Server-side reference data (TAIR10, motif libraries, precomputed
+        # indexes) lives outside the upload area and is intentionally
+        # excluded — the user-facing preview is for *user-uploaded* inputs.
+        raise HTTPException(status_code=403, detail="File is not user-uploaded") from exc
+
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail="File missing on disk")
+
+    size = target.stat().st_size
+    truncated = size > _PREVIEW_BYTE_CAP
+
+    with target.open("rb") as fh:
+        raw = fh.read(_PREVIEW_BYTE_CAP if truncated else size)
+    # decode as utf-8 — input files we accept are all text. errors='replace'
+    # keeps a single bad byte from killing the whole preview.
+    content = raw.decode("utf-8", errors="replace")
+    if truncated:
+        # Don't leave the response ending mid-line; the table renderer on
+        # the frontend would otherwise show a half-row at the bottom.
+        last_nl = content.rfind("\n")
+        if last_nl > 0:
+            content = content[:last_nl]
+
+    line_count = None
+    if size <= _LINE_COUNT_MAX_BYTES:
+        with target.open("rb") as fh:
+            line_count = sum(1 for _ in fh)
+
+    return {
+        "filename": target.name,
+        "size_bytes": size,
+        "content": content,
+        "truncated": truncated,
+        "line_count": line_count,
+    }
 
 
 @router.delete("/upload")
