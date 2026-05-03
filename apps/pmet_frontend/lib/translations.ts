@@ -212,6 +212,8 @@ const en = {
   'submit.toast.upload_annotation': 'Please upload an annotation file',
   'submit.toast.upload_motif': 'Please upload a motif file',
   'submit.toast.pick_db': 'Please select a pre-computed database',
+  'submit.toast.empty_file': 'The {slot} file is empty. Please upload a file with content.',
+  'submit.toast.no_cluster_active': 'No clusters selected — at least one cluster must stay active for the submission to have any genes.',
   'submit.toast.success': 'Task submitted successfully! You will receive an email when results are ready.',
   'submit.toast.failed': 'Failed to submit task',
 
@@ -330,6 +332,14 @@ const en = {
   'task.file.meme': 'Motif database (MEME)',
   'task.file.premade': 'Pre-computed index',
   'task.file.preview': 'Preview',
+
+  // GeneClusterFilter (submit page; collapsible cluster toggle)
+  'cluster_filter.title': 'Filter clusters',
+  'cluster_filter.active_suffix': 'active',
+  'cluster_filter.help': 'Click a chip to exclude that cluster from the run. The original file stays untouched; a filtered copy is uploaded only if you deactivate at least one cluster.',
+  'cluster_filter.select_all': 'Select all',
+  'cluster_filter.clear': 'Clear',
+  'cluster_filter.err.read': 'Could not read the gene list to detect clusters.',
 
   // FileDrawer (side panel for user-uploaded input files)
   'drawer.loading': 'Loading preview…',
@@ -668,6 +678,8 @@ const zh: Record<keyof typeof en, string> = {
   'submit.toast.upload_annotation': '请上传注释文件',
   'submit.toast.upload_motif': '请上传 motif 文件',
   'submit.toast.pick_db': '请选择一个预计算数据库',
+  'submit.toast.empty_file': '{slot} 文件为空，请上传非空文件。',
+  'submit.toast.no_cluster_active': '没有激活的聚类——至少要保留一个聚类，提交才有基因可分析。',
   'submit.toast.success': '任务提交成功！结果就绪后会发邮件通知。',
   'submit.toast.failed': '任务提交失败',
 
@@ -785,6 +797,13 @@ const zh: Record<keyof typeof en, string> = {
   'task.file.meme': 'Motif 库 (MEME)',
   'task.file.premade': '预计算索引',
   'task.file.preview': '预览',
+
+  'cluster_filter.title': '聚类筛选',
+  'cluster_filter.active_suffix': '已激活',
+  'cluster_filter.help': '点击 chip 可排除该聚类参与计算。原文件保持不变，仅在你取消任何聚类时上传一份过滤副本。',
+  'cluster_filter.select_all': '全选',
+  'cluster_filter.clear': '清空',
+  'cluster_filter.err.read': '无法读取基因列表以检测聚类。',
 
   'drawer.loading': '加载预览中…',
   'drawer.err.failed': '预览加载失败。',

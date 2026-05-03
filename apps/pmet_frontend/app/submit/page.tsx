@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import FileUpload from '@/components/FileUpload';
+import GeneClusterFilter from '@/components/GeneClusterFilter';
 import ParameterPanel from '@/components/ParameterPanel';
 import {
   EXAMPLE_FASTA,
@@ -68,6 +69,13 @@ function SubmitPageContent() {
 
   const [submitting, setSubmitting] = useState(false);
   const [indexingEntries, setIndexingEntries] = useState<IndexingEntry[]>([]);
+
+  // Cluster-filter selection. `null` means no filter step needed —
+  // either the gene list has no cluster column, or every detected
+  // cluster is still active. A non-null array lists the cluster names
+  // that should remain in the submission, and the submit handler
+  // builds + uploads a filtered file at that point.
+  const [activeClusters, setActiveClusters] = useState<string[] | null>(null);
 
   // Runtime estimate. Recomputed (debounced ~400 ms) whenever the inputs
   // that affect duration change — mode, uploaded file paths, premade
@@ -276,6 +284,35 @@ function SubmitPageContent() {
       return false;
     }
 
+    // Empty-file guard. The upload endpoint accepts zero-byte files
+    // because the validation it does is purely on extension, but every
+    // downstream tool (FIMO, pmetindex, pair_parallel, R heatmap) is
+    // either going to crash on or silently produce garbage from an
+    // empty input. Catch here so the user gets a clear toast instead
+    // of a half-failed task in their inbox.
+    const slotLabelKeys = {
+      genes: 'task.file.genes',
+      fasta: 'task.file.fasta',
+      gff3: 'task.file.gff3',
+      meme: 'task.file.meme',
+    } as const;
+    const emptySlot = (Object.keys(slotLabelKeys) as Array<keyof typeof slotLabelKeys>)
+      .find((s) => files[s] && files[s]!.size === 0);
+    if (emptySlot) {
+      toast.error(
+        t('submit.toast.empty_file').replace('{slot}', t(slotLabelKeys[emptySlot]))
+      );
+      return false;
+    }
+
+    // Cluster filter: zero active clusters means the filtered file
+    // would contain no data rows — semantically equivalent to an
+    // empty gene list. Block before we waste an upload + a task slot.
+    if (activeClusters !== null && activeClusters.length === 0) {
+      toast.error(t('submit.toast.no_cluster_active'));
+      return false;
+    }
+
     return true;
   };
 
@@ -291,6 +328,41 @@ function SubmitPageContent() {
       if (files.genes && !genesPath) {
         const result = await fileApi.upload(files.genes, 'genes', uploadSessionId);
         genesPath = result.path;
+      }
+
+      // Cluster filter: when the user has deactivated some clusters,
+      // build a filtered copy of the gene list client-side and upload
+      // it under a sibling filename (`<base>.filtered.txt`). The
+      // original stays in the upload dir for reproducibility / preview;
+      // the task's genes_file points at the filtered copy.
+      // `activeClusters === null` means "no filter needed" — either
+      // single-column gene list or every cluster still active.
+      if (files.genes && activeClusters !== null) {
+        const text = await files.genes.text();
+        const keep = new Set(activeClusters);
+        const filteredText = text
+          .split('\n')
+          .filter((rawLine) => {
+            const line = rawLine.replace(/\r$/, '');
+            if (!line) return true;  // preserve blank lines verbatim
+            const parts = line.split(/\s+/).filter(Boolean);
+            // Single-column rows wouldn't normally show up here (the
+            // filter component reports null in that case), but if they
+            // do, pass through — better than silently dropping data.
+            if (parts.length < 2) return true;
+            return keep.has(parts[0]);
+          })
+          .join('\n');
+        const origName = files.genes.name;
+        const dot = origName.lastIndexOf('.');
+        const filteredName = dot > 0
+          ? `${origName.slice(0, dot)}.filtered${origName.slice(dot)}`
+          : `${origName}.filtered`;
+        const filteredFile = new File([filteredText], filteredName, {
+          type: files.genes.type || 'text/plain',
+        });
+        const filteredUpload = await fileApi.upload(filteredFile, 'genes', uploadSessionId);
+        genesPath = filteredUpload.path;
       }
 
       let fastaPath = uploadedPaths.fasta;
@@ -688,6 +760,16 @@ function SubmitPageContent() {
               previewTitle={t(mode === 'intervals' ? 'submit.preview.peaks_title' : 'submit.preview.gene_list_title')}
               previewNote={t(mode === 'intervals' ? 'submit.preview.peaks_note' : 'submit.preview.gene_list_note')}
               previewContent={mode === 'intervals' ? EXAMPLE_PEAK_LIST : EXAMPLE_GENE_LIST}
+            />
+            {/* Cluster filter renders only when the uploaded gene list
+                has a 2-column <cluster>\t<gene> shape. The component
+                itself decides; pass it the File object and listen for
+                the resolved active-set. Intervals mode also flows
+                through here — peaks files use the same shape so the
+                filter applies uniformly. */}
+            <GeneClusterFilter
+              file={files.genes ?? null}
+              onSelectionChange={setActiveClusters}
             />
           </div>
         </div>
