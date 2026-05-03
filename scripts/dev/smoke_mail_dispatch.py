@@ -9,7 +9,7 @@ amber Notes block, action button, and Subject character set survive.
 Run:
     python3 scripts/dev/smoke_mail_dispatch.py wangxuesong29@gmail.com
 
-Reads SMTP creds from data/configure/email_credential.txt the same way
+Reads SMTP creds from deploy/configure/email_credential.txt the same way
 the worker does. Prints a tagged log line per send. Exits non-zero on
 any send failure.
 """
@@ -39,7 +39,7 @@ def make_meta(task_id: str) -> dict:
 def main(recipient: str) -> int:
     mail = MailService()
     if not all([mail.username, mail.password, mail.server]):
-        print("ERROR: SMTP creds not loaded — check data/configure/email_credential.txt")
+        print("ERROR: SMTP creds not loaded — check deploy/configure/email_credential.txt")
         return 2
 
     print(f"Sending three smoke emails to {recipient} via {mail.server}:{mail.port}")

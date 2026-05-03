@@ -1,7 +1,7 @@
 """Admin auth + settings endpoints.
 
 Authentication model: shared bearer token from
-``data/configure/admin_token.txt``. Login posts the token, server validates
+``deploy/configure/admin_token.txt``. Login posts the token, server validates
 against ``config.ADMIN_TOKEN`` and sets an httpOnly cookie. Subsequent admin
 endpoints check the cookie via ``Depends(require_admin)``.
 
@@ -33,7 +33,7 @@ class AdminSettings(BaseModel):
 
 
 def _settings_path() -> Path:
-    return config.PROJECT_ROOT / "data" / "configure" / "admin_settings.json"
+    return config.CONFIGURE_DIR / "admin_settings.json"
 
 
 def require_admin(pmet_admin: Optional[str] = Cookie(default=None)) -> bool:

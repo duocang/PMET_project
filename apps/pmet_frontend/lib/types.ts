@@ -62,7 +62,7 @@ export interface TaskResponse {
   indexing_motif_db?: string | null;
   runtime_estimate?: EstimateResponse | null;
 
-  // Current worker thread count (data/configure/cpu_configuration.txt)
+  // Current worker thread count (deploy/configure/cpu_configuration.txt)
   ncpu?: number | null;
 
   // Filesystem-derived per-stage view (services/stage_status.py).

@@ -184,7 +184,7 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
         task_file.write_text(json.dumps(task_meta, indent=2))
 
         # Notify admin + user that task has started. Both switches are
-        # hot-reloaded from data/configure/admin_settings.json.
+        # hot-reloaded from deploy/configure/admin_settings.json.
         if self.request.retries == 0:
             config.reload()
             if config.NOTIFY_ON_SUBMIT:
@@ -212,7 +212,7 @@ def run_pmet_task(self, task_meta: dict, task_dir: str):
             storage.zip_results(result_dir, task_id)
 
             # Build the public link from the configured deployment URL
-            # (data/configure/public_base_url.txt) and persist it to
+            # (deploy/configure/public_base_url.txt) and persist it to
             # task_meta so both the email and later GET /tasks/{id} return
             # the same URL. Points at the frontend task-detail page, which
             # exposes the actual zip Download button.

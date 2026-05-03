@@ -92,7 +92,7 @@ class TaskResponse(BaseModel):
     indexing_motif_db: Optional[str] = None
     runtime_estimate: Optional[dict] = None
 
-    # Worker thread count read from current config (data/configure/
+    # Worker thread count read from current config (deploy/configure/
     # cpu_configuration.txt). Not historically frozen — reflects what
     # the worker would use *now* if the same task were rerun.
     ncpu: Optional[int] = None

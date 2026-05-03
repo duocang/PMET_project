@@ -149,10 +149,10 @@ tar -czf pmet_results_$(date +%Y%m%d).tar.gz results/app/
 cp apps/pmet_backend/pmet.db pmet_db_$(date +%Y%m%d).db
 
 # 3. Configure dir (admin token, email creds, etc. — be careful with this one)
-tar -czf pmet_config_$(date +%Y%m%d).tar.gz data/configure/
+tar -czf pmet_config_$(date +%Y%m%d).tar.gz deploy/configure/
 ```
 
-`results/app/` and `apps/pmet_backend/pmet.db` are bind-mounted from the host, so backing up the host paths is sufficient — no need to `docker compose exec` into anything. The `data/configure/` tarball contains secrets; store it encrypted.
+`results/app/` and `apps/pmet_backend/pmet.db` are bind-mounted from the host, so backing up the host paths is sufficient — no need to `docker compose exec` into anything. The `deploy/configure/` tarball contains secrets; store it encrypted.
 
 Restore is the reverse: stop the stack (`make down`), untar / cp back, `make up`.
 
@@ -206,7 +206,7 @@ nginx limit. Edit [`deploy/nginx/nginx.conf`](../deploy/nginx/), bump `client_ma
 
 ```bash
 # Eyeball the credentials file: it must be exactly 5 lines, no leading/trailing whitespace.
-cat data/configure/email_credential.txt
+cat deploy/configure/email_credential.txt
 
 # Move into deploy/ so docker compose can find compose.yml.
 cd deploy
@@ -390,10 +390,10 @@ tar -czf pmet_results_$(date +%Y%m%d).tar.gz results/app/
 cp apps/pmet_backend/pmet.db pmet_db_$(date +%Y%m%d).db
 
 # 3. configure 目录（admin token、email 凭据等 —— 这个要小心）
-tar -czf pmet_config_$(date +%Y%m%d).tar.gz data/configure/
+tar -czf pmet_config_$(date +%Y%m%d).tar.gz deploy/configure/
 ```
 
-`results/app/` 和 `apps/pmet_backend/pmet.db` 都是从 host bind-mount 进去的，所以备份 host 路径就够了，不用 `docker compose exec`。`data/configure/` tarball 含密钥；加密存。
+`results/app/` 和 `apps/pmet_backend/pmet.db` 都是从 host bind-mount 进去的，所以备份 host 路径就够了，不用 `docker compose exec`。`deploy/configure/` tarball 含密钥；加密存。
 
 恢复反过来：停栈（`make down`）、untar / cp 回去、`make up`。
 
@@ -447,7 +447,7 @@ nginx 限制。编辑 [`deploy/nginx/nginx.conf`](../deploy/nginx/) 调大 `clie
 
 ```bash
 # 看一眼凭据文件：必须正好 5 行，前后无空白。
-cat data/configure/email_credential.txt
+cat deploy/configure/email_credential.txt
 
 # 进 deploy/ 让 docker compose 找得到 compose.yml。
 cd deploy

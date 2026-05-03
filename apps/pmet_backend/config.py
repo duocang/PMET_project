@@ -29,6 +29,27 @@ def _detect_project_root() -> Path:
     return here.parents[1]
 
 
+def _detect_configure_dir(project_root: Path) -> Path:
+    """Resolve the deploy-time config directory.
+
+    Default = ``<project_root>/deploy/configure/`` (host monorepo layout).
+    Override with PMET_CONFIGURE_DIR for the docker layout, where the
+    host's ``deploy/configure/`` is bind-mounted in at a fixed path.
+    Falls back to the legacy ``data/configure/`` location if it still
+    exists, so a deployment that hasn't yet migrated keeps working.
+    """
+    override = os.environ.get("PMET_CONFIGURE_DIR")
+    if override:
+        return Path(override)
+    new = project_root / "deploy" / "configure"
+    if new.is_dir():
+        return new
+    legacy = project_root / "data" / "configure"
+    if legacy.is_dir():
+        return legacy
+    return new  # default location even if not yet created
+
+
 @dataclass
 class Config:
     PROJECT_ROOT: Path = _detect_project_root()
@@ -59,6 +80,12 @@ class Config:
     # path. Kept under the existing name to avoid a churn-y rename across the
     # executor and Dockerfile docs.
     PMET_SCRIPTS_DIR: Path = PROJECT_ROOT
+    # Deploy-time config (admin token, SMTP creds, CPU count, etc).
+    # Lives outside data/ because it's operator-controlled, not scientific
+    # input. Override via PMET_CONFIGURE_DIR for non-default mounts.
+    CONFIGURE_DIR: Path = field(
+        default_factory=lambda: _detect_configure_dir(_detect_project_root())
+    )
 
     # Email configuration
     EMAIL_USERNAME: str = ""
@@ -86,7 +113,7 @@ class Config:
     )
 
     # Admin auth + behaviour. ADMIN_TOKEN comes from
-    # data/configure/admin_token.txt (gitignored, single line). Empty token
+    # deploy/configure/admin_token.txt (gitignored, single line). Empty token
     # means admin features are disabled — no one can log in.
     # NOTIFY_ON_SUBMIT toggles the per-task admin email; default True so
     # existing deployments don't silently change behaviour.
@@ -103,15 +130,15 @@ class Config:
         self._load_configs()
 
     def _load_configs(self):
-        cpu_file = self.PROJECT_ROOT / "data" / "configure" / "cpu_configuration.txt"
+        cpu_file = self.CONFIGURE_DIR / "cpu_configuration.txt"
         if cpu_file.exists():
             self.NCPU = int(cpu_file.read_text().strip().split()[0])
 
-        base_url_file = self.PROJECT_ROOT / "data" / "configure" / "public_base_url.txt"
+        base_url_file = self.CONFIGURE_DIR / "public_base_url.txt"
         if base_url_file.exists():
             self.PUBLIC_BASE_URL = base_url_file.read_text().strip()
 
-        email_file = self.PROJECT_ROOT / "data" / "configure" / "email_credential.txt"
+        email_file = self.CONFIGURE_DIR / "email_credential.txt"
         if email_file.exists():
             lines = email_file.read_text().strip().split("\n")
             if len(lines) >= 5:
@@ -121,11 +148,11 @@ class Config:
                 self.EMAIL_SERVER = lines[3].strip()
                 self.EMAIL_PORT = lines[4].strip()
 
-        admin_token_file = self.PROJECT_ROOT / "data" / "configure" / "admin_token.txt"
+        admin_token_file = self.CONFIGURE_DIR / "admin_token.txt"
         if admin_token_file.exists():
             self.ADMIN_TOKEN = admin_token_file.read_text().strip()
 
-        admin_settings_file = self.PROJECT_ROOT / "data" / "configure" / "admin_settings.json"
+        admin_settings_file = self.CONFIGURE_DIR / "admin_settings.json"
         if admin_settings_file.exists():
             try:
                 settings = json.loads(admin_settings_file.read_text())

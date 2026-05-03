@@ -14,7 +14,7 @@ Goals: **predictable** (a name should hint at what the file does), **mechanicall
 
 | | |
 |---|---|
-| [1. Top-level layout](#en-1) | [6. data/configure/ (deploy-time files)](#en-6) |
+| [1. Top-level layout](#en-1) | [6. deploy/configure/ (deploy-time files)](#en-6) |
 | [2. scripts/workflows/](#en-2) | [7. results/](#en-7) |
 | [3. scripts/python/, scripts/r/, scripts/lib/](#en-3) | [8. docs/](#en-8) |
 | [4. apps/cli/scripts/](#en-4) | [9. Commits](#en-9) |
@@ -144,7 +144,7 @@ Subdirs: `tests/integration/fixtures/` for synthetic inputs (and a small motif_o
 
 <a id="en-6"></a>
 
-## 6. data/configure/ (deploy-time files)
+## 6. deploy/configure/ (deploy-time files)
 
 These are bind-mounted into the running web stack and read at runtime. **All gitignored — never commit credentials.**
 
@@ -214,7 +214,7 @@ These exist in the repo and predate this document. They're not failures; they ge
 
 | | |
 |---|---|
-| [1. 顶层目录](#cn-1) | [6. data/configure/（部署期文件）](#cn-6) |
+| [1. 顶层目录](#cn-1) | [6. deploy/configure/（部署期文件）](#cn-6) |
 | [2. scripts/workflows/](#cn-2) | [7. results/](#cn-7) |
 | [3. scripts/python/、scripts/r/、scripts/lib/](#cn-3) | [8. docs/](#cn-8) |
 | [4. apps/cli/scripts/](#cn-4) | [9. Commit](#cn-9) |
@@ -344,7 +344,7 @@ tests/
 
 <a id="cn-6"></a>
 
-## 6. data/configure/（部署期文件）
+## 6. deploy/configure/（部署期文件）
 
 bind-mount 进运行中的 web 栈、运行时读取。**全部 gitignored —— 凭据绝不要提交。**
 
