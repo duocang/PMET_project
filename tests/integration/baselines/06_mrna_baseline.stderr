@@ -1,581 +1,0 @@
-tput: No value for $TERM and no -T specified
-processed: 0.0%processed: 100.0%[Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-
-Computers / CPU threads / Max jobs to run
-1:local / 10 / 8
-
-Computer:jobs running/jobs completed/%of started jobs/Average seconds to complete
-local:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Klocal:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:8/0/100%/0.0s [Klocal:7/1/100%/268.0s [Klocal:7/1/100%/268.0s [Klocal:7/1/100%/268.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:7/1/100%/269.0s [Klocal:6/2/100%/134.5s [Klocal:6/2/100%/134.5s [Klocal:6/2/100%/134.5s [Klocal:6/2/100%/134.5s [Klocal:6/2/100%/134.5s [Klocal:5/3/100%/89.7s [Klocal:5/3/100%/89.7s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:5/3/100%/90.0s [Klocal:5/3/100%/90.0s [Klocal:5/3/100%/90.0s [Klocal:5/3/100%/90.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:5/3/100%/90.3s [Klocal:5/3/100%/90.3s [Klocal:5/3/100%/90.3s [Klocal:4/4/100%/67.8s [Klocal:4/4/100%/67.8s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:4/4/100%/68.0s [Klocal:4/4/100%/68.0s [Klocal:3/5/100%/54.4s [Klocal:3/5/100%/54.4s [Klocal:3/5/100%/54.4s [Klocal:3/5/100%/54.4s [Klocal:3/5/100%/54.4s [Klocal:2/6/100%/45.3s [Klocal:2/6/100%/45.3s [Klocal:2/6/100%/45.3s [Klocal:2/6/100%/45.3s [Klocal:2/6/100%/45.3s [Klocal:2/6/100%/45.3s [Klocal:2/6/100%/45.3s [Klocal:1/7/100%/38.9s [Klocal:1/7/100%/38.9s [Klocal:1/7/100%/38.9s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/39.0s [Klocal:1/7/100%/39.0s [Klocal:1/7/100%/39.0s [Klocal:1/7/100%/39.0s [Klocal:1/7/100%/39.0s [Klocal:1/7/100%/39.0s [Klocal:1/7/100%/39.0s [Klocal:1/7/100%/39.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/39.1s [Klocal:1/7/100%/39.1s [Klocal:1/7/100%/39.1s [Klocal:1/7/100%/39.1s [Klocal:1/7/100%/39.1s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/39.3s [Klocal:1/7/100%/39.3s [Klocal:1/7/100%/39.3s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/39.4s [Klocal:1/7/100%/39.4s [Klocal:1/7/100%/39.4s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/39.6s [Klocal:1/7/100%/39.6s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/39.7s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/39.9s [Klocal:1/7/100%/39.9s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/40.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/40.1s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/40.3s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/40.4s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/40.6s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/40.7s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/40.9s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/41.0s [Ksh: /dev/tty: Device not configured
-sh: /dev/tty: Device not configured
-local:1/7/100%/41.1s [Klocal:0/8/100%/36.0s [Klocal:0/8/100%/36.0s [K
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-      527.20 real      2852.88 user        50.36 sys
-           591101952  maximum resident set size
-                   0  average shared memory size
-                   0  average unshared data size
-                   0  average unshared stack size
-             4073452  page reclaims
-                8005  page faults
-                   0  swaps
-                   0  block input operations
-                   0  block output operations
-                   0  messages sent
-                   0  messages received
-                  88  signals received
-               34432  voluntary context switches
-             2990972  involuntary context switches
-            15612318  instructions retired
-             7812817  cycles elapsed
-             1049152  peak memory footprint

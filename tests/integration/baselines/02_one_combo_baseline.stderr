@@ -1,19 +1,0 @@
-Warning: matplotlib not available, skipping histogram plot
-processed: 0.0%processed: 100.0%[K      103.42 real       488.65 user        33.99 sys
-           476037120  maximum resident set size
-                   0  average shared memory size
-                   0  average unshared data size
-                   0  average unshared stack size
-              157723  page reclaims
-                1600  page faults
-                   0  swaps
-                   0  block input operations
-                   0  block output operations
-                   0  messages sent
-                   0  messages received
-                  11  signals received
-                1343  voluntary context switches
-              708491  involuntary context switches
-            23255635  instructions retired
-            12729915  cycles elapsed
-             1098304  peak memory footprint

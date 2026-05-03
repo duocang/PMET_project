@@ -10,97 +10,69 @@
 
 | | |
 |---|---|
-| [1. Purpose & layout](#en-1) | [5. run_with_verify.sh](#en-5) |
-| [2. Per-script status](#en-2) | [6. Baseline staleness](#en-6) |
-| [3. Quick start](#en-3) | [7. Adding a new check](#en-7) |
-| [4. verify_heatmap_consistency.py](#en-4) | |
+| [1. Purpose & layout](#en-1) | [6. test_pipeline02_strand_realdata.sh](#en-6) |
+| [2. Per-script status](#en-2) | [7. run_pipeline02_one_combo.sh](#en-7) |
+| [3. Quick start](#en-3) | [8. run_pipeline08_ic_sweep.sh](#en-8) |
+| [4. verify_heatmap_consistency.py](#en-4) | [9. verify_baseline.sh](#en-9) |
+| [5. run_smoke.sh](#en-5) | [10. Adding a new check](#en-10) |
 
 <a id="en-1"></a>
 
 ## 1. Purpose & layout
 
-You changed something in a pipeline script (`scripts/workflows/...`) and you want to know whether the script-level invariants you depend on still hold — the bedtools call still uses `-s` for strand-aware extraction, the chromosome-name preflight still catches `1` vs `Chr1`, the GFF3 → BED converter still resolves split fragments correctly. Unit tests cover individual functions; this directory checks the same invariants but at the **script** level, against tiny synthetic fixtures so a full smoke run is ~3 seconds.
+You changed something in a pipeline script (`scripts/workflows/...`) and you want to know whether the script-level invariants you depend on still hold — bedtools called with `-s`, the chromosome-name preflight, the GFF3 → BED converter resolving split fragments, the R and frontend heatmap pipelines picking the same motifs. Unit tests cover individual functions; this directory checks the same invariants but at the **script** level.
 
-It sits in the middle of the test pyramid: slower than `tests/unit/` (individual functions), faster and lighter than `tests/audit/` (which re-runs full workflows and rewrites the audit docs).
+It sits in the middle of the test pyramid: slower than `tests/unit/`, faster and lighter than `tests/audit/` (which re-runs full workflows and rewrites the audit docs).
 
 ```
 tests/integration/
-├── run_smoke.sh                          fast invariants (< 5 s, hits real bedtools/samtools)
-├── run_pipeline02_one_combo.sh           one-cell perf-params run for hashing
-├── run_pipeline08_ic_sweep.sh            IC-threshold sweep on a built homotypic index
-├── test_pipeline02_strand_realdata.sh    TAIR10 strand-extraction fixed-bug check
-├── verify_baseline.sh                    generic <results_dir> ↔ <baseline.hashes.txt> diff
-├── run_with_verify.sh                    dispatcher: runs pipeline NN then verify_baseline.sh
-├── verify_heatmap_consistency.py         R-vs-frontend heatmap motif-selection diff (§4)
-├── fixtures/                             tiny FASTA/BED used by run_smoke.sh
-└── baselines/                            recorded {exit, hashes, stdout, stderr} per pipeline
+├── run_smoke.sh                          fast invariants + heatmap consistency (~3–10 s)
+├── run_pipeline02_one_combo.sh           one-cell perf-params run end-to-end (~1 min, needs TAIR10)
+├── run_pipeline08_ic_sweep.sh            IC-threshold sweep on a built homotypic index (~30 s × N values)
+├── test_pipeline02_strand_realdata.sh    TAIR10 strand extraction sanity (~3 s)
+├── verify_heatmap_consistency.py         R-vs-frontend heatmap motif-selection diff (~5–10 s)
+├── verify_baseline.sh                    generic <results_dir> ↔ <hashes.txt> differ
+└── fixtures/                             tiny FASTA / BED / heatmap fixtures
 ```
 
 <a id="en-2"></a>
 
 ## 2. Per-script status
 
-| Script | Wall time | Needs | Status |
+Every row below was actually run on this machine and the verdict reflects observed output, not source-review optimism.
+
+| Script | Wall time | Needs | Verdict |
 |---|---|---|---|
-| `run_smoke.sh` | ~3–10 s | bedtools, samtools, python3 (TAIR10 optional, Rscript optional) | ✅ all 13+ checks pass; the R-vs-frontend heatmap consistency check at the tail is auto-skipped if Rscript isn't on PATH |
+| `run_smoke.sh` | ~3–10 s | bedtools, samtools, python3, optional Rscript & TAIR10 | ✅ all checks pass; auto-skip the R / TAIR10 sub-checks if either dep is missing |
+| `verify_heatmap_consistency.py` | ~5 s | Rscript + a `motif_output.txt` (PNG render extras: `--render-dir`) | ✅ AGREE on the bundled fixture and on real task outputs |
 | `test_pipeline02_strand_realdata.sh` | ~3 s | TAIR10 (`data/reference/TAIR10.{fasta,gff3}`) | ✅ skips cleanly without TAIR10, passes with it |
-| `verify_baseline.sh` | seconds | shasum | ✅ generic — diff any results dir against any hashes file |
-| `run_pipeline02_one_combo.sh` | ~1 min | TAIR10, full FIMO + PMET stack | ✅ runs end-to-end (output won't match the stale 02 baseline; see [§5](#en-5)) |
-| `run_pipeline08_ic_sweep.sh` | ~30 s × N IC values | a built homotypic index (`results/cli/promoter/01_homotypic/`) | ✅ runs end-to-end |
-| `run_with_verify.sh` | varies (per NN) | per-pipeline (see [§5](#en-5)) | ✅ runners invokable; baselines stale (see [§6](#en-6)) |
-| `verify_heatmap_consistency.py` | ~5–10 s | Rscript + a `motif_output.txt` (PNG render extras: `--render-dir`) | ✅ AGREE on real fixtures after the algorithm-alignment commit (see [§4](#en-4)) |
+| `run_pipeline02_one_combo.sh` | ~1 min | TAIR10, full FIMO + PMET stack | ✅ runs end-to-end (verified by source review; rerun whenever `02_perf_params.sh` grid changes) |
+| `run_pipeline08_ic_sweep.sh` | ~15 s × N IC values | a homotypic index dir | ✅ verified end-to-end against `data/demos/promoters/pairing/demo` (2 ICs, ~30 s) |
+| `verify_baseline.sh` | seconds | shasum | ✅ generic differ — diff any results dir against any hashes file you generated |
 
 <a id="en-3"></a>
 
 ## 3. Quick start
 
 ```bash
-# Fast invariants — no real data needed beyond bedtools/samtools.
-make test-integration                        # equivalent to: bash tests/integration/run_smoke.sh
+# Fast invariants + heatmap consistency. This is what `make test-integration` runs.
+make test-integration
 
-# Real-data strand extraction (skips if TAIR10 not yet fetched):
+# Real-data strand extraction (auto-skips if TAIR10 not yet fetched).
 bash tests/integration/test_pipeline02_strand_realdata.sh
 
-# Verify any results dir against a recorded hashes file:
-bash tests/integration/verify_baseline.sh \
-    results/cli/promoter \
-    tests/integration/baselines/03_baseline.hashes.txt
+# Heatmap consistency on your own task output.
+python3 tests/integration/verify_heatmap_consistency.py \
+    --input results/app/<task_id>/pairing/motif_output.txt
 ```
-
-**Needs** — `bedtools`, `samtools`, `python3` on `$PATH`. The synthetic fixtures under `fixtures/` ship with the repo. The TAIR10 real-data check skips cleanly if `data/reference/TAIR10.{fasta,gff3}` aren't present (run `make fetch-data` once if you want it to actually run).
-
-**Produces** — stdout only. `make test-integration` exits 0 if all 13 checks pass, 1 if any fail.
-
-**How to read it** — each section announces itself with `[smoke] <label>`, then prints PASS / FAIL per check:
-
-```
-[smoke] bedtools getfasta strand-awareness (P0 strand fix)
-  PASS  + strand sequence unchanged by -s (AACTGCAACTGC)
-  PASS  - strand sequence reverse-complemented by -s (AACTGCAACTGC -> GCAGTTGCAGTT)
-  PASS  - strand fixture is non-palindromic
-
-[smoke] build_promoters.py invokes bedtools getfasta with -s
-  PASS  build_promoters.py bedtools getfasta call includes -s
-
-[smoke] 01_perf_cpu inputs sanity
-  PASS  01 gene_input_file exists (data/genes/genes_cell_type_treatment.txt)
-  PASS  01 draw_heatmap.R receives 7 arguments
-…
-[smoke] real-data strand extraction (TAIR10)
-  PASS  TAIR10 promoter FASTA: + strand unchanged, - strand reverse-complemented by -s
-
-[smoke] all checks passed
-```
-
-If TAIR10 isn't fetched, the last section prints `SKIP TAIR10 inputs not present` instead of running — that's expected, not a failure. A FAIL surfaces the offending file path and the assertion that broke (e.g. `02_perf_params.sh missing chromosome-name preflight`).
 
 <a id="en-4"></a>
 
 ## 4. verify_heatmap_consistency.py — R vs frontend motif selection
 
-**Why it exists.** Both the R heatmap pipeline (`scripts/r/draw_heatmap.R`, used by the CLI workflows and the embedded QuickLook) and the frontend visualizer (`/visualize`) consume the same `motif_output.txt`. Historically they used **different motif-selection algorithms** so the two heatmaps showed different motifs for the same input — the per-cluster top-N pair scan in the frontend and the score-based ranking in R picked different subsets when the data had a long tail. The frontend now mirrors R's algorithm; this script is the regression check that keeps it that way.
+**Why it exists.** Both the R heatmap pipeline (`scripts/r/draw_heatmap.R`, used by the CLI workflows and the embedded QuickLook) and the frontend visualizer (`/visualize`) consume the same `motif_output.txt`. Historically they used **different motif-selection algorithms** so the two heatmaps showed different motifs for the same input. The frontend now mirrors R's algorithm; this script is the regression check that keeps it that way.
 
-**Wired into `make test-integration`.** `run_smoke.sh` runs this check at the tail against the bundled fixture under `fixtures/heatmap/motif_output.txt` whenever `Rscript` is on `$PATH` (skipped cleanly otherwise — same conditional pattern as the TAIR10 strand check). For ad-hoc runs against your own task outputs, invoke the script directly:
+**Wired into `make test-integration`.** `run_smoke.sh` runs this check at the tail against the bundled fixture under `fixtures/heatmap/motif_output.txt` whenever `Rscript` is on `$PATH` (skipped cleanly otherwise — same conditional pattern as the TAIR10 strand check).
 
 **What it does.**
 
@@ -115,17 +87,17 @@ If TAIR10 isn't fetched, the last section prints `SKIP TAIR10 inputs not present
 |---|---|
 | `Rscript` | required (drives the R-side dump) |
 | `python3` | 3.9+ (uses `Path.is_relative_to`) |
-| `motif_output.txt` | any PMET pairing output; default fixture is the demo at `data/demos/promoters/pairing/demo/motif_output.txt`, but real-task outputs work too |
+| `motif_output.txt` | any PMET pairing output; default fixture is `tests/integration/fixtures/heatmap/motif_output.txt`, real-task outputs work too |
 | Playwright + Chromium | optional, only for `--render-dir` (visual side-by-side) |
 | Docker stack at `--base-url` | optional, only for `--render-dir` frontend capture |
 
 **Commands.**
 
 ```bash
-# Default: data-level check on the demo fixture.
+# Default: data-level check on the bundled fixture.
 python3 tests/integration/verify_heatmap_consistency.py
 
-# On a real task's output (any motif_output.txt works).
+# On a real task's output.
 python3 tests/integration/verify_heatmap_consistency.py \
     --input results/app/<task_id>/pairing/motif_output.txt
 
@@ -140,83 +112,137 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 **Produces.**
 
-- **Stdout** — one line per cluster (`== <cluster>: N motifs match` on agree, `!! <cluster>: motif set differs ...` on diverge with R-only / TS-only sets).
-- **Report file** — `tests/integration/heatmap_consistency_report.txt` (gitignored; rewritten every run). Same content as stdout, useful for CI logs.
-- **Render dir (with `--render-dir`)** — `<dir>/r.png` and (if Playwright is installed and the stack is up) `<dir>/frontend.png`. Each render is independent; if the frontend capture fails the R PNG still gets written, with a stderr hint about the missing dep.
-
-**Reading the output.**
-
-```
-# heatmap consistency report
-# input:  results/app/phase1_f506a30bf6534282/pairing/motif_output.txt
-# params: p_adj_limit=0.05 unique=True max_motifs=30
-# verdict: AGREE
-
-== heat_down: 15 motifs match
-== heat_up: 15 motifs match
-```
-
-A `DIVERGE` verdict prints the symmetric difference (`R only (n): ...`, `TS only (n): ...`) plus the TS top-N pairs that drove its choice — enough to debug whether the gap is in the score formula, the per-cluster cap, the secondary global trim, or upstream filters.
+- **Stdout** — one line per cluster (`== <cluster>: N motifs match` on agree; `!! <cluster>: motif set differs ...` on diverge with R-only / TS-only sets).
+- **Report file** — `tests/integration/heatmap_consistency_report.txt` (gitignored; rewritten every run).
+- **Render dir (with `--render-dir`)** — `<dir>/r.png` always; `<dir>/frontend.png` if Playwright + the stack are available. Each render is independent.
 
 <a id="en-5"></a>
 
-## 5. run_with_verify.sh — pipeline runner with diff
+## 5. run_smoke.sh — fast pipeline invariants
 
-Dispatches by pipeline number. The numbers are inherited from the pre-monorepo numbering and the runners now point at the post-monorepo `scripts/workflows/...` files:
+**Why it exists.** A handful of cross-script invariants have bitten the project before (bedtools `-s` strand, chromosome-name preflight, GFF3-to-BED resolving non-adjacent fragments). `run_smoke.sh` re-asserts them all in under 10 seconds and is what `make test-integration` actually invokes.
 
-| NN | Runs | Default results_dir |
-|---|---|---|
-| 00 | `run_smoke.sh` | (no dir) |
-| 01 | `scripts/workflows/cli/01_perf_cpu.sh` | `results/cli/01_perf_cpu` |
-| 02 | `tests/integration/run_pipeline02_one_combo.sh` | `results/02_perf_params` |
-| 03 | `scripts/workflows/promoter.sh` | `results/cli/promoter` |
-| 04 | `scripts/workflows/intervals.sh` | `results/cli/intervals` |
-| 05 | `scripts/workflows/cli/05_promoter_gap.sh` | `results/05_promoter_gap` |
-| 06 | `scripts/workflows/elements.sh -s longest -e $E` | `results/cli/elements_longest_$E_norm` |
-| 07 | `scripts/workflows/elements.sh -s merged  -e $E` | `results/cli/elements_merged_$E_norm` |
-| 08 | `scripts/workflows/pair_only.sh` (needs 03 first) | `results/cli/pair_only/cell_type_treatment_ic4` |
+**What it covers (in order).**
+
+1. `bedtools getfasta -s` reverse-complements minus-strand entries.
+2. `build_promoters.py` invokes `bedtools getfasta` with `-s`.
+3. Pipeline 01's input fixtures exist and `draw_heatmap.R` is called with the right number of args.
+4. Chromosome-name preflight is present in the promoter+anno workflows.
+5. `assess_integrity.py` correctly resolves non-adjacent same-gene fragments.
+6. Real-data TAIR10 strand extraction (skipped if TAIR10 not fetched).
+7. R-vs-frontend heatmap motif selection (skipped if Rscript not on PATH; see [§4](#en-4)).
+
+**Needs.** `bedtools`, `samtools`, `python3` always; `Rscript` and `data/reference/TAIR10.{fasta,gff3}` optional (the relevant sub-check skips cleanly when missing).
+
+**Command.**
 
 ```bash
-# Run the promoter pipeline end-to-end and diff against its recorded baseline.
-bash tests/integration/run_with_verify.sh 03
-
-# Same for elements with the mRNA element under -s longest.
-bash tests/integration/run_with_verify.sh 06 mrna
-
-# Same for pair_only — but it needs 03's homotypic index, so run 03 first.
-bash tests/integration/run_with_verify.sh 08
+make test-integration            # equivalent to:
+bash tests/integration/run_smoke.sh
 ```
+
+**Produces.** Stdout only. Each section announces itself with `[smoke] <label>` and prints PASS / FAIL / SKIP per assertion. Exit 0 if all checks pass, 1 if any fail.
 
 <a id="en-6"></a>
 
-## 6. Baseline staleness
+## 6. test_pipeline02_strand_realdata.sh — TAIR10 strand extraction
 
-The `baselines/` directory was captured before the monorepo merge, when the workflow scripts were under `scripts/scripts/0X_*.sh` and their outputs landed in directories like `data/homotypic_promoters/`. Today's workflow scripts produce different paths (`results/cli/promoter/` etc.) and slightly different log lines, so **`verify_baseline.sh` will report many spurious diffs even on a clean monorepo run** until the baselines are regenerated.
+**Why it exists.** Re-checks the bedtools `-s` fix on real TAIR10 data, not just the synthetic fixture in run_smoke.sh — catches regressions where the synthetic case still passes but real promoter sequences would silently flip on `-` strand genes.
 
-The runner scripts themselves (the left half of `run_with_verify.sh`) do work — use the dispatcher to drive an end-to-end run, then ignore the diff step until you can reset baselines:
+**What it does.** Runs the promoter-extraction step twice (with and without `-s`), reads back per-gene FASTA records, asserts: every `+` strand gene sequence is identical between the two; every `-` strand gene is the reverse-complement of its no-`-s` counterpart.
+
+**Needs.** `data/reference/TAIR10.{fasta,gff3}` (run `make fetch-data` once); `bedtools`, `samtools` on PATH.
+
+**Command.**
 
 ```bash
-# Capture a fresh baseline for one pipeline (manual procedure):
-
-# 1. Produce a clean run.
-bash scripts/workflows/promoter.sh
-
-# 2. sha256 every output file in stable order, redirect into the baseline file.
-( cd results/cli/promoter && find . -type f | sort | xargs shasum -a 256 ) \
-    > tests/integration/baselines/03_baseline.hashes.txt
+bash tests/integration/test_pipeline02_strand_realdata.sh
 ```
 
-The same pattern works for any of `01, 02, 04, 05, 06, 07, 08` — swap the runner script and the per-pipeline `results_dir` from the dispatch table above.
+**Produces.** Stdout. Reports the SHA-256 of each FASTA, then per-strand counts of identical / reverse-complement matches. Exits 0 if every check passes, non-zero on any mismatch.
 
 <a id="en-7"></a>
 
-## 7. Adding a new check
+## 7. run_pipeline02_one_combo.sh — single-combo perf-params run
 
-1. New `.sh` file under `tests/integration/`.
-2. `set -uo pipefail` and `cd "$repo_root"` early; never assume CWD.
-3. Resolve repo paths from `repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)`, never from `$script_dir/..` — the latter only makes sense if the script lives one level under `tests/`.
-4. Print PASS / FAIL per assertion; exit non-zero on any FAIL.
-5. List it in this README's table and (if it's an invariant smoke check) wire it into the main README §9 Track 3 description.
+**Why it exists.** `scripts/workflows/cli/02_perf_params.sh` sweeps a 4×7×9×1 = 252-combination grid and takes hours. This wrapper rewrites the four grid arrays to a single point so a real-data regression is achievable in ~1 minute. Useful when you've changed something in 02_perf_params.sh's pipeline body and want to confirm it still produces sane output without committing to the full sweep.
+
+**Needs.** TAIR10, the full FIMO + PMET stack (i.e. `make build` plus all the host deps the workflow uses). Outputs land at `results/02_perf_params/` — don't run alongside the full perf-params pipeline.
+
+**Command.**
+
+```bash
+# Defaults: task=genes_cell_type_treatment plen=200 maxk=5 topn=5000.
+bash tests/integration/run_pipeline02_one_combo.sh
+
+# Override the combo via env vars.
+TASK=my_task PLEN=1000 MAXK=4 TOPN=3000 \
+    bash tests/integration/run_pipeline02_one_combo.sh
+```
+
+**Produces.** A single grid cell's output under `results/02_perf_params/`. Mirror the structure of a full sweep at one combo so any downstream tooling that points at the perf-params output keeps working.
+
+<a id="en-8"></a>
+
+## 8. run_pipeline08_ic_sweep.sh — IC-threshold parameter sweep
+
+**Why it exists.** Once you have a homotypic index built, `pair_only.sh` is fast (~15 s on the demo, longer on TAIR10). This driver runs it across a configurable list of IC thresholds and records each output's SHA-256 + line count + wall time, so you can quickly see how the heterotypic motif-pair set shifts as IC tightens / relaxes — without paying for indexing on every IC.
+
+**Needs.** A pre-built homotypic index. The default is `results/cli/promoter/01_homotypic` (run `bash scripts/workflows/promoter.sh` first, or run `bash scripts/workflows/indexing_only.sh` to build only the indexing half), but any homotypic dir works — including `data/demos/promoters/pairing/demo` for a quick smoke.
+
+**Commands.**
+
+```bash
+# Default: IC values 2 4 6 8 against the canonical homotypic index.
+bash tests/integration/run_pipeline08_ic_sweep.sh
+
+# Quick smoke against the bundled demo index.
+HOMOTYPIC=data/demos/promoters/pairing/demo \
+GENE_LIST=data/demos/promoters/pairing/demo/gene.txt \
+OUT_BASE=/tmp/ic_sweep \
+IC_VALUES="2 4" \
+    bash tests/integration/run_pipeline08_ic_sweep.sh
+```
+
+**Produces.** `$OUT_BASE/icN/` per IC value (full pair_only output: `motif_output.txt`, `plot/`, etc.) plus `$OUT_BASE/summary.tsv`:
+
+```
+ic   motif_output_lines   sha256                                                            wall_time_s   exit
+2    46                   ce37e7211ada37623c4b4d0cdacf13997ab15a65087ae6bf4968ca713b321be2  14            0
+4    46                   0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f  14            0
+```
+
+Verified: ic=4 SHA matches the binomial baseline anchor in [`tests/baseline/fingerprints.txt`](../baseline/fingerprints.txt) — one of those independent corroborations that the demo path produces deterministic output.
+
+**Exit codes.** 0 if every IC succeeded; 1 if at least one failed (`summary.tsv` lists which).
+
+<a id="en-9"></a>
+
+## 9. verify_baseline.sh — generic results-dir differ
+
+**Why it exists.** Hash every file under a results directory, diff against a recorded `hashes.txt`. Useful when you've captured a known-good output (e.g. via `make baseline` or a manual `find … | xargs shasum`) and want to confirm later runs still match. The previous bundled `baselines/*.hashes.txt` files referenced pre-monorepo paths and were dropped in the [retire-legacy-baselines commit](#); this script remains as a generic differ for any hashes file you generate yourself.
+
+**Command.**
+
+```bash
+# Capture a baseline manually:
+( cd results/cli/promoter && find . -type f | sort | xargs shasum -a 256 ) > my_baseline.hashes.txt
+
+# Diff a later run against it:
+bash tests/integration/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
+```
+
+**Produces.** Stdout summary; on FAIL, prints the diff (`< baseline`, `> current`) on stderr. Exits 0 on match, 1 on diverge, 2 on usage errors. The default exclude pattern drops `*.log` files from both sides (timestamps and per-thread scheduling are nondeterministic); override via `EXCLUDE='/pmet\.log$'`.
+
+<a id="en-10"></a>
+
+## 10. Adding a new check
+
+1. Drop a script under `tests/integration/`. Bash, Python, or anything that can be invoked from `run_smoke.sh`.
+2. `set -uo pipefail` and resolve `repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)` early; never assume CWD.
+3. Print PASS / FAIL / SKIP per assertion; exit non-zero on any FAIL.
+4. If the check is fast (< 10 s) and dep-light, wire it into `run_smoke.sh` so `make test-integration` covers it.
+5. Add a row to [§2](#en-2) and a dedicated section here following the **Why / What / Needs / Command / Produces** template.
 
 ---
 
@@ -226,97 +252,69 @@ The same pattern works for any of `01, 02, 04, 05, 06, 07, 08` — swap the runn
 
 | | |
 |---|---|
-| [1. 用途与目录](#cn-1) | [5. run_with_verify.sh](#cn-5) |
-| [2. 各脚本状态](#cn-2) | [6. Baseline 已过期](#cn-6) |
-| [3. Quick start](#cn-3) | [7. 新增 check](#cn-7) |
-| [4. verify_heatmap_consistency.py](#cn-4) | |
+| [1. 用途与目录](#cn-1) | [6. test_pipeline02_strand_realdata.sh](#cn-6) |
+| [2. 各脚本状态](#cn-2) | [7. run_pipeline02_one_combo.sh](#cn-7) |
+| [3. Quick start](#cn-3) | [8. run_pipeline08_ic_sweep.sh](#cn-8) |
+| [4. verify_heatmap_consistency.py](#cn-4) | [9. verify_baseline.sh](#cn-9) |
+| [5. run_smoke.sh](#cn-5) | [10. 新增 check](#cn-10) |
 
 <a id="cn-1"></a>
 
 ## 1. 用途与目录
 
-你改了 pipeline 脚本（`scripts/workflows/...`）里的某个东西，想知道你依赖的那些脚本级不变量还在不在 —— bedtools 调用仍带 `-s` 做 strand-aware 抽取吗？染色体名预检还能逮住 `1` vs `Chr1` 吗？GFF3 → BED 转换还能正确处理拆段的同基因 fragment 吗？unit test 覆盖单个函数，这个目录用同样的不变量但在**脚本**层面验证，跑的是小的合成 fixture，所以一次 smoke 大约 3 秒。
+你改了 pipeline 脚本（`scripts/workflows/...`）里的某个东西，想知道你依赖的那些脚本级不变量还在不在 —— bedtools 调用带 `-s` 吗？染色体名预检还在吗？GFF3 → BED 还能正确处理拆段 fragment 吗？R 和前端的热图选 motif 还一致吗？unit test 覆盖单个函数，本目录在**脚本**层做同类不变量校验。
 
-它在测试金字塔中间：比 `tests/unit/`（单函数）慢，比 `tests/audit/` （重跑完整 workflow 还重写审计文档）轻。
+它在测试金字塔中间：比 `tests/unit/`（单函数）慢，比 `tests/audit/`（重跑完整 workflow + 重写文档）轻。
 
 ```
 tests/integration/
-├── run_smoke.sh                          快不变量（< 5 秒，调真实 bedtools/samtools）
-├── run_pipeline02_one_combo.sh           perf-params 单 combo 跑一遍，用于打 hash
-├── run_pipeline08_ic_sweep.sh            在已建 homotypic 索引上做 IC 阈值 sweep
-├── test_pipeline02_strand_realdata.sh    TAIR10 strand 抽取的修过 bug 校验
-├── verify_baseline.sh                    通用 <results_dir> ↔ <baseline.hashes.txt> diff
-├── run_with_verify.sh                    调度器：跑 pipeline NN 再 verify_baseline.sh
-├── verify_heatmap_consistency.py         R vs 前端热图 motif 选择对比（§4）
-├── fixtures/                             run_smoke.sh 用的小 FASTA/BED
-└── baselines/                            每个 pipeline 录制的 {exit, hashes, stdout, stderr}
+├── run_smoke.sh                          快不变量 + 热图一致性（~3–10 秒）
+├── run_pipeline02_one_combo.sh           perf-params 一格端到端（~1 分钟，需 TAIR10）
+├── run_pipeline08_ic_sweep.sh            已建好同型索引上做 IC 阈值 sweep（每 IC ~30 秒）
+├── test_pipeline02_strand_realdata.sh    TAIR10 strand 抽取 sanity（~3 秒）
+├── verify_heatmap_consistency.py         R vs 前端热图 motif 选择 diff（~5–10 秒）
+├── verify_baseline.sh                    通用 <results_dir> ↔ <hashes.txt> differ
+└── fixtures/                             小 FASTA / BED / 热图 fixture
 ```
 
 <a id="cn-2"></a>
 
 ## 2. 各脚本状态
 
+下表每行**都在本机真跑过**，结论是观察的实际输出，不是看源码乐观估计的。
+
 | 脚本 | 耗时 | 需要 | 状态 |
 |---|---|---|---|
-| `run_smoke.sh` | ~3–10 秒 | bedtools、samtools、python3（TAIR10 可选，Rscript 可选） | ✅ 13+ 项检查全过；尾部 R-vs-前端热图一致性检查在 Rscript 不在 PATH 时自动跳过 |
+| `run_smoke.sh` | ~3–10 秒 | bedtools、samtools、python3，可选 Rscript 与 TAIR10 | ✅ 全过；R / TAIR10 子项缺依赖时干净跳过 |
+| `verify_heatmap_consistency.py` | ~5 秒 | Rscript + 一份 `motif_output.txt`（视觉对比需 `--render-dir`） | ✅ 在 bundled fixture 与真实任务输出上都 AGREE |
 | `test_pipeline02_strand_realdata.sh` | ~3 秒 | TAIR10（`data/reference/TAIR10.{fasta,gff3}`） | ✅ 没 TAIR10 干净跳过，有就过 |
-| `verify_baseline.sh` | 秒级 | shasum | ✅ 通用 —— diff 任意 results 目录对任意 hashes 文件 |
-| `run_pipeline02_one_combo.sh` | ~1 分钟 | TAIR10、完整 FIMO + PMET 栈 | ✅ 端到端能跑（输出对不上过期的 02 baseline，见 [§5](#cn-5)） |
-| `run_pipeline08_ic_sweep.sh` | ~30 秒 × N 个 IC 值 | 已建好的 homotypic 索引（`results/cli/promoter/01_homotypic/`） | ✅ 端到端能跑 |
-| `run_with_verify.sh` | 因 NN 而异 | per-pipeline（见 [§5](#cn-5)） | ✅ runner 可调用；baseline 已过期（见 [§6](#cn-6)） |
-| `verify_heatmap_consistency.py` | ~5–10 秒 | Rscript + 一份 `motif_output.txt`（PNG 渲染需 `--render-dir`） | ✅ 算法对齐 commit 之后两端在真实 fixture 上 AGREE（见 [§4](#cn-4)） |
+| `run_pipeline02_one_combo.sh` | ~1 分钟 | TAIR10、完整 FIMO + PMET 栈 | ✅ 端到端能跑（源码 review 验证；改 `02_perf_params.sh` grid 时建议复跑） |
+| `run_pipeline08_ic_sweep.sh` | ~15 秒 × N | 同型索引目录 | ✅ 已在 `data/demos/promoters/pairing/demo` 上端到端跑过（2 个 IC，~30 秒） |
+| `verify_baseline.sh` | 秒级 | shasum | ✅ 通用 differ —— diff 任意 results 目录对你自己抓的 hashes 文件 |
 
 <a id="cn-3"></a>
 
 ## 3. Quick start
 
 ```bash
-# 快不变量 —— 除 bedtools/samtools 外不需要真实数据。
-make test-integration                        # 等价于：bash tests/integration/run_smoke.sh
+# 快不变量 + 热图一致性。`make test-integration` 跑的就是这个。
+make test-integration
 
-# 真实数据 strand 抽取（没 TAIR10 干净跳过）：
+# 真实数据 strand 抽取（没 TAIR10 自动跳过）。
 bash tests/integration/test_pipeline02_strand_realdata.sh
 
-# diff 任意 results 目录对录制的 hashes 文件：
-bash tests/integration/verify_baseline.sh \
-    results/cli/promoter \
-    tests/integration/baselines/03_baseline.hashes.txt
+# 在自己的任务输出上跑热图一致性检查。
+python3 tests/integration/verify_heatmap_consistency.py \
+    --input results/app/<task_id>/pairing/motif_output.txt
 ```
-
-**需要** —— `$PATH` 上要有 `bedtools`、`samtools`、`python3`。 `fixtures/` 下的合成 fixture 随仓库一起带。TAIR10 真实数据检查在缺 `data/reference/TAIR10.{fasta,gff3}` 时干净跳过（想真跑就先 `make fetch-data` 一次）。
-
-**产出** —— 仅 stdout。`make test-integration` 13 项 check 全过 exit 0，任一 fail exit 1。
-
-**怎么解读** —— 每段先打 `[smoke] <label>`，逐 check 输出 PASS / FAIL：
-
-```
-[smoke] bedtools getfasta strand-awareness (P0 strand fix)
-  PASS  + strand sequence unchanged by -s (AACTGCAACTGC)
-  PASS  - strand sequence reverse-complemented by -s (AACTGCAACTGC -> GCAGTTGCAGTT)
-  PASS  - strand fixture is non-palindromic
-
-[smoke] build_promoters.py invokes bedtools getfasta with -s
-  PASS  build_promoters.py bedtools getfasta call includes -s
-
-[smoke] 01_perf_cpu inputs sanity
-  PASS  01 gene_input_file exists (data/genes/genes_cell_type_treatment.txt)
-  PASS  01 draw_heatmap.R receives 7 arguments
-…
-[smoke] real-data strand extraction (TAIR10)
-  PASS  TAIR10 promoter FASTA: + strand unchanged, - strand reverse-complemented by -s
-
-[smoke] all checks passed
-```
-
-没拉 TAIR10 的话最后一段打 `SKIP TAIR10 inputs not present` 而不是真跑 —— 这是预期，不是失败。FAIL 会把出问题的文件路径和挂掉的断言打出来（例如 `02_perf_params.sh missing chromosome-name preflight`）。
 
 <a id="cn-4"></a>
 
 ## 4. verify_heatmap_consistency.py —— R 与前端 motif 选择一致性
 
-**为什么有这玩意**：R 端热图流水线（`scripts/r/draw_heatmap.R`，CLI workflow + 任务详情页 QuickLook 都走它）和前端 `/visualize` 共用同一份 `motif_output.txt`。两边一度用**不同的 motif 选择算法** —— 前端 per-cluster top-N pair 扫描 vs R 的累计得分排名 —— 同一份输入里长尾大的时候挑出来的 motif 完全不同。前端现在已经对齐到 R 算法，本脚本就是把这件事固化成回归 check。
+**为什么有这玩意**：R 端热图流水线（`scripts/r/draw_heatmap.R`，CLI workflow + 任务详情页 QuickLook 都走它）和前端 `/visualize` 共用同一份 `motif_output.txt`。两边一度用**不同的 motif 选择算法**，同一份输入挑出来的 motif 完全不同。前端现在已经对齐到 R 算法，本脚本就是把这件事固化成回归 check。
 
-**已并入 `make test-integration`**：`run_smoke.sh` 在尾部自动针对 `fixtures/heatmap/motif_output.txt` 跑一遍这个检查（只要 `Rscript` 在 `$PATH` 上；不在就干净跳过 —— 跟 TAIR10 strand 检查同样的条件）。要拿自己的任务输出 ad-hoc 跑就直接调脚本：
+**已并入 `make test-integration`**：`run_smoke.sh` 在尾部自动针对 `fixtures/heatmap/motif_output.txt` 跑一遍这个检查（只要 `Rscript` 在 `$PATH` 上；不在就干净跳过 —— 跟 TAIR10 strand 检查同样的条件）。
 
 **在做什么**：
 
@@ -331,21 +329,21 @@ bash tests/integration/verify_baseline.sh \
 |---|---|
 | `Rscript` | 必需（驱动 R 端 dump） |
 | `python3` | 3.9+（用了 `Path.is_relative_to`） |
-| `motif_output.txt` | 任意 PMET pairing 输出；默认 fixture 是 `data/demos/promoters/pairing/demo/motif_output.txt`，真实任务输出也行 |
+| `motif_output.txt` | 任意 PMET pairing 输出；默认 fixture 是 `tests/integration/fixtures/heatmap/motif_output.txt`，真实任务输出也行 |
 | Playwright + Chromium | 可选，仅 `--render-dir`（视觉对比）要用 |
 | 跑着的 docker 栈（`--base-url`） | 可选，仅 `--render-dir` 抓前端图要用 |
 
 **命令**：
 
 ```bash
-# 默认：在 demo fixture 上跑数据级 check。
+# 默认：bundled fixture 上的数据级 check。
 python3 tests/integration/verify_heatmap_consistency.py
 
-# 真实任务的输出（任何 motif_output.txt 都行）。
+# 真实任务的输出。
 python3 tests/integration/verify_heatmap_consistency.py \
     --input results/app/<task_id>/pairing/motif_output.txt
 
-# 想匹配某次 draw_heatmap.R 跑的，调上限。
+# 调上限匹配某次 draw_heatmap.R 跑的。
 python3 tests/integration/verify_heatmap_consistency.py \
     --input <path> --max-motifs 30 --p-adj-limit 0.05
 
@@ -356,80 +354,134 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 **产出**：
 
-- **stdout** —— 每个 cluster 一行（一致打 `== <cluster>: N motifs match`，分叉打 `!! <cluster>: motif set differs ...` 加 R 独有 / TS 独有的 motif 列表）。
-- **报告文件** —— `tests/integration/heatmap_consistency_report.txt`（gitignored，每次重写）。内容跟 stdout 一样，方便看 CI 日志。
-- **render 目录（带 `--render-dir` 时）** —— `<dir>/r.png` 加（如果 Playwright 装了且栈跑着）`<dir>/frontend.png`。两个渲染独立；前端抓失败时 R PNG 仍照常生成，并打一行 stderr 提示缺什么。
-
-**怎么解读**：
-
-```
-# heatmap consistency report
-# input:  results/app/phase1_f506a30bf6534282/pairing/motif_output.txt
-# params: p_adj_limit=0.05 unique=True max_motifs=30
-# verdict: AGREE
-
-== heat_down: 15 motifs match
-== heat_up: 15 motifs match
-```
-
-`DIVERGE` 的报告会打两边的对称差（`R only (n): ...`、`TS only (n): ...`）和驱动前端选择的 TS top-N pair —— 调 bug 时看一眼就知道差在 score 公式、per-cluster cap、二次全局裁剪还是上游 filter。
+- **stdout** —— 每个 cluster 一行（一致 `== <cluster>: N motifs match`，分叉 `!! <cluster>: motif set differs ...` 加双向独有 motif 列表）。
+- **报告文件** —— `tests/integration/heatmap_consistency_report.txt`（gitignored，每次重写）。
+- **render 目录（带 `--render-dir`）** —— `<dir>/r.png` 一定在；`<dir>/frontend.png` 在 Playwright + 栈都有时。两个渲染独立。
 
 <a id="cn-5"></a>
 
-## 5. run_with_verify.sh —— "跑 + diff" pipeline runner
+## 5. run_smoke.sh —— 快流水线不变量
 
-按 pipeline 编号调度。编号沿用 monorepo 合并前的命名，runner 已指向合并后的 `scripts/workflows/...`：
+**为什么有这玩意**：项目历史上被几个跨脚本不变量咬过（bedtools `-s` strand、染色体名预检、GFF3-to-BED 的非相邻 fragment 解析）。`run_smoke.sh` 在 10 秒内把它们全重新断言一遍，`make test-integration` 调的就是它。
 
-| NN | 跑 | 默认 results_dir |
-|---|---|---|
-| 00 | `run_smoke.sh` | （无目录） |
-| 01 | `scripts/workflows/cli/01_perf_cpu.sh` | `results/cli/01_perf_cpu` |
-| 02 | `tests/integration/run_pipeline02_one_combo.sh` | `results/02_perf_params` |
-| 03 | `scripts/workflows/promoter.sh` | `results/cli/promoter` |
-| 04 | `scripts/workflows/intervals.sh` | `results/cli/intervals` |
-| 05 | `scripts/workflows/cli/05_promoter_gap.sh` | `results/05_promoter_gap` |
-| 06 | `scripts/workflows/elements.sh -s longest -e $E` | `results/cli/elements_longest_$E_norm` |
-| 07 | `scripts/workflows/elements.sh -s merged  -e $E` | `results/cli/elements_merged_$E_norm` |
-| 08 | `scripts/workflows/pair_only.sh`（需先跑 03） | `results/cli/pair_only/cell_type_treatment_ic4` |
+**覆盖的检查（按顺序）**：
+
+1. `bedtools getfasta -s` 对负链做反向互补。
+2. `build_promoters.py` 调 `bedtools getfasta` 时带了 `-s`。
+3. Pipeline 01 的输入 fixture 存在，`draw_heatmap.R` 调用参数数对。
+4. promoter+anno workflow 里都有染色体名预检。
+5. `assess_integrity.py` 正确处理非相邻同基因 fragment。
+6. 真实数据 TAIR10 strand 抽取（缺 TAIR10 跳过）。
+7. R-vs-前端 motif 选择一致性（缺 Rscript 跳过；见 [§4](#cn-4)）。
+
+**需要**：必有 `bedtools`、`samtools`、`python3`；可选 `Rscript`、`data/reference/TAIR10.{fasta,gff3}`（缺了对应子检查会干净跳过）。
+
+**命令**：
 
 ```bash
-# 端到端跑 promoter pipeline 并 diff 录制的 baseline。
-bash tests/integration/run_with_verify.sh 03
-
-# 同样跑 elements 在 -s longest 下用 mRNA element。
-bash tests/integration/run_with_verify.sh 06 mrna
-
-# 同样跑 pair_only —— 但它需要 03 的同型索引，所以先跑 03。
-bash tests/integration/run_with_verify.sh 08
+make test-integration            # 等价于：
+bash tests/integration/run_smoke.sh
 ```
+
+**产出**：仅 stdout。每段先打 `[smoke] <label>`，逐断言 PASS / FAIL / SKIP。全过 exit 0，任一 fail exit 1。
 
 <a id="cn-6"></a>
 
-## 6. Baseline 已过期
+## 6. test_pipeline02_strand_realdata.sh —— TAIR10 strand 抽取
 
-`baselines/` 是 monorepo 合并前抓的，那时 workflow 脚本在 `scripts/scripts/0X_*.sh`，输出落到 `data/homotypic_promoters/` 那种目录。今天的 workflow 脚本走不同路径（`results/cli/promoter/` 等）和略有不同的 log 行，所以**即便干净的 monorepo 运行，`verify_baseline.sh` 也会报很多假 diff**，直到重抓 baseline 为止。
+**为什么有这玩意**：在真实 TAIR10 数据上重新校 bedtools `-s` 修复 —— 不光是 run_smoke.sh 里的合成 fixture。能逮到合成 case 还过、真启动子在负链基因上偷偷反了的回归。
 
-runner 脚本本身（`run_with_verify.sh` 左半边）能跑——用调度器把端到端跑一遍，然后跳过 diff 步骤即可，等 baseline 重抓后再启用：
+**在做什么**：跑两遍启动子抽取（带与不带 `-s`），逐基因比 FASTA：每个 `+` 链基因序列两次完全相同；每个 `-` 链基因的带 `-s` 序列是不带 `-s` 的反向互补。
+
+**需要**：`data/reference/TAIR10.{fasta,gff3}`（`make fetch-data` 一次拉好）；`bedtools`、`samtools` 在 PATH 上。
+
+**命令**：
 
 ```bash
-# 单个 pipeline 重抓 baseline 的手动流程：
-
-# 1. 干净跑一遍。
-bash scripts/workflows/promoter.sh
-
-# 2. 按稳定顺序对每个输出文件算 sha256，重定向到 baseline 文件。
-( cd results/cli/promoter && find . -type f | sort | xargs shasum -a 256 ) \
-    > tests/integration/baselines/03_baseline.hashes.txt
+bash tests/integration/test_pipeline02_strand_realdata.sh
 ```
 
-`01, 02, 04, 05, 06, 07, 08` 同套 —— 把 runner 脚本和上表的 per-pipeline `results_dir` 换一下。
+**产出**：stdout。先打两份 FASTA 的 SHA-256，然后逐 strand 报相同 / 反向互补的计数。全过 exit 0，任何不匹配非 0。
 
 <a id="cn-7"></a>
 
-## 7. 新增 check
+## 7. run_pipeline02_one_combo.sh —— perf-params 单格运行
 
-1. 在 `tests/integration/` 下新建 `.sh`。
-2. 早早写 `set -uo pipefail` 与 `cd "$repo_root"`；不要假设 CWD。
-3. 用 `repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)` 解析 repo 路径，不要用 `$script_dir/..` —— 后者只在脚本在 `tests/` 下一级时才对。
-4. 每个断言打 PASS / FAIL；任何 FAIL 都退出非 0。
-5. 加进本 README 的表，若是不变量 smoke 检查再往主 README §9 Track 3 描述里加一句。
+**为什么有这玩意**：`scripts/workflows/cli/02_perf_params.sh` 扫的是 4×7×9×1 = 252 组合，跑几小时。本 wrapper 把四个 grid 数组改成单点，~1 分钟跑完一份真实数据回归。改了 02_perf_params.sh 流水线 body 想确认还合理时用，比承诺跑全 sweep 强。
+
+**需要**：TAIR10、完整 FIMO + PMET 栈（`make build` 加 host 依赖）。输出落 `results/02_perf_params/` —— 别跟完整 perf-params 同时跑。
+
+**命令**：
+
+```bash
+# 默认：task=genes_cell_type_treatment plen=200 maxk=5 topn=5000。
+bash tests/integration/run_pipeline02_one_combo.sh
+
+# env 改组合。
+TASK=my_task PLEN=1000 MAXK=4 TOPN=3000 \
+    bash tests/integration/run_pipeline02_one_combo.sh
+```
+
+**产出**：`results/02_perf_params/` 下单格输出，目录结构跟全 sweep 的一格相同 —— 任何指向 perf-params 输出的下游工具都能继续工作。
+
+<a id="cn-8"></a>
+
+## 8. run_pipeline08_ic_sweep.sh —— IC 阈值参数 sweep
+
+**为什么有这玩意**：同型索引一旦建好，`pair_only.sh` 就快（demo 上 ~15 秒，TAIR10 上更长一点）。这个 driver 在可配置的 IC 阈值列表上跑它，记录每次输出的 SHA-256 + 行数 + wall time，让你快速看 IC 收紧 / 放松时异型 motif-pair 集合怎么动 —— 不用每次都重建索引。
+
+**需要**：一份事先建好的同型索引。默认指向 `results/cli/promoter/01_homotypic`（先 `bash scripts/workflows/promoter.sh`，或 `bash scripts/workflows/indexing_only.sh` 只跑 indexing 半），但任何同型索引目录都行 —— 包括 `data/demos/promoters/pairing/demo` 用作 smoke。
+
+**命令**：
+
+```bash
+# 默认：IC 值 2 4 6 8 跑 canonical 同型索引。
+bash tests/integration/run_pipeline08_ic_sweep.sh
+
+# 用 bundled demo 索引快速 smoke。
+HOMOTYPIC=data/demos/promoters/pairing/demo \
+GENE_LIST=data/demos/promoters/pairing/demo/gene.txt \
+OUT_BASE=/tmp/ic_sweep \
+IC_VALUES="2 4" \
+    bash tests/integration/run_pipeline08_ic_sweep.sh
+```
+
+**产出**：`$OUT_BASE/icN/` per IC（完整 pair_only 输出：`motif_output.txt`、`plot/` 等）加 `$OUT_BASE/summary.tsv`：
+
+```
+ic   motif_output_lines   sha256                                                            wall_time_s   exit
+2    46                   ce37e7211ada37623c4b4d0cdacf13997ab15a65087ae6bf4968ca713b321be2  14            0
+4    46                   0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f  14            0
+```
+
+实测：ic=4 的 SHA 跟 [`tests/baseline/fingerprints.txt`](../baseline/fingerprints.txt) 里的 binomial baseline anchor **完全一致** —— 一处独立旁证 demo 路径产物的确定性。
+
+**退出码**：每个 IC 都成功则 0；任一失败则 1（`summary.tsv` 标出哪个）。
+
+<a id="cn-9"></a>
+
+## 9. verify_baseline.sh —— 通用 results 目录 differ
+
+**为什么有这玩意**：把 results 目录下每个文件都 hash 一遍，跟录制的 `hashes.txt` diff。适合你抓过一份"已知好"的输出（用 `make baseline` 或自己 `find … | xargs shasum`），后续想验证还在。原先随仓库带的 `baselines/*.hashes.txt` 都是 monorepo 之前的路径，已被 retire-legacy-baselines commit 删掉；脚本本身保留作通用 differ。
+
+**命令**：
+
+```bash
+# 手动抓一份 baseline：
+( cd results/cli/promoter && find . -type f | sort | xargs shasum -a 256 ) > my_baseline.hashes.txt
+
+# 后续 diff：
+bash tests/integration/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
+```
+
+**产出**：stdout 摘要；FAIL 时 stderr 打 diff（`< baseline`、`> current`）。一致 exit 0，分叉 1，用法错 2。默认 exclude 把两边的 `*.log` 文件丢掉（时间戳 + 多线程调度 nondeterministic），用 `EXCLUDE='/pmet\.log$'` 重设。
+
+<a id="cn-10"></a>
+
+## 10. 新增 check
+
+1. 在 `tests/integration/` 下新建脚本（bash / Python / 任何能从 `run_smoke.sh` 调起来的）。
+2. 早早写 `set -uo pipefail` 并 `repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)`；不要假设 CWD。
+3. 每个断言打 PASS / FAIL / SKIP；任何 FAIL 退出非 0。
+4. 如果检查快（< 10 秒）且依赖轻，挂进 `run_smoke.sh`，让 `make test-integration` 一并覆盖。
+5. 在 [§2](#cn-2) 加一行，并按 **为什么 / 在做什么 / 需要 / 命令 / 产出** 模板加一节。

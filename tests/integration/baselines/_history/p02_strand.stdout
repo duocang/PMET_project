@@ -1,5 +1,0 @@
-[strand-real] PRE-FIX  (no -s) FASTA sha256: 4b9f61d5c2a25a9b8a2860fded75aaafefc5209adc0300446a091fbcac55f273
-[strand-real] POST-FIX (-s)    FASTA sha256: cd1ebf4a7359958826323fa74423d55f3583343b8ef12396e8c7a44eedfbeed3
-[strand-real] + strand: 13855 identical, 0 differ
-[strand-real] - strand: 13800 are RC of pre-fix, 0 are not
-[strand-real] all per-gene checks passed

@@ -1,22 +1,0 @@
-processed: 0.0%processed: 100.0%[KFused FIMO parallel mode: OpenMP enabled, up to 1 thread(s).
-Fused FIMO will process 8 motif(s).
-Fused FIMO matched sequence output: disabled.
-Fused FIMO motif batching: 4 batch(es), up to 2 motif(s) per batch.
-        3.90 real         3.26 user         0.31 sys
-           232718336  maximum resident set size
-                   0  average shared memory size
-                   0  average unshared data size
-                   0  average unshared stack size
-               47977  page reclaims
-                2029  page faults
-                   0  swaps
-                   0  block input operations
-                   0  block output operations
-                   0  messages sent
-                   0  messages received
-                   1  signals received
-                1513  voluntary context switches
-                4005  involuntary context switches
-            54829087  instructions retired
-            37129432  cycles elapsed
-             1327744  peak memory footprint

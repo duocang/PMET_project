@@ -1,34 +1,0 @@
-processed: 0.0%processed: 100.0%[KFused FIMO parallel mode: OpenMP enabled, up to 4 thread(s).
-Fused FIMO will process 113 motif(s).
-Fused FIMO matched sequence output: disabled.
-Fused FIMO motif batching: 15 batch(es), up to 8 motif(s) per batch.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-Joining with `by = join_by(motif1, motif2)`
-Using p_adj as value column: use value.var to override.
-       74.75 real       187.96 user         2.16 sys
-           537149440  maximum resident set size
-                   0  average shared memory size
-                   0  average unshared data size
-                   0  average unshared stack size
-              203088  page reclaims
-                2451  page faults
-                   0  swaps
-                   0  block input operations
-                   0  block output operations
-                   0  messages sent
-                   0  messages received
-                   5  signals received
-                2044  voluntary context switches
-              144701  involuntary context switches
-            54445440  instructions retired
-            33190979  cycles elapsed
-             1376960  peak memory footprint

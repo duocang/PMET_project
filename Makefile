@@ -1,6 +1,6 @@
 # PMET monorepo top-level Makefile
 
-.PHONY: help build build-core clean-core-binaries build-indexing build-pairing demo demo-indexing demo-pairing baseline clean \
+.PHONY: help build build-core clean-core-binaries build-indexing build-pairing baseline clean \
         clean-results clean-results-app clean-results-cli \
         fetch-data build-app up down logs ps rebuild \
         test test-core test-pairing test-indexing test-unit test-integration test-audit
@@ -14,7 +14,6 @@ help:
 	@echo ""
 	@echo "  Local CLI / dev — host-side, no docker"
 	@echo "    build            - compile core C/C++ engines into ./build/  (NOT the web app)"
-	@echo "    demo             - run demo indexing + pairing against data/"
 	@echo "    fetch-data       - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
 	@echo "    clean            - remove ./build/ (compiled core binaries)"
 	@echo "    clean-results-app - wipe results/app/ (web-app task outputs)"
@@ -27,7 +26,7 @@ help:
 	@echo "    test-pairing     - just the pairing kernel tests"
 	@echo "    test-indexing    - just the indexing kernel tests"
 	@echo "    test-unit        - repo-wide unit tests (Python / R / bash / TS, ~5 s)"
-	@echo "    test-integration - integration smoke (~3 s; other tests/integration/*.sh need real data)"
+	@echo "    test-integration - integration smoke + heatmap consistency (~3-10 s; other tests/integration/*.sh need real data)"
 	@echo "    test-audit       - workflow audit; renders docs/workflows/*.md (minutes)"
 	@echo "    baseline         - CLI baseline fingerprints to tests/baseline/fingerprints.txt"
 	@echo ""
@@ -117,14 +116,6 @@ test-audit:
 # Default aggregator: all the fast tracks. Audit + baseline write
 # files to disk, so they remain explicit opt-ins.
 test: test-core test-unit test-integration
-
-demo: demo-indexing demo-pairing
-
-demo-indexing:
-	@bash apps/cli/scripts/run_indexing.sh -v fused
-
-demo-pairing:
-	@bash apps/cli/scripts/run_pairing.sh
 
 baseline:
 	@bash tests/baseline/capture.sh > tests/baseline/fingerprints.txt
