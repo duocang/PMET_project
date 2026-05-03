@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Unit test for scripts/lib/minhash.sh::resolve_minhash_min — the policy that
-# decides what value each pair_parallel invocation passes to its `-m` flag.
+# decides what value each pairing_parallel invocation passes to its `-m` flag.
 #
 # The C++ engine accepts the flag verbatim; this resolver is the only place
 # that picks a sensible default, so behavior is worth pinning.

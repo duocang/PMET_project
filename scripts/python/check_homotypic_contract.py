@@ -188,7 +188,7 @@ def check_fimohits_motifs(
     if not fimohits_dir.is_dir():
         return
 
-    # Upstream index_fimo_fused emits .bin since PMET_project commit 8fa9b66
+    # Upstream indexing_fimo_fused emits .bin since PMET_project commit 8fa9b66
     # ("perf: add binary SoA fimohits format"); older builds still emit .txt.
     found_files: dict[str, Path] = {}
     for entry in sorted(fimohits_dir.iterdir()):
@@ -219,7 +219,7 @@ def check_fimohits_motifs(
     # Spot-check: gene ids in column 2 of each fimohits file ⊆ universe.
     # Bound the cost: read first 1000 hits per motif. A pipeline regression
     # almost always violates the invariant in the first few rows. Binary
-    # fimohits (.bin) cannot be parsed as text — pair_parallel validates the
+    # fimohits (.bin) cannot be parsed as text — pairing_parallel validates the
     # header magic on load, so we only check non-emptiness here.
     for motif, path in found_files.items():
         if path.stat().st_size == 0:

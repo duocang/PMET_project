@@ -48,7 +48,7 @@ make baseline
 git diff tests/baseline/fingerprints.txt
 ```
 
-**Needs** — `build/index_fimo_fused` and `build/pair_parallel` (run `make build` once if missing). The demo inputs under `data/demos/` ship with the repo, so no `make fetch-data` required.
+**Needs** — `build/indexing_fimo_fused` and `build/pairing_parallel` (run `make build` once if missing). The demo inputs under `data/demos/` ship with the repo, so no `make fetch-data` required.
 
 **Produces** — overwrites `tests/baseline/fingerprints.txt` (one ~1.7 KB plain-text file). Sections are headered like `## section:foo`; each section lists one sha256 per file produced by that step:
 
@@ -58,8 +58,8 @@ git diff tests/baseline/fingerprints.txt
 # git: ac09b73 on main
 
 ## section:binaries
-build/index_fimo_fused    b851f487d0471a58…
-build/pair_parallel       a14286e985542b53…
+build/indexing_fimo_fused    b851f487d0471a58…
+build/pairing_parallel       a14286e985542b53…
 
 ## section:core_demo_run_indexing_fused
 # RUN_OK
@@ -83,7 +83,7 @@ Safe to re-run any time. Each section is wrapped in a fallback block, so a missi
 
 | Section | What it hashes | Source |
 |---|---|---|
-| `binaries` | `build/index_fimo_fused`, `build/pair_parallel` | host build (`make build`) |
+| `binaries` | `build/indexing_fimo_fused`, `build/pairing_parallel` | host build (`make build`) |
 | `core_demo_indexing_existing_outputs` | `results/cli/demo/fimo_official/*` if present | leftover from a previous demo run, optional |
 | `core_demo_run_indexing_fused` | output of `apps/cli/scripts/run_indexing.sh -v fused` against `data/demos/promoters/indexing/demo` | runs the script |
 | `core_demo_run_pairing` | output of `apps/cli/scripts/run_pairing.sh` against `data/demos/promoters/pairing/demo` | runs the script |
@@ -96,7 +96,7 @@ The `*_existing_outputs` and the two `legacy/*` fallback paths are holdovers fro
 
 ## 4. Determinism
 
-The demo indexer (`index_fimo_fused`) and demo pairer (`pair_parallel`) are designed to produce byte-identical output on every run, given the same input. So **any** diff in the `core_demo_run_indexing_fused` or `core_demo_run_pairing` section means something changed in the code, the build flags, or the input — there's no "flaky test" excuse to hand-wave it away.
+The demo indexer (`indexing_fimo_fused`) and demo pairer (`pairing_parallel`) are designed to produce byte-identical output on every run, given the same input. So **any** diff in the `core_demo_run_indexing_fused` or `core_demo_run_pairing` section means something changed in the code, the build flags, or the input — there's no "flaky test" excuse to hand-wave it away.
 
 <a id="en-5"></a>
 
@@ -156,7 +156,7 @@ make baseline
 git diff tests/baseline/fingerprints.txt
 ```
 
-**需要** —— `build/index_fimo_fused` 和 `build/pair_parallel`（缺就先 `make build` 一次）。`data/demos/` 下的 demo 输入随仓库一起带着，**不**需要 `make fetch-data`。
+**需要** —— `build/indexing_fimo_fused` 和 `build/pairing_parallel`（缺就先 `make build` 一次）。`data/demos/` 下的 demo 输入随仓库一起带着，**不**需要 `make fetch-data`。
 
 **产出** —— 覆盖写 `tests/baseline/fingerprints.txt`（一个 ~1.7 KB 的纯文本文件）。分段以 `## section:foo` 开头；每段列出该步骤产出的每个文件的 sha256：
 
@@ -166,8 +166,8 @@ git diff tests/baseline/fingerprints.txt
 # git: ac09b73 on main
 
 ## section:binaries
-build/index_fimo_fused    b851f487d0471a58…
-build/pair_parallel       a14286e985542b53…
+build/indexing_fimo_fused    b851f487d0471a58…
+build/pairing_parallel       a14286e985542b53…
 
 ## section:core_demo_run_indexing_fused
 # RUN_OK
@@ -191,7 +191,7 @@ b5a8ee82b9078787…  ./fused/fimohits/CCA1.bin
 
 | 段 | 哈希什么 | 来源 |
 |---|---|---|
-| `binaries` | `build/index_fimo_fused`、`build/pair_parallel` | host build（`make build`） |
+| `binaries` | `build/indexing_fimo_fused`、`build/pairing_parallel` | host build（`make build`） |
 | `core_demo_indexing_existing_outputs` | `results/cli/demo/fimo_official/*`（若存在） | 上次 demo 跑剩的，可选 |
 | `core_demo_run_indexing_fused` | `apps/cli/scripts/run_indexing.sh -v fused` 跑 `data/demos/promoters/indexing/demo` 的输出 | 当场跑脚本 |
 | `core_demo_run_pairing` | `apps/cli/scripts/run_pairing.sh` 跑 `data/demos/promoters/pairing/demo` 的输出 | 当场跑脚本 |
@@ -204,7 +204,7 @@ b5a8ee82b9078787…  ./fused/fimohits/CCA1.bin
 
 ## 4. 确定性
 
-demo 用的索引器（`index_fimo_fused`）和 pairer（`pair_parallel`）按设计同输入每次都给出**字节完全一致**的输出。所以 `core_demo_run_indexing_fused` 或 `core_demo_run_pairing` 段任何 diff 都意味着代码、build flag 或输入有变化 —— 没有"测试不稳定"这种借口能搪塞过去。
+demo 用的索引器（`indexing_fimo_fused`）和 pairer（`pairing_parallel`）按设计同输入每次都给出**字节完全一致**的输出。所以 `core_demo_run_indexing_fused` 或 `core_demo_run_pairing` 段任何 diff 都意味着代码、build flag 或输入有变化 —— 没有"测试不稳定"这种借口能搪塞过去。
 
 <a id="cn-5"></a>
 

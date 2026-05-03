@@ -14,7 +14,7 @@
 #
 # Stages:
 #   [1] Homotypic — genome/annotation prep -> promoter BED -> FIMO + pmetindex
-#       via build/index_fimo_fused (delegated to scripts/python/run_homotypic.py)
+#       via build/indexing_fimo_fused (delegated to scripts/python/run_homotypic.py)
 #
 # Derived from scripts/workflows/promoter.sh by stripping stages [2] and [3].
 # ==============================================================================
@@ -148,13 +148,13 @@ shift $((OPTIND - 1))
 
 BIN_DIR=
 for cand in "$project_root/build" "$script_dir/build"; do
-    if [[ -x "$cand/index_fimo_fused" ]]; then
+    if [[ -x "$cand/indexing_fimo_fused" ]]; then
         BIN_DIR=$cand
         break
     fi
 done
-[[ -n $BIN_DIR ]] || error_exit "PMET binary index_fimo_fused not found"
-BIN_INDEX="$BIN_DIR/index_fimo_fused"
+[[ -n $BIN_DIR ]] || error_exit "PMET binary indexing_fimo_fused not found"
+BIN_INDEX="$BIN_DIR/indexing_fimo_fused"
 
 PY=scripts/python
 

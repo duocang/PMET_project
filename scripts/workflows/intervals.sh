@@ -11,8 +11,8 @@
 #
 # Stages:
 #   [1] Indexing  — interval FASTA + MEME -> universe / promoter_lengths /
-#                   IC / fimohits via build/index_fimo_fused (OMP-batched)
-#   [2] Heterotypic — pair_parallel consumes the index
+#                   IC / fimohits via build/indexing_fimo_fused (OMP-batched)
+#   [2] Heterotypic — pairing_parallel consumes the index
 #   [3] Heatmaps    — three R-rendered views (skipped if Rscript absent)
 #
 # Merged from cli/04_intervals.sh + web/intervals.sh — same inlined
@@ -20,7 +20,7 @@
 # 3-heatmap default, threads=4) and adds the cli's `-s -m` named-arg
 # aliases for callers that don't want positional args.
 #
-# FIMO and pair_parallel's binary fimohits ('PMETBN01' format) can't safely
+# FIMO and pairing_parallel's binary fimohits ('PMETBN01' format) can't safely
 # carry ':' in sequence names (FIMO mis-parses; binary records are length-
 # prefixed). Sanitize ':' -> '__COLON__' on the way in and round-trip on the
 # user-facing text outputs at the end.
@@ -155,14 +155,14 @@ PY=scripts/python
 
 BIN_DIR=
 for cand in "$project_root/build" "$script_dir/build"; do
-    if [[ -x "$cand/index_fimo_fused" && -x "$cand/pair_parallel" ]]; then
+    if [[ -x "$cand/indexing_fimo_fused" && -x "$cand/pairing_parallel" ]]; then
         BIN_DIR=$cand
         break
     fi
 done
-[[ -n $BIN_DIR ]] || error_exit "PMET binaries (index_fimo_fused, pair_parallel) not found"
-BIN_INDEX="$BIN_DIR/index_fimo_fused"
-BIN_PMET="$BIN_DIR/pair_parallel"
+[[ -n $BIN_DIR ]] || error_exit "PMET binaries (indexing_fimo_fused, pairing_parallel) not found"
+BIN_INDEX="$BIN_DIR/indexing_fimo_fused"
+BIN_PMET="$BIN_DIR/pairing_parallel"
 
 # ==================== Preflight ====================
 
@@ -212,7 +212,7 @@ python3 "$PY/calculateICfrommeme_IC_to_csv.py" \
 nummotifs=$(grep -c '^MOTIF' "$meme")
 echo "   └─ $nummotifs motifs"
 
-# index_fimo_fused has internal OpenMP batching; one invocation handles
+# indexing_fimo_fused has internal OpenMP batching; one invocation handles
 # every motif. Replaces the earlier shell-level for-loop that forked one
 # process per motif each with its own OMP team, oversubscribing cores.
 OMP_NUM_THREADS="$threads" \
@@ -279,12 +279,12 @@ echo "MinHash prefilter: -m $minhash_min"
     -t "$threads"              \
     -m "$minhash_min" > "$pairing_output/pmet.log"
 
-# Merge ONLY pair_parallel's temp*.txt shards.
+# Merge ONLY pairing_parallel's temp*.txt shards.
 shopt -s nullglob
 shards=("$pairing_output"/temp*.txt)
 shopt -u nullglob
 if (( ${#shards[@]} == 0 )); then
-    error_exit "pair_parallel produced no temp*.txt shards (see $pairing_output/pmet.log)"
+    error_exit "pairing_parallel produced no temp*.txt shards (see $pairing_output/pmet.log)"
 fi
 cat "${shards[@]}" > "$pairing_output/motif_output.txt"
 rm -f "${shards[@]}"

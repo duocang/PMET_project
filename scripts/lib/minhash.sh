@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Resolve the value passed to pair_parallel's `-m` flag (MinHash prefilter
+# Resolve the value passed to pairing_parallel's `-m` flag (MinHash prefilter
 # minimum estimated intersection). The C++ side documents the flag in
 # core/pairing/src/main.cpp; the calibration that picks the default lives in
 # docs/perf/minhash_calibration.md.

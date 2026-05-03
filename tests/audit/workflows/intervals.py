@@ -94,7 +94,7 @@ def checks(data: dict) -> list[Check]:
                     "4858412a09198363305a419af01d47a35ff7cfd63a2169dd01aa545f8ff800c6",
                     data["motif_output_sha"],
                     note="captured against demo_intervals on this host; "
-                         "differs if fixture or pair_parallel sort changes"),
+                         "differs if fixture or pairing_parallel sort changes"),
 
         # Cross-file motif-set invariants — independent of the script's
         # own check_homotypic_contract.py call, so a future change that

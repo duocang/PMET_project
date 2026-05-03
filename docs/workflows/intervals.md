@@ -46,15 +46,15 @@ After indexing + pairing, only the user-facing text outputs (`motif_output.txt`,
 
 | # | Stage | What runs | Why |
 |---|---|---|---|
-| 1 | Argument + binary preflight | locate `build/{index_fimo_fused, pair_parallel}` | Single failure point if either binary is missing |
+| 1 | Argument + binary preflight | locate `build/{indexing_fimo_fused, pairing_parallel}` | Single failure point if either binary is missing |
 | 2 | Interval sanitization | `sed 's/^\(>.*\):/\1__COLON__/g'` over input FASTA | See "biological setup" above — FIMO/binary safety |
 | 3 | Dedupe + lengths | `scripts/python/deduplicate.py` then `parse_promoter_lengths_from_fasta.py` | Drops duplicate sequences, writes per-interval lengths to `promoter_lengths.txt`, derives `universe.txt` from it |
 | 4 | Background model | `fasta-get-markov` over the sanitized FASTA | Zero-order Markov base composition; FIMO uses it as the null model so p-values are calibrated against the user's actual interval composition |
-| 5 | IC.txt | `scripts/python/calculateICfrommeme_IC_to_csv.py` | Per-motif positional information content; `pair_parallel` uses this as a sanity floor |
-| 6 | FIMO + indexing | one `index_fimo_fused` call (OpenMP-batched) | Replaces an older shell-level for-loop that forked one fimo per motif. Writes `binomial_thresholds.txt` + `fimohits/<MOTIF>.bin` (PMETBN01 binary) |
+| 5 | IC.txt | `scripts/python/calculateICfrommeme_IC_to_csv.py` | Per-motif positional information content; `pairing_parallel` uses this as a sanity floor |
+| 6 | FIMO + indexing | one `indexing_fimo_fused` call (OpenMP-batched) | Replaces an older shell-level for-loop that forked one fimo per motif. Writes `binomial_thresholds.txt` + `fimohits/<MOTIF>.bin` (PMETBN01 binary) |
 | 7 | Indexing contract validation | `scripts/python/check_homotypic_contract.py <indexing_dir>` | Asserts the schema in `docs/methods/homotypic-contract.md` holds — catches motif-id case mismatches and missing files early |
 | 8 | Gene-list filter | `sed` colon sanitize → `grep -wFf universe.txt` | Match user's `peaks.txt` against the sanitized index universe |
-| 9 | Heterotypic pair test | `build/pair_parallel -d <index> -g <kept> ...` → temp shards | The actual pair enrichment |
+| 9 | Heterotypic pair test | `build/pairing_parallel -d <index> -g <kept> ...` → temp shards | The actual pair enrichment |
 | 10 | Shard aggregation + colon restore | `cat temp*.txt > motif_output.txt`, then `sed 's/__COLON__/:/g'` over the user-facing text outputs | Final `motif_output.txt` has the user's original `chr:start-end(strand)` interval names back |
 | 11 | Heatmaps (optional) | three `Rscript scripts/r/draw_heatmap.R` calls | Skipped silently if `Rscript` is absent |
 
@@ -74,7 +74,7 @@ python3 tests/audit/generate.py intervals
 
 **Produces** — overwrites `docs/workflows/intervals.md` (this file). Working files at `tests/audit/runs/intervals/` (gitignored).
 
-**How to read it** — see [§Verification](#verification). PASS means the SHA of `motif_output.txt` matches the anchor for `data/demos/intervals` recorded on this machine. Both the demo data and `pair_parallel`'s output are deterministic — any SHA drift is a real regression signal.
+**How to read it** — see [§Verification](#verification). PASS means the SHA of `motif_output.txt` matches the anchor for `data/demos/intervals` recorded on this machine. Both the demo data and `pairing_parallel`'s output are deterministic — any SHA drift is a real regression signal.
 
 ---
 
@@ -115,15 +115,15 @@ indexing + pairing 之后，只有用户面文本输出（`motif_output.txt`、`
 
 | # | 阶段 | 跑什么 | 为什么 |
 |---|---|---|---|
-| 1 | 参数 + 二进制预检 | 找 `build/{index_fimo_fused, pair_parallel}` | 二进制缺一个就早退 |
+| 1 | 参数 + 二进制预检 | 找 `build/{indexing_fimo_fused, pairing_parallel}` | 二进制缺一个就早退 |
 | 2 | 区间 sanitization | `sed 's/^\(>.*\):/\1__COLON__/g'` 处理输入 FASTA | 见上 "生物学背景" —— FIMO/二进制安全 |
 | 3 | 去重 + 长度 | `scripts/python/deduplicate.py` 然后 `parse_promoter_lengths_from_fasta.py` | 丢重复序列，per-interval 长度写到 `promoter_lengths.txt`，从中派生 `universe.txt` |
 | 4 | 背景模型 | `fasta-get-markov` 处理 sanitized FASTA | 零阶 Markov 碱基组成；FIMO 当零分布用，让 p 值按用户实际区间组成校准 |
-| 5 | IC.txt | `scripts/python/calculateICfrommeme_IC_to_csv.py` | per-motif 位置信息量；`pair_parallel` 当 sanity floor |
-| 6 | FIMO + indexing | 一次 `index_fimo_fused`（OpenMP-batched） | 替代旧的 shell for 循环 fork 一个 fimo per motif。写 `binomial_thresholds.txt` + `fimohits/<MOTIF>.bin`（PMETBN01 二进制） |
+| 5 | IC.txt | `scripts/python/calculateICfrommeme_IC_to_csv.py` | per-motif 位置信息量；`pairing_parallel` 当 sanity floor |
+| 6 | FIMO + indexing | 一次 `indexing_fimo_fused`（OpenMP-batched） | 替代旧的 shell for 循环 fork 一个 fimo per motif。写 `binomial_thresholds.txt` + `fimohits/<MOTIF>.bin`（PMETBN01 二进制） |
 | 7 | indexing 契约校验 | `scripts/python/check_homotypic_contract.py <indexing_dir>` | 断言 `docs/methods/homotypic-contract.md` 里的 schema 成立 —— 早抓 motif-id 大小写不一致和缺文件 |
 | 8 | 基因列表过滤 | `sed` colon sanitize → `grep -wFf universe.txt` | 把用户 `peaks.txt` 跟 sanitized 索引 universe 对上 |
-| 9 | 异型 pair 检验 | `build/pair_parallel -d <index> -g <kept> ...` → temp shard | 真正的 pair 富集 |
+| 9 | 异型 pair 检验 | `build/pairing_parallel -d <index> -g <kept> ...` → temp shard | 真正的 pair 富集 |
 | 10 | shard 聚合 + colon 还原 | `cat temp*.txt > motif_output.txt`，再 `sed 's/__COLON__/:/g'` 处理用户面文本输出 | 最终 `motif_output.txt` 把用户原本的 `chr:start-end(strand)` 区间名还原 |
 | 11 | heatmap（可选） | 三次 `Rscript scripts/r/draw_heatmap.R` | 缺 `Rscript` 静默跳过 |
 
@@ -143,7 +143,7 @@ python3 tests/audit/generate.py intervals
 
 **产出** —— 覆盖写 `docs/workflows/intervals.md`（本文件）。工作文件在 `tests/audit/runs/intervals/`（gitignored）。
 
-**怎么解读** —— 见 [§Verification](#verification)。PASS 表示 `motif_output.txt` 的 SHA 跟本机录制的 `data/demos/intervals` anchor 一致。demo 数据和 `pair_parallel` 输出都是确定性的 —— 任何 SHA 漂移都是真回归信号。
+**怎么解读** —— 见 [§Verification](#verification)。PASS 表示 `motif_output.txt` 的 SHA 跟本机录制的 `data/demos/intervals` anchor 一致。demo 数据和 `pairing_parallel` 输出都是确定性的 —— 任何 SHA 漂移都是真回归信号。
 
 ---
 
@@ -227,7 +227,7 @@ _The recomputed and reported raw-p match to within numerical precision; any drif
 | 5 | universe.txt non-empty (interval names) | `>= 1` | `26552` | ✅ PASS |
 | 6 | promoter_lengths.txt rows == universe size | `26552` | `26552` | ✅ PASS — every interval needs a length row |
 | 7 | motif_output.txt non-empty (heterotypic pairs) | `>= 1` | `46` | ✅ PASS |
-| 8 | motif_output.txt deterministic vs anchor | `4858412a09198363305a419af01d47a35ff7cfd63a2169dd01aa545f8ff800c6` | `4858412a09198363305a419af01d47a35ff7cfd63a2169dd01aa545f8ff800c6` | ✅ PASS — captured against demo_intervals on this host; differs if fixture or pair_parallel sort changes |
+| 8 | motif_output.txt deterministic vs anchor | `4858412a09198363305a419af01d47a35ff7cfd63a2169dd01aa545f8ff800c6` | `4858412a09198363305a419af01d47a35ff7cfd63a2169dd01aa545f8ff800c6` | ✅ PASS — captured against demo_intervals on this host; differs if fixture or pairing_parallel sort changes |
 | 9 | indexing contract: binomial == IC motifs | `set equal` | `|both|=10` | ✅ PASS |
 | 10 | indexing contract: binomial == fimohits motifs | `set equal` | `|both|=10` | ✅ PASS |
 | 11 | indexing contract: IC == fimohits motifs | `set equal` | `|both|=10` | ✅ PASS |

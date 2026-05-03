@@ -41,8 +41,8 @@ def split_motifs(lines):
     for start, end in zip(boundaries[:-1], boundaries[1:]):
         header = lines[start]
         # Mirror legacy parse_memefile.py: upper-case the entire MOTIF header
-        # before extracting the id. Downstream pair_parallel joins fimohits ↔
-        # IC.txt ↔ binomial_thresholds by motif id, and the index_fimo_fused
+        # before extracting the id. Downstream pairing_parallel joins fimohits ↔
+        # IC.txt ↔ binomial_thresholds by motif id, and the indexing_fimo_fused
         # path also feeds an uppercased meme — keep IC.txt's id column in the
         # same case so the join still works for mixed-case input MEMEs.
         name = header.upper().split()[1]

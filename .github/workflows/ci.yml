@@ -46,6 +46,6 @@ jobs:
         run: make build
       - name: Verify expected binaries exist
         run: |
-          for b in index_fimo_fused pair_parallel; do
+          for b in indexing_fimo_fused pairing_parallel; do
             test -x "build/$b" || { echo "missing: build/$b" >&2; exit 1; }
           done

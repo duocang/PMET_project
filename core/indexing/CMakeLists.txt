@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(index_fimo_fused C)
+project(indexing_fimo_fused C)
 
 if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
@@ -34,7 +34,7 @@ if(NOT OpenMP_C_FOUND AND APPLE AND CMAKE_C_COMPILER_ID MATCHES "Clang")
     message(STATUS "OpenMP configured for AppleClang from ${PMET_OPENMP_ROOT}")
   else()
     message(STATUS
-      "OpenMP not found: index_fimo_fused will run in single-thread fallback. "
+      "OpenMP not found: indexing_fimo_fused will run in single-thread fallback. "
       "On macOS, install libomp and optionally export OpenMP_ROOT, then reconfigure. "
       "Example OpenMP_ROOT values: /opt/homebrew/opt/libomp (Apple Silicon) or /usr/local/opt/libomp (Intel)."
     )
@@ -165,17 +165,17 @@ if(PMET_BUILD_TESTS)
   enable_language(CXX)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  add_executable(index_tests
+  add_executable(test_indexing
     tests/test_main.cpp
     tests/test_pair_test.cpp
     tests/test_utils.cpp
     ${PMET_INDEX_TEST_SOURCES}
   )
-  target_include_directories(index_tests PRIVATE
+  target_include_directories(test_indexing PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/pmet_index
   )
-  target_link_libraries(index_tests PRIVATE m)
+  target_link_libraries(test_indexing PRIVATE m)
 endif()
 
 #############################################

@@ -21,7 +21,7 @@ Why the MinHash-based pair prefilter is implemented and shipped, but defaults to
 
 ## 1. What it is and why
 
-The pair stage (`pair_parallel`) evaluates every motif pair `(i, j)` for co-occurrence enrichment in each gene cluster. With a typical large library like CIS-BP2 (~1.6 k motifs), that is ~1.4 M pairs × N clusters before any gene filtering — most of which can never reach Bonferroni significance because the two motifs barely share any genes in the universe.
+The pair stage (`pairing_parallel`) evaluates every motif pair `(i, j)` for co-occurrence enrichment in each gene cluster. With a typical large library like CIS-BP2 (~1.6 k motifs), that is ~1.4 M pairs × N clusters before any gene filtering — most of which can never reach Bonferroni significance because the two motifs barely share any genes in the universe.
 
 To skip those, every motif gets a **128-slot MinHash sketch** over its gene-id support set at load time. For each pair, the C++ side estimates `|genes(i) ∩ genes(j)|` from the sketches and skips the full hypergeometric path when the estimate falls below a configurable threshold:
 
@@ -159,7 +159,7 @@ The bash unit test at [`tests/unit/test_minhash_resolver.sh`](../../tests/unit/t
 Three commands, run in order. The trailing `\` is a bash line continuation — lines joined by `\` are one command; a line without `\` ends the command.
 
 ```bash
-# 1. Make sure pair_parallel is freshly compiled.
+# 1. Make sure pairing_parallel is freshly compiled.
 make build
 
 # 2. Run the sweep — one command, four lines glued by `\`.
@@ -174,7 +174,7 @@ apps/cli/scripts/bench/analyze_minhash_calibration.py \
     results/bench/calibrate/Arabidopsis_thaliana__CIS-BP2__random_genes_300
 ```
 
-**Needs** — built `build/pair_parallel` (`make build`); the named precomputed index (`make fetch-data` Tier 2); a gene-list file in two-column format. `bash` + `python3` only on the host.
+**Needs** — built `build/pairing_parallel` (`make build`); the named precomputed index (`make fetch-data` Tier 2); a gene-list file in two-column format. `bash` + `python3` only on the host.
 
 **Produces** — `results/bench/calibrate/<species>__<library>__<gene-list>/` with one `m=N/` subdir per sweep value (TSVs of pair output) and a top-level `ANALYSIS.tsv` produced by the analyzer. Stdout shows per-m runtime + speedup + FN.
 
@@ -197,7 +197,7 @@ apps/cli/scripts/bench/analyze_minhash_calibration.py \
 
 ## 1. 这是什么、为什么
 
-pair 阶段（`pair_parallel`）对每对 motif `(i, j)` 评估它们在每个基因 cluster 内的共现富集。CIS-BP2 这种典型大库（~1.6 k motif）就是 ~1.4 M 对 × N 个 cluster，绝大多数因为两 motif 在 universe 内基因集合本来就几乎不重叠，根本不可能跑到 Bonferroni 显著。
+pair 阶段（`pairing_parallel`）对每对 motif `(i, j)` 评估它们在每个基因 cluster 内的共现富集。CIS-BP2 这种典型大库（~1.6 k motif）就是 ~1.4 M 对 × N 个 cluster，绝大多数因为两 motif 在 universe 内基因集合本来就几乎不重叠，根本不可能跑到 Bonferroni 显著。
 
 为跳过这些，每个 motif 在加载时建一个 **128 槽的 MinHash sketch**（基于其 gene-id 支持集）。对每对 motif，C++ 端用 sketch 估计 `|genes(i) ∩ genes(j)|`，估值低于可配阈值时跳过完整的超几何路径：
 
@@ -335,7 +335,7 @@ bash 单元测试 [`tests/unit/test_minhash_resolver.sh`](../../tests/unit/test_
 三条命令，按顺序跑。行尾的 `\` 是 bash 行延续符 —— 用 `\` 粘起来的算同一条；不带 `\` 的那行就是命令结束。
 
 ```bash
-# 1. 确保 pair_parallel 是新编的。
+# 1. 确保 pairing_parallel 是新编的。
 make build
 
 # 2. 跑 sweep —— 一条命令，4 行用 `\` 粘成。
@@ -350,7 +350,7 @@ apps/cli/scripts/bench/analyze_minhash_calibration.py \
     results/bench/calibrate/Arabidopsis_thaliana__CIS-BP2__random_genes_300
 ```
 
-**需要** —— 编好的 `build/pair_parallel`（`make build`）；指定的预计算索引（`make fetch-data` Tier 2）；两列格式的基因列表文件。host 上只要 `bash` + `python3`。
+**需要** —— 编好的 `build/pairing_parallel`（`make build`）；指定的预计算索引（`make fetch-data` Tier 2）；两列格式的基因列表文件。host 上只要 `bash` + `python3`。
 
 **产出** —— `results/bench/calibrate/<species>__<library>__<gene-list>/`，每个 sweep 值一个 `m=N/` 子目录（pair 输出 TSV），顶层一份 analyzer 写的 `ANALYSIS.tsv`。stdout 给出 per-m 用时 + 加速比 + FN。
 

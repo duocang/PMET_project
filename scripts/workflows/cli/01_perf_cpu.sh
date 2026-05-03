@@ -2,7 +2,7 @@
 # ==============================================================================
 # Pipeline 01: CPU benchmark — heterotypic search on a precomputed promoter
 # index, comparing single-CPU (build/pmet) against multi-threaded
-# (build/pair_parallel).
+# (build/pairing_parallel).
 # ==============================================================================
 
 set -euo pipefail
@@ -45,7 +45,7 @@ trap 'rm -f "$temp_genes"' EXIT
 # ==================== Shared runner ====================
 # Run one heterotypic pass with the given binary into $output/<subdir>, then
 # consolidate per-motif hits and draw the heatmap. Extra arguments after the
-# subdir are forwarded verbatim to the binary (e.g. -t for pair_parallel).
+# subdir are forwarded verbatim to the binary (e.g. -t for pairing_parallel).
 
 run_pmet_pass() {
     local binary="$1"
@@ -70,7 +70,7 @@ run_pmet_pass() {
         "$@"
 
     # `build/pmet` writes a single $out_dir/motif_output.txt directly.
-    # `build/pair_parallel` writes per-cluster .txt files; concatenate them.
+    # `build/pairing_parallel` writes per-cluster .txt files; concatenate them.
     # In the latter case, redirecting into $out_dir/motif_output.txt while
     # the glob `$out_dir/*.txt` still contains it would self-clobber, so
     # build the consolidated file via mktemp first.
@@ -105,5 +105,5 @@ print_green "Searching for heterotypic motif hits with single CPU..."
 run_pmet_pass build/pmet single
 
 # ==================== Parallel ====================
-print_green "Searching for heterotypic motif hits with pair_parallel..."
-run_pmet_pass build/pair_parallel parallel -t "$parallel_threads"
+print_green "Searching for heterotypic motif hits with pairing_parallel..."
+run_pmet_pass build/pairing_parallel parallel -t "$parallel_threads"

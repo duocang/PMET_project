@@ -131,7 +131,7 @@ The anchors currently committed:
 
 `elements` carries one anchor per gene-task; tasks present in the dict with a `None` value are "known but not yet blessed" — the first audit run after this commit captures the real sha and emits a WARN with the captured value, which a reviewer then pastes into `TASK_ANCHORS`. New tasks (gene lists added later) appear as a separate WARN until added to the dict.
 
-(An older version of this README cited "C-engine non-determinism" as the reason for omitting elements anchors. That justification was stale — `elements.sh` now uses `index_fimo_fused`, which is deterministic; the C-indexer caveat in `tests/baseline/README.md` applies to a different workflow.)
+(An older version of this README cited "C-engine non-determinism" as the reason for omitting elements anchors. That justification was stale — `elements.sh` now uses `indexing_fimo_fused`, which is deterministic; the C-indexer caveat in `tests/baseline/README.md` applies to a different workflow.)
 
 <a id="en-6"></a>
 
@@ -292,7 +292,7 @@ audit 的目的是**给人看的、可 review 的叙事**——讲每个 workflo
 
 `elements` 每个 gene-task 一个 anchor；dict 里值为 `None` 的是"已知但未 bless"——本次提交后第一次 audit 运行会抓到真实 sha 并以 WARN 形式报上抓到的值，reviewer 粘回 `TASK_ANCHORS`。后续新增的 task（新的 gene list）以单独的 WARN 出现，直到加进 dict。
 
-（旧版本 README 把"C 引擎非确定性"列为不给 elements 加 anchor 的理由。那个理由已过期 —— `elements.sh` 现在用 `index_fimo_fused`，是确定性的； `tests/baseline/README.md` 里 C-indexer 的 caveat 指的是另一个 workflow。)
+（旧版本 README 把"C 引擎非确定性"列为不给 elements 加 anchor 的理由。那个理由已过期 —— `elements.sh` 现在用 `indexing_fimo_fused`，是确定性的； `tests/baseline/README.md` 里 C-indexer 的 caveat 指的是另一个 workflow。)
 
 <a id="cn-6"></a>
 

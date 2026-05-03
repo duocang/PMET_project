@@ -4,5 +4,5 @@
 #include "test_runner.hpp"
 
 int main() {
-  return pmet_test_main("index_tests");
+  return pmet_test_main("test_indexing");
 }

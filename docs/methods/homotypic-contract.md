@@ -28,11 +28,11 @@ PMET has two stages — indexing (the slow scan) and pairing (the per-cluster te
 
 ### Why we have to write it down
 
-The pairing binary (`build/pair_parallel`, also `build/pmetParallel`, `build/pmet`) assumes a fixed shape: five files at the top, plus one `fimohits/` subdirectory. If indexing writes the wrong shape — wrong column order, missing motif, gene IDs that don't agree across files — pairing fails *late*, in confusing ways: a bizarre segfault deep in C++, or "0 enriched pairs" that's actually a silent data mismatch.
+The pairing binary (`build/pairing_parallel`, also `build/pmetParallel`, `build/pmet`) assumes a fixed shape: five files at the top, plus one `fimohits/` subdirectory. If indexing writes the wrong shape — wrong column order, missing motif, gene IDs that don't agree across files — pairing fails *late*, in confusing ways: a bizarre segfault deep in C++, or "0 enriched pairs" that's actually a silent data mismatch.
 
 Codifying the contract here gives three concrete things:
 
-1. **A target** for any new indexer (`index_fimo_fused`, `index_fimo_batched`, anything someone writes next year) to satisfy. As long as the new indexer produces this shape, any existing pairing binary can consume its output.
+1. **A target** for any new indexer (`indexing_fimo_fused`, `index_fimo_batched`, anything someone writes next year) to satisfy. As long as the new indexer produces this shape, any existing pairing binary can consume its output.
 2. **A fail-fast validator**: [`scripts/python/check_homotypic_contract.py`](../../scripts/python/check_homotypic_contract.py) runs at the end of every indexing pipeline and crashes immediately if the shape is wrong — rather than passing a bad index downstream and waiting for pairing to misbehave.
 3. **A reference** for downstream consumers (the Python audit code, anyone reading an index manually with `head` / `awk`).
 
@@ -72,7 +72,7 @@ $homotypic_output/
   3. `extra` — float; pipeline-specific (e.g. corrected threshold).
 - One line per motif; motif names unique.
 - Used by: `-b` argument to PMET pairing binaries.
-- Row order: not enforced by the contract (pairing doesn't depend on it). Pipelines that fan FIMO out in parallel batches sort with `sort -o` to remove a race-induced nondeterminism; the serial `index_fimo_fused` produces a deterministic order without sorting.
+- Row order: not enforced by the contract (pairing doesn't depend on it). Pipelines that fan FIMO out in parallel batches sort with `sort -o` to remove a race-induced nondeterminism; the serial `indexing_fimo_fused` produces a deterministic order without sorting.
 
 ### `IC.txt`
 
@@ -159,11 +159,11 @@ PMET 有两个阶段 —— indexing（重扫描）和 pairing（per-cluster 检
 
 ### 为什么必须写下来
 
-pairing 二进制（`build/pair_parallel`，也包括 `build/pmetParallel`、`build/pmet`）假定一个固定形态：顶层 5 个文件 + 一个 `fimohits/` 子目录。indexing 若写出不符的形态 —— 列序错、缺 motif、跨文件 gene ID 不一致 —— pairing 会**很晚才挂**、报错也费解：可能是 C++ 深处一个莫名其妙的 segfault，也可能是"0 个富集对"——其实是数据没对上，silently 出了错。
+pairing 二进制（`build/pairing_parallel`，也包括 `build/pmetParallel`、`build/pmet`）假定一个固定形态：顶层 5 个文件 + 一个 `fimohits/` 子目录。indexing 若写出不符的形态 —— 列序错、缺 motif、跨文件 gene ID 不一致 —— pairing 会**很晚才挂**、报错也费解：可能是 C++ 深处一个莫名其妙的 segfault，也可能是"0 个富集对"——其实是数据没对上，silently 出了错。
 
 把契约写在这里能给三样具体东西：
 
-1. **一个目标**：任何新写的 indexer（`index_fimo_fused`、`index_fimo_batched`、明年某人新写的）都按这份形态产出，现有任何 pairing 二进制都能消费。
+1. **一个目标**：任何新写的 indexer（`indexing_fimo_fused`、`index_fimo_batched`、明年某人新写的）都按这份形态产出，现有任何 pairing 二进制都能消费。
 2. **一份 fail-fast validator**：[`scripts/python/check_homotypic_contract.py`](../../scripts/python/check_homotypic_contract.py) 在每条 indexing pipeline 末尾跑一次，形态不对立刻挂 —— 而不是把坏索引传到下游、等 pairing 出怪事。
 3. **一份参考**：给下游消费者（Python 审计代码、用 `head` / `awk` 手翻索引的人）。
 
@@ -203,7 +203,7 @@ $homotypic_output/
   3. `extra` —— 浮点；pipeline 自定义额外值（比如校正后阈值）。
 - 每 motif 一行；motif 名唯一。
 - 谁用：PMET pairing 二进制的 `-b` 参数。
-- 行序：契约不强制（pairing 不依赖）。并行 FIMO 批量的 pipeline 用 `sort -o` 排一下消除并行 race；串行的 `index_fimo_fused` 天然有确定性顺序，无需排。
+- 行序：契约不强制（pairing 不依赖）。并行 FIMO 批量的 pipeline 用 `sort -o` 排一下消除并行 race；串行的 `indexing_fimo_fused` 天然有确定性顺序，无需排。
 
 ### `IC.txt`
 

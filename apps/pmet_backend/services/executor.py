@@ -32,9 +32,9 @@ class PMETExecutor:
     def _required_binaries(self, mode: str) -> list[Path]:
         build_dir = config.PMET_SCRIPTS_DIR / "build"
         if mode == "promoters_pre":
-            return [build_dir / "pair_parallel"]
+            return [build_dir / "pairing_parallel"]
         if mode in {"promoters", "intervals"}:
-            return [build_dir / "index_fimo_fused", build_dir / "pair_parallel"]
+            return [build_dir / "indexing_fimo_fused", build_dir / "pairing_parallel"]
         return []
 
     def _normalize_arch(self, arch: str) -> str:

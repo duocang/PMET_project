@@ -67,7 +67,7 @@ def checks(data: dict) -> list[Check]:
     return [
         equal_check("script exit code", 0, data["returncode"]),
         at_least_check("motif_output.txt non-empty", 1, data["motif_output_lines"],
-                       note="rows = enriched motif pairs after pair_parallel filtering"),
+                       note="rows = enriched motif pairs after pairing_parallel filtering"),
         equal_check("motif_output deterministic vs anchor",
                     "0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f",
                     data["motif_output_sha"],

@@ -12,7 +12,7 @@
 #                                + Markov bg + promoter_lengths + universe
 #   [C] LEN{p}_K{k}_N{n}_FIMO{f}/ — run per (length, maxk, topn): FIMO hits +
 #                                   binomial thresholds (no cp -r explosion)
-#   [D] 02_heterotypic/{task}_LEN..._K..._N..._FIMO.../ — pair_parallel output
+#   [D] 02_heterotypic/{task}_LEN..._K..._N..._FIMO.../ — pairing_parallel output
 #       └── motif_output.txt   — what the user actually keeps
 # ==============================================================================
 
@@ -65,7 +65,7 @@ mkdir -p "$shared_dir" "$heterotypic_output" "$plot_output" "$logDir"
 # Binaries / tools
 BIN_DIR=build
 BIN_FIMO="$BIN_DIR/fimo"
-BIN_PMET="$BIN_DIR/pair_parallel"
+BIN_PMET="$BIN_DIR/pairing_parallel"
 PY=scripts/python
 
 # ==================== Preflight ====================
@@ -208,7 +208,7 @@ run_fimo_combo() {
         parallel --jobs="$threads" \
             "$BIN_FIMO --topk $maxk --topn $topn --text --no-qvalue --thresh $fimothresh --verbosity 1 --oc $out/fimohits --bgfile $length_dir/promoters.bg {} $length_dir/promoters.fa $length_dir/promoter_lengths.txt"
 
-    # FIMO writes binomial_thresholds.txt into fimohits/; pair_parallel expects it one level up.
+    # FIMO writes binomial_thresholds.txt into fimohits/; pairing_parallel expects it one level up.
     # Parallel FIMO batches race to write this file; the row order is therefore
     # nondeterministic across runs. Sort by motif to make the file content
     # byte-stable (downstream binaries do not depend on row order).

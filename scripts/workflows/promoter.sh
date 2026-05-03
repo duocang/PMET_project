@@ -12,8 +12,8 @@
 #
 # Stages:
 #   [1] Homotypic — genome/annotation prep -> promoter BED -> FIMO + pmetindex
-#       via build/index_fimo_fused (delegated to scripts/python/run_homotypic.py)
-#   [2] Heterotypic — pair_parallel consumes the index
+#       via build/indexing_fimo_fused (delegated to scripts/python/run_homotypic.py)
+#   [2] Heterotypic — pairing_parallel consumes the index
 #   [3] Heatmaps    — three R-rendered views (skipped if Rscript absent)
 #
 # Merged from cli/03_promoter.sh + web/promoter.sh — same body and same
@@ -182,14 +182,14 @@ shift $((OPTIND - 1))
 
 BIN_DIR=
 for cand in "$project_root/build" "$script_dir/build"; do
-    if [[ -x "$cand/index_fimo_fused" && -x "$cand/pair_parallel" ]]; then
+    if [[ -x "$cand/indexing_fimo_fused" && -x "$cand/pairing_parallel" ]]; then
         BIN_DIR=$cand
         break
     fi
 done
-[[ -n $BIN_DIR ]] || error_exit "PMET binaries (index_fimo_fused, pair_parallel) not found"
-BIN_INDEX="$BIN_DIR/index_fimo_fused"
-BIN_PMET="$BIN_DIR/pair_parallel"
+[[ -n $BIN_DIR ]] || error_exit "PMET binaries (indexing_fimo_fused, pairing_parallel) not found"
+BIN_INDEX="$BIN_DIR/indexing_fimo_fused"
+BIN_PMET="$BIN_DIR/pairing_parallel"
 
 PY=scripts/python
 
@@ -293,12 +293,12 @@ echo "MinHash prefilter: -m $minhash_min"
     -t "$threads"                     \
     -m "$minhash_min" > "$heterotypic_output/pmet.log"
 
-# Merge ONLY pair_parallel's temp*.txt shards.
+# Merge ONLY pairing_parallel's temp*.txt shards.
 shopt -s nullglob
 shards=("$heterotypic_output"/temp*.txt)
 shopt -u nullglob
 if (( ${#shards[@]} == 0 )); then
-    error_exit "pair_parallel produced no temp*.txt shards (see $heterotypic_output/pmet.log)"
+    error_exit "pairing_parallel produced no temp*.txt shards (see $heterotypic_output/pmet.log)"
 fi
 cat "${shards[@]}" > "$heterotypic_output/motif_output.txt"
 rm -f "${shards[@]}"

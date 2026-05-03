@@ -64,15 +64,15 @@ PERMANENT_FIXTURES = {
         "Error : No gene clusters found!",
     # Existing environment-mismatch snippets (regression check)
     "macho_on_linux_worker":
-        "Required PMET binary /app/build/pair_parallel is a macOS Mach-O "
+        "Required PMET binary /app/build/pairing_parallel is a macOS Mach-O "
         "executable and cannot run inside the Linux Docker worker. "
         "Rebuild Linux binaries or run the worker on the host.",
     "exec_format_error":
-        "OSError: [Errno 8] Exec format error: '/app/build/pair_parallel'",
+        "OSError: [Errno 8] Exec format error: '/app/build/pairing_parallel'",
     "missing_binary":
-        "Required PMET binary is missing: /app/build/pair_parallel",
+        "Required PMET binary is missing: /app/build/pairing_parallel",
     "wrong_arch":
-        "Required PMET binary /app/build/index_fimo_fused targets Linux/aarch64, "
+        "Required PMET binary /app/build/indexing_fimo_fused targets Linux/aarch64, "
         "but the worker is running on Linux/x86_64.",
 }
 
@@ -81,7 +81,7 @@ PERMANENT_FIXTURES = {
 # 60s backoff might actually fix.
 TRANSIENT_FIXTURES = {
     "command_failed_generic":
-        "Command failed: pair_parallel: unknown error",
+        "Command failed: pairing_parallel: unknown error",
     "connection_reset":
         "ConnectionResetError: [Errno 104] Connection reset by peer",
     "disk_io":
@@ -93,11 +93,11 @@ TRANSIENT_FIXTURES = {
         "subprocess returned non-zero exit status -9",
     # Wrapped form from executor.py for an arbitrary subprocess crash
     "command_failed_segfault":
-        "Command failed: pair_parallel: Segmentation fault (core dumped)",
+        "Command failed: pairing_parallel: Segmentation fault (core dumped)",
     # Pairing scripts emit this when shards are missing — could be
     # transient (worker killed mid-shard) so we leave it retryable.
     "no_temp_shards":
-        "ERROR: pair_parallel produced no temp*.txt shards (see pmet.log)",
+        "ERROR: pairing_parallel produced no temp*.txt shards (see pmet.log)",
     # Empty / falsy
     "empty_string":
         "",

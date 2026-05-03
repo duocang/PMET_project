@@ -19,7 +19,7 @@
 #   HOMOTYPIC   homotypic index dir (default: results/cli/promoter/01_homotypic)
 #   GENE_LIST   gene list (default: data/genes/genes_cell_type_treatment.txt)
 #   OUT_BASE    base output dir (default: results/cli/pair_only/sweep_$(date +%Y%m%d_%H%M%S))
-#   THREADS     pair_parallel threads per run (default: 4)
+#   THREADS     pairing_parallel threads per run (default: 4)
 #   JOBS        how many pair_only runs to launch concurrently (default: 1)
 #               WARNING: each run uses $THREADS CPU; JOBS * THREADS should
 #               not exceed your core count.

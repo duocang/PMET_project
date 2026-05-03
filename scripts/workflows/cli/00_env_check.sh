@@ -51,7 +51,7 @@ setup_pmet() {
 
     (cd "$script_dir" && make build)
 
-    if [[ -x "$script_dir/build/index_fimo_fused" && -x "$script_dir/build/pair_parallel" ]]; then
+    if [[ -x "$script_dir/build/indexing_fimo_fused" && -x "$script_dir/build/pairing_parallel" ]]; then
         print_green "[✓] Build complete! Binaries available in ./build"
     else
         print_red "[✗] Build failed - expected binaries not found in ./build"

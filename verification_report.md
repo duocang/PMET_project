@@ -62,7 +62,7 @@ Neither breaks any actual tested functionality — the test_api.py file itself r
 
 | Command | Doc references | Result |
 |---|---|---|
-| `make build` | README §2 | ✅ produces `build/{index_fimo_fused, pair_parallel}` (+ test binaries) |
+| `make build` | README §2 | ✅ produces `build/{indexing_fimo_fused, pairing_parallel}` (+ test binaries) |
 | `make demo` | README §2 (5-min first-success path) | ✅ writes `results/cli/demo/{indexing/fused, pairing}/`; `motif_output.txt` first row is `cortex / AHL12 / AHL12_2` as claimed in README §6 |
 | `head results/cli/demo/pairing/motif_output.txt` | README §2 | ✅ shows the documented header + cortex row |
 | `bash scripts/workflows/intervals.sh -s ... -m ... -g ...` | README §4.2 | ✅ ~15 s, produces `results/cli/intervals/02_pairing/motif_output.txt` |
@@ -276,7 +276,7 @@ python3 apps/pmet_backend/test_api.py       # actual working form (after pip ins
 
 | 命令 | 文档引用 | 结果 |
 |---|---|---|
-| `make build` | README §2 | ✅ 产出 `build/{index_fimo_fused, pair_parallel}`（+ test 二进制） |
+| `make build` | README §2 | ✅ 产出 `build/{indexing_fimo_fused, pairing_parallel}`（+ test 二进制） |
 | `make demo` | README §2（5 分钟首跑） | ✅ 写出 `results/cli/demo/{indexing/fused, pairing}/`；`motif_output.txt` 第一行是 `cortex / AHL12 / AHL12_2`，与 README §6 worked example 一致 |
 | `head results/cli/demo/pairing/motif_output.txt` | README §2 | ✅ 显示文档里写的表头 + cortex 行 |
 | `bash scripts/workflows/intervals.sh -s ... -m ... -g ...` | README §4.2 | ✅ ~15 秒，产出 `results/cli/intervals/02_pairing/motif_output.txt` |

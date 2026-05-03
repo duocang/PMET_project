@@ -4,5 +4,5 @@
 #include "test_runner.hpp"
 
 int main() {
-  return pmet_test_main("pair_tests");
+  return pmet_test_main("test_pairing");
 }

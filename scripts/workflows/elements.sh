@@ -57,7 +57,7 @@ Optional:
 Output:
   results/cli/elements_<strategy>_<element>/
     01_homotypic/                pmet index for the element
-    02_heterotypic_<task>/       per-task pair_parallel output
+    02_heterotypic_<task>/       per-task pairing_parallel output
     03_plot_<task>/              per-task heatmaps
 
 Gene tasks are looped over all data/genes/*.txt files.
@@ -197,7 +197,7 @@ mkdir -p "$homotypic_output"
 
 toolDir=scripts
 HOMOTYPIC=$toolDir/workflows/cli/_pmet_index_element.sh
-HETEROTYPIC=build/pair_parallel
+HETEROTYPIC=build/pairing_parallel
 
 overlap=NoOverlap
 utr=Yes
@@ -252,7 +252,7 @@ for gene_input_file in "${gene_files[@]}"; do
 
     print_green "\n  ── task: $task"
 
-    # Filter genes to those in the homotypic universe (pair_parallel rejects unknowns).
+    # Filter genes to those in the homotypic universe (pairing_parallel rejects unknowns).
     grep -Ff "$homotypic_output/universe.txt" "$gene_input_file" \
         > "$heterotypic_output/new_genes_temp.txt" || true
 
@@ -274,7 +274,7 @@ for gene_input_file in "${gene_files[@]}"; do
         -t "$threads" > "$heterotypic_output/pmet.log"
 
     rm -f "$heterotypic_output/new_genes_temp.txt"
-    # Aggregate idempotently: stage to a tmp, drop any pair_parallel temp*.txt
+    # Aggregate idempotently: stage to a tmp, drop any pairing_parallel temp*.txt
     # shards, then move into place. A naive cat over *.txt would fold an old
     # motif_output.txt back in on a re-run.
     rm -f "$heterotypic_output/motif_output.txt"

@@ -8,8 +8,8 @@
 #
 # Stages:
 #   [1] Homotypic — genome/annotation prep → promoter BED (with gap) →
-#       FIMO + pmetindex via build/index_fimo_fused
-#   [2] Heterotypic — pair_parallel consumes the index
+#       FIMO + pmetindex via build/indexing_fimo_fused
+#   [2] Heterotypic — pairing_parallel consumes the index
 #   [3] Heatmaps — three R-rendered views
 # ==============================================================================
 
@@ -71,8 +71,8 @@ plot_output=$res_dir/plot
 
 # Binaries / tools
 BIN_DIR=build
-BIN_INDEX="$BIN_DIR/index_fimo_fused"
-BIN_PMET="$BIN_DIR/pair_parallel"
+BIN_INDEX="$BIN_DIR/indexing_fimo_fused"
+BIN_PMET="$BIN_DIR/pairing_parallel"
 PY=scripts/python
 
 # Derived paths (inside homotypic_output)
@@ -176,7 +176,7 @@ python3 "$PY/run_homotypic.py" \
 print_elapsed_time "$h_start"
 
 # ==============================================================================
-# [2] Heterotypic: pair_parallel consumes the homotypic index
+# [2] Heterotypic: pairing_parallel consumes the homotypic index
 # ==============================================================================
 
 print_green "\n[2/3] Heterotypic motif search..."

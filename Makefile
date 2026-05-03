@@ -54,7 +54,7 @@ build-core: clean-core-binaries build-indexing build-pairing
 clean-core-binaries:
 	@mkdir -p $(BUILD)
 	@rm -f $(BUILD)/index_c $(BUILD)/index_cpp $(BUILD)/pair_original
-	@rm -f $(BUILD)/index_fimo_fused $(BUILD)/pair_parallel
+	@rm -f $(BUILD)/indexing_fimo_fused $(BUILD)/pairing_parallel
 
 build-indexing:
 	@$(CMAKE) -S $(ROOT)/core/indexing -B $(BUILD)/cmake/indexing \
@@ -69,19 +69,19 @@ build-pairing:
 	@$(CMAKE) --build $(BUILD)/cmake/pairing --parallel
 
 # Pairing C++ unit tests. Configures a separate build dir with
-# -DPMET_BUILD_TESTS=ON, builds the `pair_tests` binary into
-# build/pair_tests, and runs it. Math kernels only — see
+# -DPMET_BUILD_TESTS=ON, builds the `test_pairing` binary into
+# build/test_pairing, and runs it. Math kernels only — see
 # core/pairing/tests/ for what's covered.
 test-pairing:
 	@$(CMAKE) -S $(ROOT)/core/pairing -B $(BUILD)/cmake/pairing-tests \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DPMET_BUILD_TESTS=ON \
 		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
-	@$(CMAKE) --build $(BUILD)/cmake/pairing-tests --target pair_tests --parallel
-	@$(BUILD)/pair_tests
+	@$(CMAKE) --build $(BUILD)/cmake/pairing-tests --target test_pairing --parallel
+	@$(BUILD)/test_pairing
 
 # Indexing C unit tests. Same shape as test-pairing but builds the
-# `index_tests` binary against the PMET-side sources (the FIMO
+# `test_indexing` binary against the PMET-side sources (the FIMO
 # sources are excluded — they're upstream MEME C and not what we
 # wrote). See core/indexing/tests/ for coverage.
 test-indexing:
@@ -89,8 +89,8 @@ test-indexing:
 		-DCMAKE_BUILD_TYPE=Release \
 		-DPMET_BUILD_TESTS=ON \
 		-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(BUILD)
-	@$(CMAKE) --build $(BUILD)/cmake/indexing-tests --target index_tests --parallel
-	@$(BUILD)/index_tests
+	@$(CMAKE) --build $(BUILD)/cmake/indexing-tests --target test_indexing --parallel
+	@$(BUILD)/test_indexing
 
 # Run both core test suites end-to-end.
 test-core: test-pairing test-indexing

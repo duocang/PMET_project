@@ -30,11 +30,11 @@ set(PAIR_LIB_HEADERS
 add_library(pair_lib OBJECT ${PAIR_LIB_SOURCES} ${PAIR_LIB_HEADERS})
 
 # Production binary
-add_executable(pair_parallel src/main.cpp $<TARGET_OBJECTS:pair_lib>)
+add_executable(pairing_parallel src/main.cpp $<TARGET_OBJECTS:pair_lib>)
 
 # Find and link threading lib (pthread)
 find_package(Threads REQUIRED)
-target_link_libraries(pair_parallel Threads::Threads)
+target_link_libraries(pairing_parallel Threads::Threads)
 
 # Unit tests — opt-in via -DPMET_BUILD_TESTS=ON. Default off so the
 # normal `make build` stays lean. The Makefile target `make
@@ -43,7 +43,7 @@ target_link_libraries(pair_parallel Threads::Threads)
 # pure-math kernel that has earned a regression test.
 option(PMET_BUILD_TESTS "Build pairing unit tests" OFF)
 if(PMET_BUILD_TESTS)
-  add_executable(pair_tests
+  add_executable(test_pairing
       tests/test_main.cpp
       tests/test_bh_correction.cpp
       tests/test_fair_division.cpp
@@ -54,5 +54,5 @@ if(PMET_BUILD_TESTS)
       tests/test_coloc.cpp
       $<TARGET_OBJECTS:pair_lib>
   )
-  target_link_libraries(pair_tests Threads::Threads)
+  target_link_libraries(test_pairing Threads::Threads)
 endif()

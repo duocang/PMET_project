@@ -12,7 +12,7 @@
 #   - Web:  the `promoters_pre` mode (apps/pmet_backend/services/executor.py)
 #
 # Stages:
-#   [1] Heterotypic — pair_parallel consumes the pre-built index
+#   [1] Heterotypic — pairing_parallel consumes the pre-built index
 #   [2] Heatmaps    — three R-rendered views (skipped if Rscript absent)
 #
 # Merged from cli/08_pair_only.sh + web/promoter_precomputed.sh — same
@@ -135,13 +135,13 @@ done
 
 BIN_DIR=
 for cand in "$project_root/build" "$script_dir/build"; do
-    if [[ -x "$cand/pair_parallel" ]]; then
+    if [[ -x "$cand/pairing_parallel" ]]; then
         BIN_DIR=$cand
         break
     fi
 done
-[[ -n $BIN_DIR ]] || error_exit "PMET binary pair_parallel not found in any of: $project_root/build, $script_dir/build"
-BIN_PMET="$BIN_DIR/pair_parallel"
+[[ -n $BIN_DIR ]] || error_exit "PMET binary pairing_parallel not found in any of: $project_root/build, $script_dir/build"
+BIN_PMET="$BIN_DIR/pairing_parallel"
 
 # ==================== Preflight ====================
 
@@ -159,7 +159,7 @@ check_file "$genefile" "Gene list"
 # (scripts/python/check_homotypic_contract.py) lives separately. It is
 # intentionally NOT invoked here because it rejects the canonical
 # data/demos/promoters/pairing/demo fixture (which ships a partial fimohits set on
-# purpose). pair_parallel itself produces clear errors on malformed
+# purpose). pairing_parallel itself produces clear errors on malformed
 # indexes; opt into the strict check by running the python helper
 # manually before invoking pair_only.sh.
 
@@ -191,14 +191,14 @@ if [[ ! -s "$gene_tmp" ]]; then
     error_exit "No genes from the input list match the index universe ($universefile)"
 fi
 
-# Diagnostic outputs (written before pair_parallel so failures still leave them).
+# Diagnostic outputs (written before pairing_parallel so failures still leave them).
 cp "$gene_tmp" "$outputdir/genes_used_PMET.txt"
 grep -vwFf "$universefile" "$genefile" > "$outputdir/genes_not_found.txt" || true
 
 minhash_min=$(resolve_minhash_min "$pmetindex/fimohits")
 echo "MinHash prefilter: -m $minhash_min"
 
-# pair_parallel resolves -p/-b/-c/-f relative to -d, so feed it the
+# pairing_parallel resolves -p/-b/-c/-f relative to -d, so feed it the
 # index dir as the base and bare filenames for the rest.
 "$BIN_PMET" \
     -d "$pmetindex"            \
@@ -212,13 +212,13 @@ echo "MinHash prefilter: -m $minhash_min"
     -t "$threads"              \
     -m "$minhash_min" > "$outputdir/pmet.log"
 
-# Merge ONLY pair_parallel's temp*.txt shards — naive `cat *.txt` would now
+# Merge ONLY pairing_parallel's temp*.txt shards — naive `cat *.txt` would now
 # also concatenate the diagnostic files we just wrote.
 shopt -s nullglob
 shards=("$outputdir"/temp*.txt)
 shopt -u nullglob
 if (( ${#shards[@]} == 0 )); then
-    error_exit "pair_parallel produced no temp*.txt shards (see $outputdir/pmet.log)"
+    error_exit "pairing_parallel produced no temp*.txt shards (see $outputdir/pmet.log)"
 fi
 cat "${shards[@]}" > "$outputdir/motif_output.txt"
 rm -f "${shards[@]}"

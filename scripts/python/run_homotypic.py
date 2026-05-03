@@ -2,7 +2,7 @@
 """Run the homotypic stage of a promoter PMET pipeline end-to-end.
 
 Composes the existing helpers in `scripts/python/` and the
-`build/index_fimo_fused` binary into a single Python entrypoint.
+`build/indexing_fimo_fused` binary into a single Python entrypoint.
 Pipelines 03 and 08 use this for their entire stage A; the bash entry
 script then only orchestrates configuration and the heterotypic +
 heatmap stages.
@@ -20,7 +20,7 @@ Inputs:
     --utr {Yes,No}
     --gff3-id-key STR       attribute key (e.g. 'gene_id=' or 'ID=gene:')
     --threads INT           number of parallel FIMO batches
-    [--poisson]             pass --poisson to index_fimo_fused
+    [--poisson]             pass --poisson to indexing_fimo_fused
     [--keep-intermediate]   retain intermediate files for debugging
 
 Output (canonical homotypic_dir contract — see docs/contracts/homotypic.md):
@@ -37,7 +37,7 @@ The Python helpers used:
 
 The external tools used (must be on PATH):
     samtools, bedtools, sortBed, fasta-get-markov, perl (for gff3sort.pl),
-    build/index_fimo_fused.
+    build/indexing_fimo_fused.
 
 Pipelines that build their own gene BED differently (06/07 use
 pmet_index_element.sh) do not use this entrypoint.
@@ -116,8 +116,8 @@ def main() -> int:
     parser.add_argument(
         "--bin-index",
         type=Path,
-        default=REPO_ROOT / "build" / "index_fimo_fused",
-        help="Path to the index_fimo_fused binary.",
+        default=REPO_ROOT / "build" / "indexing_fimo_fused",
+        help="Path to the indexing_fimo_fused binary.",
     )
     parser.add_argument(
         "--gff3sort",
@@ -200,10 +200,10 @@ def main() -> int:
         str(args.meme), str(ic_txt),
     ])
 
-    # ---- 7. FIMO + PMETindex via index_fimo_fused ----
+    # ---- 7. FIMO + PMETindex via indexing_fimo_fused ----
     # Upper-case MOTIF header lines so motif ids are consistent with the IC
     # helper (which also upper-cases the MOTIF header before extracting the id)
-    # — pair_parallel joins fimohits ↔ IC ↔ binomial_thresholds by motif id.
+    # — pairing_parallel joins fimohits ↔ IC ↔ binomial_thresholds by motif id.
     meme_upper = out / "meme_upper.meme"
     nummotifs = 0
     with args.meme.open() as src, meme_upper.open("w") as dst:
@@ -239,9 +239,9 @@ def main() -> int:
     )
 
     # ---- 8. Sanity: file count ----
-    # Upstream index_fimo_fused emits .bin since PMET_project commit 8fa9b66
+    # Upstream indexing_fimo_fused emits .bin since PMET_project commit 8fa9b66
     # ("perf: add binary SoA fimohits format"); older builds still emit .txt.
-    # pair_parallel auto-detects via the binary header magic, so accept either.
+    # pairing_parallel auto-detects via the binary header magic, so accept either.
     fimohits_files = [
         p for p in fimohits_dir.iterdir()
         if p.is_file() and p.suffix in (".txt", ".bin")

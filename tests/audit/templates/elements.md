@@ -51,7 +51,7 @@ For `-e mRNA` specifically there are **three biologically distinct modes** depen
 
 `-m` is ignored for `-s merged` and for any non-mRNA element.
 
-Both strategies typically produce multiple intervals per gene (e.g. 3 exons → 3 intervals; one mRNA span → 1 interval). The script tags each interval as `__GENE__N` (gene name + 1-based index) so FIMO can scan them separately, then a **gene-level fold** in step 12 collapses per-interval hits back to per-gene rows so `pair_parallel` sees one row per gene.
+Both strategies typically produce multiple intervals per gene (e.g. 3 exons → 3 intervals; one mRNA span → 1 interval). The script tags each interval as `__GENE__N` (gene name + 1-based index) so FIMO can scan them separately, then a **gene-level fold** in step 12 collapses per-interval hits back to per-gene rows so `pairing_parallel` sees one row per gene.
 
 <a id="en-3"></a>
 
@@ -68,11 +68,11 @@ Both strategies typically produce multiple intervals per gene (e.g. 3 exons → 
 | 7 | Universe + per-interval lengths | `_pmet_index_element.sh` step 4 — `cut -f1 promoter_lengths.txt` → `universe.txt` | Index metadata |
 | 8 | Promoter FASTA extract | `_pmet_index_element.sh` step 5 — `bedtools getfasta -s` (strand-aware) over a linearised + faidx'd genome | Per-interval sequences for FIMO |
 | 9 | Markov background | `_pmet_index_element.sh` step 6 — `fasta-get-markov` over the just-extracted promoter set | Zero-order base composition; FIMO uses it as the null model so p-values reflect the local element composition rather than the genome's |
-| 10 | IC.txt | `_pmet_index_element.sh` step 7 — `calculateICfrommeme_IC_to_csv.py` | Per-motif positional information content; `pair_parallel` uses this as a sanity floor (skip motifs less informative than `-i`) |
-| 11 | FIMO + indexing | `_pmet_index_element.sh` step 8 — one `index_fimo_fused` call (OpenMP) | Replaces the older two-step (split MEME → parallel fimo → separate pmet indexer) flow that depended on PMET-patched `--topn`/`--topk` flags absent from upstream MEME's `fimo` (commit `d2663c0`) |
+| 10 | IC.txt | `_pmet_index_element.sh` step 7 — `calculateICfrommeme_IC_to_csv.py` | Per-motif positional information content; `pairing_parallel` uses this as a sanity floor (skip motifs less informative than `-i`) |
+| 11 | FIMO + indexing | `_pmet_index_element.sh` step 8 — one `indexing_fimo_fused` call (OpenMP) | Replaces the older two-step (split MEME → parallel fimo → separate pmet indexer) flow that depended on PMET-patched `--topn`/`--topk` flags absent from upstream MEME's `fimo` (commit `d2663c0`) |
 | 12 | **Gene-level fold** | `_pmet_index_element.sh` step 9 — `scripts/python/collapse_element_fimohits.py` | Decodes PMETBN01 binary fimohits, strips `__GENE__N` from sequence names, groups hits by gene, keeps top-`maxk` per gene by ascending p-value, filters against the per-motif binomial threshold, re-encodes. Also normalises `binomial_thresholds.txt` motif IDs to upper-case to match `IC.txt` and the fimohits filenames |
 | 13 | Indexing contract validation | `scripts/python/check_homotypic_contract.py <homotypic>` | Catches motif-id case mismatches and missing files |
-| 14 | Heterotypic loop over `data/genes/*.txt` | for each task: filter by universe → `pair_parallel` → optional heatmaps | Per-task `02_heterotypic_<task>/motif_output.txt`. Heatmap failures (e.g. `ggsave`'s 50-inch dimension cap on huge tasks) are non-fatal — the loop continues |
+| 14 | Heterotypic loop over `data/genes/*.txt` | for each task: filter by universe → `pairing_parallel` → optional heatmaps | Per-task `02_heterotypic_<task>/motif_output.txt`. Heatmap failures (e.g. `ggsave`'s 50-inch dimension cap on huge tasks) are non-fatal — the loop continues |
 
 <a id="en-4"></a>
 
@@ -142,7 +142,7 @@ R `ggsave` enforces a hard 50-inch dimension cap. Some gene tasks (e.g. `random_
 
 `-m` 在 `-s merged` 和任何非 mRNA element 下被忽略。
 
-两种策略通常都给每基因多个区间（如 3 exon → 3 区间；一个 mRNA 跨度 → 1 区间）。脚本给每个区间打 `__GENE__N` 标签（基因名 + 1-based 序号）让 FIMO 分别扫，然后 step 12 的 **gene-level fold** 把 per-interval hit 折回 per-gene 行，让 `pair_parallel` 看到的是 per-gene 一行。
+两种策略通常都给每基因多个区间（如 3 exon → 3 区间；一个 mRNA 跨度 → 1 区间）。脚本给每个区间打 `__GENE__N` 标签（基因名 + 1-based 序号）让 FIMO 分别扫，然后 step 12 的 **gene-level fold** 把 per-interval hit 折回 per-gene 行，让 `pairing_parallel` 看到的是 per-gene 一行。
 
 <a id="cn-3"></a>
 
@@ -159,11 +159,11 @@ R `ggsave` enforces a hard 50-inch dimension cap. Some gene tasks (e.g. `random_
 | 7 | universe + per-interval 长度 | `_pmet_index_element.sh` step 4 —— `cut -f1 promoter_lengths.txt` → `universe.txt` | 索引元数据 |
 | 8 | 启动子 FASTA 抽取 | `_pmet_index_element.sh` step 5 —— `bedtools getfasta -s`（链感知）处理已经单行化 + faidx 的基因组 | per-interval 序列给 FIMO |
 | 9 | Markov 背景 | `_pmet_index_element.sh` step 6 —— `fasta-get-markov` 处理刚抽出来的启动子集 | 零阶碱基组成；FIMO 当零分布用，让 p 值反映局部 element 组成而不是基因组的 |
-| 10 | IC.txt | `_pmet_index_element.sh` step 7 —— `calculateICfrommeme_IC_to_csv.py` | per-motif 位置信息量；`pair_parallel` 当 sanity floor（IC 比 `-i` 低的 motif 跳过） |
-| 11 | FIMO + indexing | `_pmet_index_element.sh` step 8 —— 一次 `index_fimo_fused`（OpenMP） | 替代旧的两步流程（拆 MEME → 并行 fimo → 单独的 pmet indexer），那个流程依赖上游 MEME `fimo` 没有的 PMET 补丁 `--topn` / `--topk` flag（commit `d2663c0`） |
+| 10 | IC.txt | `_pmet_index_element.sh` step 7 —— `calculateICfrommeme_IC_to_csv.py` | per-motif 位置信息量；`pairing_parallel` 当 sanity floor（IC 比 `-i` 低的 motif 跳过） |
+| 11 | FIMO + indexing | `_pmet_index_element.sh` step 8 —— 一次 `indexing_fimo_fused`（OpenMP） | 替代旧的两步流程（拆 MEME → 并行 fimo → 单独的 pmet indexer），那个流程依赖上游 MEME `fimo` 没有的 PMET 补丁 `--topn` / `--topk` flag（commit `d2663c0`） |
 | 12 | **gene-level fold** | `_pmet_index_element.sh` step 9 —— `scripts/python/collapse_element_fimohits.py` | 解码 PMETBN01 二进制 fimohits，从序列名里剥 `__GENE__N`，按基因分组 hit，按 p 值升序保留每基因 top-`maxk`，按 per-motif 二项阈值过滤，再编码回去。同时把 `binomial_thresholds.txt` 的 motif ID 大写化以匹配 `IC.txt` 和 fimohits 文件名 |
 | 13 | indexing 契约校验 | `scripts/python/check_homotypic_contract.py <homotypic>` | 抓 motif-id 大小写不一致和缺文件 |
-| 14 | 异型循环遍历 `data/genes/*.txt` | 对每 task：按 universe 过滤 → `pair_parallel` → 可选 heatmap | per-task `02_heterotypic_<task>/motif_output.txt`。heatmap 失败（如 `ggsave` 50 寸尺寸 cap 在大 task 上）非致命 —— 循环继续 |
+| 14 | 异型循环遍历 `data/genes/*.txt` | 对每 task：按 universe 过滤 → `pairing_parallel` → 可选 heatmap | per-task `02_heterotypic_<task>/motif_output.txt`。heatmap 失败（如 `ggsave` 50 寸尺寸 cap 在大 task 上）非致命 —— 循环继续 |
 
 <a id="cn-4"></a>
 
@@ -219,7 +219,7 @@ The script loops over every `data/genes/*.txt` file. Per-task results:
 
 <<TASK_TABLE>>
 
-(`missing` rows = the gene list had zero overlap with the 5'UTR universe, so the script skipped `pair_parallel` for that task — that's expected biology, not a failure.)
+(`missing` rows = the gene list had zero overlap with the 5'UTR universe, so the script skipped `pairing_parallel` for that task — that's expected biology, not a failure.)
 
 Total enriched pair rows across all tasks · 所有 task 的富集对总行数：**<<TOTAL_HET_LINES>>**.
 

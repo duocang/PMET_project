@@ -93,8 +93,8 @@ The lower-level entry points for `make demo` and the perf benchmarks live here, 
 apps/cli/
 ├── run.sh                 interactive menu (lists workflows + cli)
 └── scripts/
-    ├── run_indexing.sh        wraps build/index_fimo_fused
-    ├── run_pairing.sh         wraps build/pair_parallel
+    ├── run_indexing.sh        wraps build/indexing_fimo_fused
+    ├── run_pairing.sh         wraps build/pairing_parallel
     ├── run_pipeline.sh        legacy umbrella
     ├── run_fimo_official.sh   FIMO-only sanity
     ├── compare_branches.sh    cross-branch hash diff
@@ -294,8 +294,8 @@ scripts/workflows/
 apps/cli/
 ├── run.sh                 交互菜单（列 workflow + cli）
 └── scripts/
-    ├── run_indexing.sh        包 build/index_fimo_fused
-    ├── run_pairing.sh         包 build/pair_parallel
+    ├── run_indexing.sh        包 build/indexing_fimo_fused
+    ├── run_pairing.sh         包 build/pairing_parallel
     ├── run_pipeline.sh        遗留 umbrella
     ├── run_fimo_official.sh   仅 FIMO 的 sanity
     ├── compare_branches.sh    跨分支 hash diff

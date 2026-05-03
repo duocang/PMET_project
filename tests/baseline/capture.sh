@@ -30,7 +30,7 @@ echo "# git: $(git rev-parse --short HEAD 2>/dev/null) on $(git rev-parse --abbr
 echo ""
 
 echo "## section:binaries"
-for b in index_fimo_fused pair_parallel; do
+for b in indexing_fimo_fused pairing_parallel; do
   printf "build/%s\t%s\n" "$b" "$(hash_file "build/$b")"
 done
 echo ""

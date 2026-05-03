@@ -6,7 +6,7 @@
 # run_meme_fimo.sh), then feed the per-motif fimo hit files into a
 # standalone pmetindex binary.
 #
-# Superseded for routine use by build/index_fimo_fused, which folds the
+# Superseded for routine use by build/indexing_fimo_fused, which folds the
 # FIMO scan and the pmetindex step into one process. This script is kept
 # for parity testing against the legacy two-step pipeline and for working
 # with pre-existing FIMO outputs.

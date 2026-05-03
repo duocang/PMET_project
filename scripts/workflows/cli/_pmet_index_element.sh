@@ -329,7 +329,7 @@ fasta-get-markov "$indexingOutputDir/promoter.fa" > "$indexingOutputDir/promoter
 # -------------------------------------------------------------------------------------------
 # 7. IC per motif (reads combined MEME directly; rows in deterministic
 #    MEME-file order, motif IDs upper-cased so they line up with what
-#    index_fimo_fused writes into binomial_thresholds.txt at step 8).
+#    indexing_fimo_fused writes into binomial_thresholds.txt at step 8).
 print_fluorescent_yellow "     7. Computing information content (IC.txt)"
 python3 "$pmetroot/python/calculateICfrommeme_IC_to_csv.py" \
     "$memefile" \
@@ -341,7 +341,7 @@ python3 "$pmetroot/python/calculateICfrommeme_IC_to_csv.py" \
 #    Replaces the previous two-step flow (split MEME into batches ->
 #    GNU parallel + per-batch fimo --topn/--topk -> separate pmet indexer)
 #    that depended on PMET-patched fimo flags absent from upstream MEME.
-#    index_fimo_fused has internal OpenMP motif batching + writes
+#    indexing_fimo_fused has internal OpenMP motif batching + writes
 #    binomial_thresholds.txt at $indexingOutputDir and per-motif binary
 #    fimohits/*.bin (PMETBN01 format). Same call shape as
 #    scripts/workflows/{intervals,promoter}.sh.
@@ -349,7 +349,7 @@ nummotifs=$(grep -c '^MOTIF' "$memefile")
 print_fluorescent_yellow "     8. Running FIMO + PMETindex (${nummotifs} motifs, ${threads} thread(s))"
 mkdir -p "$indexingOutputDir/fimohits"
 
-BIN_INDEX="$buildDir/index_fimo_fused"
+BIN_INDEX="$buildDir/indexing_fimo_fused"
 [ -x "$BIN_INDEX" ] || { print_red "Binary not found or not executable: $BIN_INDEX"; exit 1; }
 
 OMP_NUM_THREADS="$threads" \
@@ -373,7 +373,7 @@ OMP_NUM_THREADS="$threads" \
 #    - fimohits/*.bin: strip __GENE__N -> GENE in the sequence name pool,
 #      group by gene, keep top $maxk hits per gene by ascending p-value,
 #      filter against the motif's binomial threshold. Done in Python because
-#      index_fimo_fused emits PMETBN01 binary that needs proper parsing
+#      indexing_fimo_fused emits PMETBN01 binary that needs proper parsing
 #      (length-prefixed records, name-pool offsets) — sed/awk on bytes
 #      would corrupt the file.
 #    Idempotent when each gene has a single interval.
@@ -408,7 +408,7 @@ fi
 
 # -------------------------------------------------------------------------------------------
 # Sanity check: one fimohits file per motif (binary now after step 8 ->
-# index_fimo_fused). A motif may be absent from fimohits/ if it produced
+# indexing_fimo_fused). A motif may be absent from fimohits/ if it produced
 # zero hits at the chosen FIMO threshold; check_homotypic_contract.py
 # treats that as a soft failure with a clear message rather than a count
 # mismatch here.

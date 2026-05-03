@@ -1,14 +1,14 @@
 #!/bin/bash
 # ==============================================================================
-# run_pairing — legacy pair_parallel driver (consumes a pre-built index)
+# run_pairing — legacy pairing_parallel driver (consumes a pre-built index)
 # ==============================================================================
-# Runs the standalone legacy pair_parallel binary against an existing
+# Runs the standalone legacy pairing_parallel binary against an existing
 # homotypic index (promoter_lengths.txt + binomial_thresholds.txt + IC.txt
 # + fimohits/ + universe.txt). The gene list is filtered against the
 # universe up front so substring noise doesn't leak through.
 #
 # Superseded for routine use by scripts/workflows/pair_only.sh, which
-# wraps the modern build/pair_parallel with the same defaults the rest of
+# wraps the modern build/pairing_parallel with the same defaults the rest of
 # the pipeline uses. This script is kept as a thin, dependency-free
 # wrapper for parity testing against legacy index outputs.
 #
@@ -26,7 +26,7 @@ USAGE: run_pairing.sh -e <executable> -g <gene_file> -u <universe_file> \
                       -i <ic_threshold> -t <threads> -o <outdir>
 
 Required:
-  -e <executable>           path to legacy pair_parallel binary
+  -e <executable>           path to legacy pairing_parallel binary
   -g <gene_file>            gene list (one gene per line)
   -u <universe_file>        universe.txt — index gene universe (used to
                             filter the gene list)
@@ -42,7 +42,7 @@ Required:
 
 Example (using the curated demo fixture):
   bash scripts/workflows_legacy/run_pairing.sh \
-      -e core/pairing/build/pair_parallel \
+      -e core/pairing/build/pairing_parallel \
       -g data/demos/promoters/pairing/demo/gene.txt \
       -u data/demos/promoters/pairing/demo/universe.txt \
       -p data/demos/promoters/pairing/demo/promoter_lengths.txt \
@@ -127,7 +127,7 @@ fi
 
 # ==================== Run ====================
 
-echo "Running legacy pair_parallel..."
+echo "Running legacy pairing_parallel..."
 echo "  Executable           : $executable"
 echo "  Gene file            : $gene_file (filtered: $(wc -l < "$gene_filtered") of $(wc -l < "$gene_file"))"
 echo "  Universe             : $universe_file"
@@ -161,7 +161,7 @@ if (( ${#shards[@]} > 0 )); then
     cat "${shards[@]}" > "$outdir/motif_output.txt"
     rm -f "${shards[@]}"
 else
-    echo "WARNING: pair_parallel produced no temp*.txt shards" >&2
+    echo "WARNING: pairing_parallel produced no temp*.txt shards" >&2
 fi
 
 rm -f "$gene_filtered"

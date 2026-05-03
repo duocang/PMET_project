@@ -3,7 +3,7 @@
 
 Element pipelines (06_elements_longest.sh / 07_elements_merged.sh) tag each
 isoform fragment with __GENE__N to keep them separable through FIMO. After
-indexing, hits must be folded back so pair_parallel sees one row per (gene,
+indexing, hits must be folded back so pairing_parallel sees one row per (gene,
 motif) — this script does that fold in place on the binary fimohits/.
 
 Behaviour matches the old text-format awk pipeline that step 9 of
@@ -145,7 +145,7 @@ def collapse_one(path: Path, maxk: int, threshold: float) -> tuple[int, int]:
 
     The motif_name written back to disk is upper-cased to match the
     convention used in IC.txt and the (re-normalized) binomial_thresholds.txt.
-    pair_parallel uses the .bin's internal motif_name (not the filename)
+    pairing_parallel uses the .bin's internal motif_name (not the filename)
     to look up these two files, so the cases must agree.
     """
     motif_name, hits = read_motif_bin(path)
@@ -209,10 +209,10 @@ def main(argv: list[str]) -> int:
         return 1
 
     # Parse thresholds: <motif>\t<threshold>[\t...]
-    # Note on case: index_fimo_fused preserves MEME's original motif-id
+    # Note on case: indexing_fimo_fused preserves MEME's original motif-id
     # case in binomial_thresholds.txt, but calculateICfrommeme uppercases
     # them in IC.txt and the fimohits filenames also end up uppercase
-    # (HFS+ case folding / writer behaviour). pair_parallel and
+    # (HFS+ case folding / writer behaviour). pairing_parallel and
     # check_homotypic_contract.py require all three sets to match exactly.
     # We work around the upstream inconsistency by:
     #   1. Looking up thresholds by the motif name STORED IN THE .bin file
