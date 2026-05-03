@@ -1,10 +1,10 @@
-# baseline captured: 2026-04-30T07:11:16Z
+# baseline captured: 2026-05-03T10:29:14Z
 # host: Darwin 24.6.0 arm64
-# git: ac09b73 on main
+# git: bd353e3 on main
 
 ## section:binaries
-build/indexing_fimo_fused	b851f487d0471a58fd3c5a88a0d0d5179d7b96e8fc44f47efab16fa670864cd1
-build/pairing_parallel	a14286e985542b53bc16f40d8686ab933b94194d814f8c1cad9ed9d74b0be0f8
+build/indexing_fimo_fused	23374bf20e118e64f453ac92a6e9ba50086f00fc004e8845d9a74bb20165d316
+build/pairing_parallel	c6b163e92148663cdd7bdb5e10597e043fc0cf1d96efef3b3e2c3d64bc160ce8
 
 ## section:core_demo_indexing_existing_outputs
 7c31212645b13b1f2e52db3a3d4b948c53ad5787e6f56a96663238081fc82b67  ./CCA1.txt
@@ -26,11 +26,31 @@ cb2a9f55d7bf4524761e1b6654336f2341813f33e7405405f7992345488acdef  ./motif_output
 
 ## section:analysis_smoke
 # SMOKE_OK
-# [0;33m  • Install R packages:      Rscript pipeline/r/install_packages.R[0m
+# [0;33m  • Install R packages:      Rscript scripts/r/install_packages.R[0m
 # [0;33m  • Install Python packages: pip install numpy pandas scipy biopython[0m
-# [0;33m  • Setup PMET binaries:     make build  (or: pipeline/workflows/cli/00_env_check.sh --setup-pmet)[0m
+# [0;33m  • Setup PMET binaries:     make build  (or: scripts/workflows/cli/00_env_check.sh --setup-pmet)[0m
 # [0;33m------------------------------------------
 # [0m
 
 ## section:backend_pytest
-# PYTEST_OK
+# PYTEST_FAIL exit=1
+# 
+# 1. Testing imports...
+#    - config loaded, NCPU=2
+#    ✗ Import error: No module named 'pydantic'
+# 
+# 2. Testing TaskCreate model...
+# Traceback (most recent call last):
+#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/test_api.py", line 172, in <module>
+#     main()
+#     ~~~~^^
+#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/test_api.py", line 153, in main
+#     results.append(test_task_model())
+#                    ~~~~~~~~~~~~~~~^^
+#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/test_api.py", line 46, in test_task_model
+#     from pmet_backend.api.models.task import TaskCreate, TaskMode
+#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/api/models/__init__.py", line 1, in <module>
+#     from .task import TaskCreate, TaskResponse, TaskStatus, TaskMode
+#   File "/Users/nuioi/projects/pmet/apps/pmet_backend/api/models/task.py", line 4, in <module>
+#     from pydantic import BaseModel, EmailStr, Field
+# ModuleNotFoundError: No module named 'pydantic'
