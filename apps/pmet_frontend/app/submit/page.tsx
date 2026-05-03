@@ -710,7 +710,7 @@ function SubmitPageContent() {
             ) : estimate ? (
               <>
                 <span className="text-slate-500">{t('submit.estimate.label')}: </span>
-                <span className="font-medium text-slate-900">
+                <span className="text-base font-bold text-red-600">
                   {formatRuntimeRange(estimate.lower_seconds, estimate.upper_seconds, t)}
                 </span>
                 <span className="ml-2 text-xs text-slate-400">
