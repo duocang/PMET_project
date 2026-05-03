@@ -508,13 +508,21 @@ async def download_partial_result(task_id: str):
 
 @router.get("", response_model=TaskListResponse)
 async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, offset: int = 0):
-    """List tasks, newest first. Filter by exact email match, by task_id
-    substring, or both. Filtering happens BEFORE pagination — the prior
-    revision sliced the file list first, which made an email-filtered
-    search silently return empty whenever the first `limit` newest
-    files happened not to match (real matches sat on disk further
-    down). See test_list_pagination_filters_before_slicing."""
-    candidates = sorted(config.TASKS_DIR.glob("*.json"), reverse=True)
+    """List tasks, newest first by created_at. Filter by exact email
+    match, by task_id substring, or both. Filtering happens BEFORE
+    pagination — the prior revision sliced the file list first, which
+    made an email-filtered search silently return empty whenever the
+    first `limit` newest files happened not to match (real matches sat
+    on disk further down).
+
+    Why sort on the JSON's created_at rather than the filename: task ids
+    are user-supplied UUIDs (frontend generates one per submit), so
+    filename-lex order is effectively random. Sorting on created_at —
+    an ISO-8601 timestamp, which lex-sorts the same as chronologically
+    when the timezone is consistent — gives the user a stable
+    "newest first" view. mtime would be wrong because every status
+    update rewrites the file."""
+    candidates = list(config.TASKS_DIR.glob("*.json"))
     # task_id filters by filename stem (== task_id by writer convention),
     # so we can drop non-matching files without parsing JSON. Email lives
     # only inside the JSON, so the email check has to read each file.
@@ -532,6 +540,11 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
         if task_id and task_id not in task_data.get("task_id", ""):
             continue
         matched.append(task_data)
+
+    # Newest first. Tasks missing created_at (shouldn't happen, but
+    # defensive: corrupt writes / partial migrations) sort to the
+    # bottom rather than crashing the listing.
+    matched.sort(key=lambda d: d.get("created_at") or "", reverse=True)
 
     page = matched[offset:offset + limit]
 
