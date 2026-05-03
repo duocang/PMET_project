@@ -23,7 +23,7 @@ usage() {
 USAGE: run_pairing.sh -e <executable> -g <gene_file> -u <universe_file> \
                       -p <promoter_lengths> -b <binomial_thresholds> \
                       -c <ic_file> -f <fimohits_dir> \
-                      -i <ic_threshold> -t <threads> -o <outdir>
+                      -i <ic_threshold> -x <0|1> -t <threads> -o <outdir>
 
 Required:
   -e <executable>           path to legacy pairing_parallel binary
@@ -35,12 +35,20 @@ Required:
   -c <ic_file>              IC.txt (information content)
   -f <fimohits_dir>         fimohits/ directory
   -i <ic_threshold>         pairing IC threshold
+  -x <0|1>                  scoring model: 0 = binomial, 1 = Poisson.
+                            Required (no implicit default) so the scoring
+                            choice is always explicit. The historical
+                            apps/cli wrapper passed `-x "true"`, which
+                            the binary parses as Poisson because of its
+                            value[0] != '0' rule (see
+                            core/pairing/src/main.cpp:184) — so legacy
+                            baselines reproduce with -x 1.
   -t <threads>              number of threads
   -o <outdir>               output directory (will be wiped + recreated)
 
   -h                        show this help
 
-Example (using the curated demo fixture):
+Example (using the curated demo fixture; -x 1 reproduces legacy anchor):
   bash scripts/workflows_legacy/run_pairing.sh \
       -e core/pairing/build/pairing_parallel \
       -g data/demos/promoters/pairing/demo/gene.txt \
@@ -49,7 +57,7 @@ Example (using the curated demo fixture):
       -b data/demos/promoters/pairing/demo/binomial_thresholds.txt \
       -c data/demos/promoters/pairing/demo/IC.txt \
       -f data/demos/promoters/pairing/demo/fimohits \
-      -i 4 -t 2 \
+      -i 4 -x 0 -t 2 \
       -o results/cli/run_pairing_legacy
 EOF
 }
@@ -62,10 +70,11 @@ binomial_thresholds=
 ic_file=
 fimohits_dir=
 ic_threshold=
+poisson=
 threads=
 outdir=
 
-while getopts ":e:g:u:p:b:c:f:i:t:o:h" opt; do
+while getopts ":e:g:u:p:b:c:f:i:x:t:o:h" opt; do
     case $opt in
         e) executable=$OPTARG ;;
         g) gene_file=$OPTARG ;;
@@ -75,6 +84,7 @@ while getopts ":e:g:u:p:b:c:f:i:t:o:h" opt; do
         c) ic_file=$OPTARG ;;
         f) fimohits_dir=$OPTARG ;;
         i) ic_threshold=$OPTARG ;;
+        x) poisson=$OPTARG ;;
         t) threads=$OPTARG ;;
         o) outdir=$OPTARG ;;
         h) usage; exit 0 ;;
@@ -92,6 +102,7 @@ missing=()
 [[ -n "$ic_file"              ]] || missing+=("-c <ic_file>")
 [[ -n "$fimohits_dir"         ]] || missing+=("-f <fimohits_dir>")
 [[ -n "$ic_threshold"         ]] || missing+=("-i <ic_threshold>")
+[[ -n "$poisson"              ]] || missing+=("-x <0|1>")
 [[ -n "$threads"              ]] || missing+=("-t <threads>")
 [[ -n "$outdir"               ]] || missing+=("-o <outdir>")
 if (( ${#missing[@]} > 0 )); then
@@ -109,6 +120,20 @@ fi
 [[ -f "$binomial_thresholds"  ]] || { echo "ERROR: binomial_thresholds not found: $binomial_thresholds" >&2; exit 1; }
 [[ -f "$ic_file"              ]] || { echo "ERROR: ic_file not found: $ic_file" >&2; exit 1; }
 [[ -d "$fimohits_dir"         ]] || { echo "ERROR: fimohits_dir not found: $fimohits_dir" >&2; exit 1; }
+[[ "$poisson" =~ ^[01]$       ]] || { echo "ERROR: -x must be 0 (binomial) or 1 (Poisson), got: $poisson" >&2; exit 1; }
+
+# Canonicalize input paths to absolute. The binary resolves -p/-b/-c/-f
+# against the -d base, and we pass `-d /` to disable that resolution —
+# but `/` + relative `data/foo` would still join to `/data/foo`. By
+# converting to absolute up front, callers can pass relative paths and
+# the script DTRT.
+gene_file=$(realpath "$gene_file")
+universe_file=$(realpath "$universe_file")
+promoter_lengths=$(realpath "$promoter_lengths")
+binomial_thresholds=$(realpath "$binomial_thresholds")
+ic_file=$(realpath "$ic_file")
+fimohits_dir=$(realpath "$fimohits_dir")
+executable=$(realpath "$executable")
 
 rm -rf "$outdir"
 mkdir -p "$outdir"
@@ -136,6 +161,7 @@ echo "  Binomial thresholds  : $binomial_thresholds"
 echo "  IC                   : $ic_file"
 echo "  FIMO hits            : $fimohits_dir"
 echo "  IC threshold         : $ic_threshold"
+echo "  Scoring model        : $([[ $poisson = 1 ]] && echo Poisson || echo binomial) (-x $poisson)"
 echo "  Threads              : $threads"
 echo "  Output               : $outdir"
 
@@ -144,6 +170,7 @@ echo "  Output               : $outdir"
 # default base of `.`.
 "$executable" \
     -d "/"                      \
+    -x "$poisson"               \
     -g "$gene_filtered"         \
     -i "$ic_threshold"          \
     -p "$promoter_lengths"      \
