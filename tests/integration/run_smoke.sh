@@ -12,6 +12,14 @@ repo_root=$(cd -- "$script_dir/../.." && pwd)
 pipeline_dir="$repo_root/scripts/workflows/cli"
 cd "$script_dir"
 
+# Per-suite log dir under results/tests/ so verbose stderr from the
+# heavier checks (TAIR10 strand re-run, heatmap consistency report) is
+# co-located with every other gitignored test artefact and survives
+# across reboots — `/tmp` gets cleaned by macOS, and the FAIL path below
+# tells the user "see <log>" for the full picture.
+log_dir="$repo_root/results/tests/smoke"
+mkdir -p "$log_dir"
+
 failed=0
 section() { printf '\n[smoke] %s\n' "$1"; }
 pass()    { printf '  PASS  %s\n' "$1"; }
@@ -218,10 +226,11 @@ rm -rf "$ai_tmp"
 section "real-data strand extraction (TAIR10)"
 
 if [[ -s "$repo_root/data/reference/TAIR10.fasta" && -s "$repo_root/data/reference/TAIR10.gff3" ]]; then
-    if bash "$script_dir/test_pipeline02_strand_realdata.sh" > /tmp/strand_real.log 2>&1; then
+    strand_log="$log_dir/strand_real.log"
+    if bash "$script_dir/test_pipeline02_strand_realdata.sh" > "$strand_log" 2>&1; then
         pass "TAIR10 promoter FASTA: + strand unchanged, - strand reverse-complemented by -s"
     else
-        fail "real-data strand check failed (see /tmp/strand_real.log)"
+        fail "real-data strand check failed (see $strand_log)"
     fi
 else
     printf '  SKIP  TAIR10 inputs not present\n'
@@ -241,14 +250,15 @@ if [[ ! -s "$heatmap_fixture" ]]; then
 elif ! command -v Rscript >/dev/null 2>&1; then
     printf '  SKIP  Rscript not on PATH (heatmap consistency check needs R)\n'
 else
+    heatmap_log="$log_dir/heatmap_consistency.log"
     if python3 "$script_dir/verify_heatmap_consistency.py" \
-            --input "$heatmap_fixture" > /tmp/heatmap_consistency.log 2>&1; then
+            --input "$heatmap_fixture" > "$heatmap_log" 2>&1; then
         pass "R and frontend pipelines pick the same motifs on the bundled fixture"
     else
-        fail "R/frontend heatmap motif selection diverged (see /tmp/heatmap_consistency.log)"
+        fail "R/frontend heatmap motif selection diverged (see $heatmap_log)"
         # Surface the first DIVERGE block so the failure is actionable
         # without the user opening the log.
-        sed -n '/^!!/,/^$/p' /tmp/heatmap_consistency.log | head -20 | sed 's/^/  /' >&2
+        sed -n '/^!!/,/^$/p' "$heatmap_log" | head -20 | sed 's/^/  /' >&2
     fi
 fi
 

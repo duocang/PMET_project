@@ -28,7 +28,7 @@ Usage:
 
 Exits 0 if the two pipelines agree, 1 if they disagree, 2 on tooling
 errors (missing R, missing input, etc.). Report (default
-``tests/integration/heatmap_consistency_report.txt``) gets the
+``results/tests/heatmap/consistency_report.txt``) gets the
 human-readable diff regardless of exit code.
 """
 
@@ -47,8 +47,11 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT = REPO_ROOT / "data/demos/promoters/pairing/demo/motif_output.txt"
-DEFAULT_REPORT = REPO_ROOT / "tests/integration/heatmap_consistency_report.txt"
+DEFAULT_INPUT = REPO_ROOT / "tests/integration/fixtures/heatmap/motif_output.txt"
+# All test artefacts share results/tests/<suite>/ — one root for every
+# gitignored test output makes `make clean-tests` straightforward and
+# survives across reboots (unlike /tmp).
+DEFAULT_REPORT = REPO_ROOT / "results/tests/heatmap/consistency_report.txt"
 R_DUMP_SCRIPT = REPO_ROOT / "scripts/r/dump_processed_data.R"
 
 
@@ -351,7 +354,7 @@ def main() -> int:
                    action="store_false")
     p.add_argument("--report", default=str(DEFAULT_REPORT),
                    help="write diff report here (default: "
-                        "tests/integration/heatmap_consistency_report.txt)")
+                        "results/tests/heatmap/consistency_report.txt)")
     p.add_argument("--render-dir", default=None,
                    help="when set, also render side-by-side PNGs of the R "
                         "and frontend heatmaps to <dir>/r.png and "

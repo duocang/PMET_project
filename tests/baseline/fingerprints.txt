@@ -1,6 +1,6 @@
-# baseline captured: 2026-05-03T10:29:47Z
+# baseline captured: 2026-05-03T14:36:06Z
 # host: Darwin 24.6.0 arm64
-# git: 644b64b on main
+# git: 4c9cd1d on main
 
 ## section:binaries
 build/indexing_fimo_fused	23374bf20e118e64f453ac92a6e9ba50086f00fc004e8845d9a74bb20165d316

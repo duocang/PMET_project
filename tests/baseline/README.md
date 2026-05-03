@@ -72,7 +72,7 @@ b5a8ee82b9078787…  ./fused/fimohits/CCA1.bin
 
 - **No diff** → nothing changed, your edit is bytes-clean.
 - **A per-file sha changed** → that one file's contents shifted; open the file and compare to its previous output to see how.
-- **`# RUN_OK` flipped to `# RUN_FAIL exit=N`** → the underlying script aborted before producing output; the `# ...` lines below it are the last 20 lines of stderr from `/tmp/baseline_*.log`.
+- **`# RUN_OK` flipped to `# RUN_FAIL exit=N`** → the underlying script aborted before producing output; the `# ...` lines below it are the last 20 lines of stderr from the matching log under `results/tests/baseline/{indexing_fused,pairing,env_check,backend_pytest}.log`.
 - **A whole section gained or lost lines** → an output file was added or deleted by the workflow.
 
 Safe to re-run any time. Each section is wrapped in a fallback block, so a missing input (no TAIR10 yet, no host binaries built, etc.) degrades to a clearly-marked SKIP instead of aborting mid-capture.
@@ -180,7 +180,7 @@ b5a8ee82b9078787…  ./fused/fimohits/CCA1.bin
 
 - **没 diff** → 啥都没变，你的改动在字节层面是干净的。
 - **某个文件的 sha 变了** → 那个文件的内容有变化；打开它跟上一次输出对比看怎么变的。
-- **`# RUN_OK` 翻成 `# RUN_FAIL exit=N`** → 底层脚本在产出之前就 abort 了；下面 `# ...` 那几行是 `/tmp/baseline_*.log` 末尾 20 行 stderr。
+- **`# RUN_OK` 翻成 `# RUN_FAIL exit=N`** → 底层脚本在产出之前就 abort 了；下面 `# ...` 那几行是 `results/tests/baseline/{indexing_fused,pairing,env_check,backend_pytest}.log` 对应那份末尾 20 行 stderr。
 - **整段多了 / 少了几行** → workflow 多产了 / 少产了某个输出文件。
 
 随时可以重跑。每段都包了 fallback，缺输入（还没下 TAIR10、还没编 host 二进制等）时会清清楚楚标个 SKIP，不会中途 abort。

@@ -95,4 +95,3 @@ tests/audit/runs/
 # Local audit notes — persisted on disk for your reference, not committed
 AUDIT_FINDINGS.md
 
-tests/integration/heatmap_consistency_report.txt

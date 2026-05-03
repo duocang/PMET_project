@@ -1,7 +1,7 @@
 # PMET monorepo top-level Makefile
 
 .PHONY: help build build-core clean-core-binaries build-indexing build-pairing baseline clean \
-        clean-results clean-results-app clean-results-cli \
+        clean-results clean-results-app clean-results-cli clean-results-tests \
         fetch-data build-app up down logs ps rebuild \
         test test-core test-pairing test-indexing test-unit test-integration test-audit
 
@@ -15,10 +15,11 @@ help:
 	@echo "  Local CLI / dev — host-side, no docker"
 	@echo "    build            - compile core C/C++ engines into ./build/  (NOT the web app)"
 	@echo "    fetch-data       - download TAIR10 + per-species indexes (run ONCE, ~16 GB)"
-	@echo "    clean            - remove ./build/ (compiled core binaries)"
-	@echo "    clean-results-app - wipe results/app/ (web-app task outputs)"
-	@echo "    clean-results-cli - wipe results/cli/ (CLI / pipeline outputs)"
-	@echo "    clean-results    - both of the above"
+	@echo "    clean              - remove ./build/ (compiled core binaries)"
+	@echo "    clean-results-app  - wipe results/app/ (web-app task outputs)"
+	@echo "    clean-results-cli  - wipe results/cli/ (CLI / pipeline outputs)"
+	@echo "    clean-results-tests - wipe results/tests/ (smoke / baseline / heatmap logs)"
+	@echo "    clean-results      - all three of the above"
 	@echo ""
 	@echo "  Tests — every track has a make target; 'make test' chains the fast ones"
 	@echo "    test             - test-core + test-unit + test-integration  (~10 s, gate before commit)"
@@ -135,7 +136,11 @@ clean-results-cli:
 	@rm -rf $(ROOT)/results/cli/*
 	@echo "wiped results/cli/"
 
-clean-results: clean-results-app clean-results-cli
+clean-results-tests:
+	@rm -rf $(ROOT)/results/tests/*
+	@echo "wiped results/tests/"
+
+clean-results: clean-results-app clean-results-cli clean-results-tests
 
 # ---- Web app (proxies into deploy/) ----
 # These shortcuts run docker-compose from deploy/ so you don't need to cd.

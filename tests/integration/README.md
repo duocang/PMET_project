@@ -112,9 +112,24 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 **Produces.**
 
-- **Stdout** — one line per cluster (`== <cluster>: N motifs match` on agree; `!! <cluster>: motif set differs ...` on diverge with R-only / TS-only sets).
-- **Report file** — `tests/integration/heatmap_consistency_report.txt` (gitignored; rewritten every run).
-- **Render dir (with `--render-dir`)** — `<dir>/r.png` always; `<dir>/frontend.png` if Playwright + the stack are available. Each render is independent.
+| Where | What |
+|---|---|
+| **stdout** | one line per cluster (`== <cluster>: N motifs match` on agree; `!! <cluster>: motif set differs ...` on diverge), plus the trailing `# wrote ...` pointer |
+| `results/tests/heatmap/consistency_report.txt` | the same report as stdout, persisted across runs (rewritten every invocation). Override with `--report PATH` |
+| `<dir>/r.png` | with `--render-dir <dir>`: R's `draw_heatmap.R` output. Always rendered when Rscript is on PATH |
+| `<dir>/frontend.png` | with `--render-dir <dir>`: Playwright-captured frontend heatmap. Skipped with a stderr install hint if Playwright isn't installed |
+
+Sample agree report:
+
+```
+# heatmap consistency report
+# input:  tests/integration/fixtures/heatmap/motif_output.txt
+# params: p_adj_limit=0.05 unique=True max_motifs=30
+# verdict: AGREE
+
+== heat_down: 15 motifs match
+== heat_up: 15 motifs match
+```
 
 <a id="en-5"></a>
 
@@ -141,7 +156,23 @@ make test-integration            # equivalent to:
 bash tests/integration/run_smoke.sh
 ```
 
-**Produces.** Stdout only. Each section announces itself with `[smoke] <label>` and prints PASS / FAIL / SKIP per assertion. Exit 0 if all checks pass, 1 if any fail.
+**Produces.**
+
+| Where | What |
+|---|---|
+| **stdout** | each section announces itself with `[smoke] <label>`, then prints PASS / FAIL / SKIP per assertion. Exit 0 if all checks pass, 1 if any fail |
+| `results/tests/smoke/strand_real.log` | full stderr from the TAIR10 strand sub-check (only written when that branch ran). FAIL message points at this path |
+| `results/tests/smoke/heatmap_consistency.log` | full stderr from the heatmap consistency sub-check. On FAIL, the first DIVERGE block is also echoed inline so the failure is actionable without opening the log |
+
+Sample stdout tail:
+
+```
+[smoke] real-data strand extraction (TAIR10)
+  PASS  TAIR10 promoter FASTA: + strand unchanged, - strand reverse-complemented by -s
+[smoke] R vs frontend heatmap consistency
+  PASS  R and frontend pipelines pick the same motifs on the bundled fixture
+[smoke] all checks passed
+```
 
 <a id="en-6"></a>
 
@@ -159,7 +190,24 @@ bash tests/integration/run_smoke.sh
 bash tests/integration/test_pipeline02_strand_realdata.sh
 ```
 
-**Produces.** Stdout. Reports the SHA-256 of each FASTA, then per-strand counts of identical / reverse-complement matches. Exits 0 if every check passes, non-zero on any mismatch.
+**Produces.**
+
+| Where | What |
+|---|---|
+| **stdout** | SHA-256 of each FASTA, per-strand counts of identical / reverse-complement matches |
+| `/tmp/strand_pre_*.fa`, `/tmp/strand_post_*.fa` | the two FASTA files produced under each `-s` setting (the script makes its own `mktemp -d` and cleans up on success — paths printed in the trailing `[strand-real] ...` lines) |
+
+Sample tail:
+
+```
+[strand-real] PRE-FIX  (no -s) FASTA sha256: 4b9f61d5c2a25a9b8a2860fded75aaafefc5209adc0300446a091fbcac55f273
+[strand-real] POST-FIX (-s)    FASTA sha256: cd1ebf4a7359958826323fa74423d55f3583343b8ef12396e8c7a44eedfbeed3
+[strand-real] + strand: 13855 identical, 0 differ
+[strand-real] - strand: 13800 are RC of pre-fix, 0 are not
+[strand-real] all per-gene checks passed
+```
+
+Exits 0 on every-check pass, non-zero on any mismatch.
 
 <a id="en-7"></a>
 
@@ -180,7 +228,14 @@ TASK=my_task PLEN=1000 MAXK=4 TOPN=3000 \
     bash tests/integration/run_pipeline02_one_combo.sh
 ```
 
-**Produces.** A single grid cell's output under `results/02_perf_params/`. Mirror the structure of a full sweep at one combo so any downstream tooling that points at the perf-params output keeps working.
+**Produces.**
+
+| Where | What |
+|---|---|
+| `results/02_perf_params/<task>_LEN<plen>_K<maxk>_N<topn>_FIMO0.05/` | one grid cell's full output (binomial_thresholds, fimohits/, motif_output.txt, plot/, etc.) — same shape as a full sweep at this combo |
+| `results/02_perf_params/02_heterotypic/...` | per-cluster heterotypic output (the file the heatmap pipeline reads) |
+
+Mirror the structure of a full sweep at one combo so any downstream tooling that points at the perf-params output keeps working.
 
 <a id="en-8"></a>
 
@@ -204,7 +259,15 @@ IC_VALUES="2 4" \
     bash tests/integration/run_pipeline08_ic_sweep.sh
 ```
 
-**Produces.** `$OUT_BASE/icN/` per IC value (full pair_only output: `motif_output.txt`, `plot/`, etc.) plus `$OUT_BASE/summary.tsv`:
+**Produces.**
+
+| Where | What |
+|---|---|
+| `$OUT_BASE/icN/` (per IC) | full pair_only output: `motif_output.txt`, `plot/`, `genes_used_PMET.txt`, `pmet.log` |
+| `$OUT_BASE/summary.tsv` | one row per IC: `ic`, `motif_output_lines`, `sha256`, `wall_time_s`, `exit` |
+| stdout | per-IC progress (`[ic-sweep] ic=N OK 14s 46 lines sha=...`) plus the summary table at the end |
+
+Sample `summary.tsv`:
 
 ```
 ic   motif_output_lines   sha256                                                            wall_time_s   exit
@@ -212,9 +275,9 @@ ic   motif_output_lines   sha256                                                
 4    46                   0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f  14            0
 ```
 
-Verified: ic=4 SHA matches the binomial baseline anchor in [`tests/baseline/fingerprints.txt`](../baseline/fingerprints.txt) — one of those independent corroborations that the demo path produces deterministic output.
+Verified: `ic=4` SHA matches the binomial baseline anchor in [`tests/baseline/fingerprints.txt`](../baseline/fingerprints.txt) — independent corroboration that the demo path produces deterministic output.
 
-**Exit codes.** 0 if every IC succeeded; 1 if at least one failed (`summary.tsv` lists which).
+**Exit codes.** 0 if every IC succeeded; 1 if at least one failed (`summary.tsv` `exit` column lists which).
 
 <a id="en-9"></a>
 
@@ -232,7 +295,14 @@ Verified: ic=4 SHA matches the binomial baseline anchor in [`tests/baseline/fing
 bash tests/integration/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
 ```
 
-**Produces.** Stdout summary; on FAIL, prints the diff (`< baseline`, `> current`) on stderr. Exits 0 on match, 1 on diverge, 2 on usage errors. The default exclude pattern drops `*.log` files from both sides (timestamps and per-thread scheduling are nondeterministic); override via `EXCLUDE='/pmet\.log$'`.
+**Produces.**
+
+| Where | What |
+|---|---|
+| **stdout** | one-line summary: `OK — N files match (exclude=...)` on success |
+| **stderr** | on FAIL, the diff in `diff` format (`< baseline`, `> current`) plus a header noting how many files counted on each side |
+
+Exits 0 on match, 1 on diverge, 2 on usage errors. The default exclude pattern drops `*.log` files from both sides (timestamps and per-thread scheduling are nondeterministic); override via `EXCLUDE='/pmet\.log$'`.
 
 <a id="en-10"></a>
 
@@ -354,9 +424,24 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 **产出**：
 
-- **stdout** —— 每个 cluster 一行（一致 `== <cluster>: N motifs match`，分叉 `!! <cluster>: motif set differs ...` 加双向独有 motif 列表）。
-- **报告文件** —— `tests/integration/heatmap_consistency_report.txt`（gitignored，每次重写）。
-- **render 目录（带 `--render-dir`）** —— `<dir>/r.png` 一定在；`<dir>/frontend.png` 在 Playwright + 栈都有时。两个渲染独立。
+| 位置 | 内容 |
+|---|---|
+| **stdout** | 每个 cluster 一行（一致 `== <cluster>: N motifs match`，分叉 `!! <cluster>: motif set differs ...` 加双向独有 motif），尾部 `# wrote ...` 指示报告路径 |
+| `results/tests/heatmap/consistency_report.txt` | 跟 stdout 同内容，落盘留底（每次重写）。`--report PATH` 可改写 |
+| `<dir>/r.png` | 带 `--render-dir <dir>` 时：R `draw_heatmap.R` 输出。Rscript 在 PATH 上时一定生成 |
+| `<dir>/frontend.png` | 带 `--render-dir <dir>` 时：Playwright 抓的前端热图。没装 Playwright 时 stderr 打安装提示后跳过 |
+
+报告样例（一致）：
+
+```
+# heatmap consistency report
+# input:  tests/integration/fixtures/heatmap/motif_output.txt
+# params: p_adj_limit=0.05 unique=True max_motifs=30
+# verdict: AGREE
+
+== heat_down: 15 motifs match
+== heat_up: 15 motifs match
+```
 
 <a id="cn-5"></a>
 
@@ -383,7 +468,23 @@ make test-integration            # 等价于：
 bash tests/integration/run_smoke.sh
 ```
 
-**产出**：仅 stdout。每段先打 `[smoke] <label>`，逐断言 PASS / FAIL / SKIP。全过 exit 0，任一 fail exit 1。
+**产出**：
+
+| 位置 | 内容 |
+|---|---|
+| **stdout** | 每段先打 `[smoke] <label>`，逐断言 PASS / FAIL / SKIP。全过 exit 0，任一 fail exit 1 |
+| `results/tests/smoke/strand_real.log` | TAIR10 strand 子检查的完整 stderr（仅在该分支真跑时写入）。FAIL 时 stdout 提示这个路径 |
+| `results/tests/smoke/heatmap_consistency.log` | 热图一致性子检查的完整 stderr。FAIL 时第一段 DIVERGE 也内联回显，不必另开 log 文件 |
+
+stdout 尾段样例：
+
+```
+[smoke] real-data strand extraction (TAIR10)
+  PASS  TAIR10 promoter FASTA: + strand unchanged, - strand reverse-complemented by -s
+[smoke] R vs frontend heatmap consistency
+  PASS  R and frontend pipelines pick the same motifs on the bundled fixture
+[smoke] all checks passed
+```
 
 <a id="cn-6"></a>
 
@@ -401,7 +502,24 @@ bash tests/integration/run_smoke.sh
 bash tests/integration/test_pipeline02_strand_realdata.sh
 ```
 
-**产出**：stdout。先打两份 FASTA 的 SHA-256，然后逐 strand 报相同 / 反向互补的计数。全过 exit 0，任何不匹配非 0。
+**产出**：
+
+| 位置 | 内容 |
+|---|---|
+| **stdout** | 两份 FASTA 的 SHA-256，逐 strand 的相同 / 反向互补计数 |
+| `/tmp/strand_pre_*.fa`、`/tmp/strand_post_*.fa` | 两次 `-s` 设置下产出的 FASTA（脚本自己 `mktemp -d` 用完清理；路径在尾部 `[strand-real] ...` 行打出） |
+
+样例尾段：
+
+```
+[strand-real] PRE-FIX  (no -s) FASTA sha256: 4b9f61d5c2a25a9b8a2860fded75aaafefc5209adc0300446a091fbcac55f273
+[strand-real] POST-FIX (-s)    FASTA sha256: cd1ebf4a7359958826323fa74423d55f3583343b8ef12396e8c7a44eedfbeed3
+[strand-real] + strand: 13855 identical, 0 differ
+[strand-real] - strand: 13800 are RC of pre-fix, 0 are not
+[strand-real] all per-gene checks passed
+```
+
+全过 exit 0，任何不匹配 exit 非 0。
 
 <a id="cn-7"></a>
 
@@ -422,7 +540,14 @@ TASK=my_task PLEN=1000 MAXK=4 TOPN=3000 \
     bash tests/integration/run_pipeline02_one_combo.sh
 ```
 
-**产出**：`results/02_perf_params/` 下单格输出，目录结构跟全 sweep 的一格相同 —— 任何指向 perf-params 输出的下游工具都能继续工作。
+**产出**：
+
+| 位置 | 内容 |
+|---|---|
+| `results/02_perf_params/<task>_LEN<plen>_K<maxk>_N<topn>_FIMO0.05/` | 一格输出（binomial_thresholds、fimohits/、motif_output.txt、plot/ 等），结构跟全 sweep 的一格相同 |
+| `results/02_perf_params/02_heterotypic/...` | 各 cluster 的异型输出（热图流水线读这个） |
+
+下游所有指向 perf-params 输出的工具都能继续工作。
 
 <a id="cn-8"></a>
 
@@ -446,7 +571,15 @@ IC_VALUES="2 4" \
     bash tests/integration/run_pipeline08_ic_sweep.sh
 ```
 
-**产出**：`$OUT_BASE/icN/` per IC（完整 pair_only 输出：`motif_output.txt`、`plot/` 等）加 `$OUT_BASE/summary.tsv`：
+**产出**：
+
+| 位置 | 内容 |
+|---|---|
+| `$OUT_BASE/icN/` (每个 IC) | 完整 pair_only 输出：`motif_output.txt`、`plot/`、`genes_used_PMET.txt`、`pmet.log` |
+| `$OUT_BASE/summary.tsv` | 每 IC 一行：`ic`、`motif_output_lines`、`sha256`、`wall_time_s`、`exit` |
+| stdout | 每 IC 进度（`[ic-sweep] ic=N OK 14s 46 lines sha=...`），尾部打 summary 表 |
+
+`summary.tsv` 样例：
 
 ```
 ic   motif_output_lines   sha256                                                            wall_time_s   exit
@@ -454,9 +587,9 @@ ic   motif_output_lines   sha256                                                
 4    46                   0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f  14            0
 ```
 
-实测：ic=4 的 SHA 跟 [`tests/baseline/fingerprints.txt`](../baseline/fingerprints.txt) 里的 binomial baseline anchor **完全一致** —— 一处独立旁证 demo 路径产物的确定性。
+实测：`ic=4` SHA 跟 [`tests/baseline/fingerprints.txt`](../baseline/fingerprints.txt) 里的 binomial baseline anchor **完全一致** —— 独立旁证 demo 路径的确定性。
 
-**退出码**：每个 IC 都成功则 0；任一失败则 1（`summary.tsv` 标出哪个）。
+**退出码**：每个 IC 都成功则 0；任一失败则 1（`summary.tsv` 的 `exit` 列标出哪个）。
 
 <a id="cn-9"></a>
 
@@ -474,7 +607,14 @@ ic   motif_output_lines   sha256                                                
 bash tests/integration/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
 ```
 
-**产出**：stdout 摘要；FAIL 时 stderr 打 diff（`< baseline`、`> current`）。一致 exit 0，分叉 1，用法错 2。默认 exclude 把两边的 `*.log` 文件丢掉（时间戳 + 多线程调度 nondeterministic），用 `EXCLUDE='/pmet\.log$'` 重设。
+**产出**：
+
+| 位置 | 内容 |
+|---|---|
+| **stdout** | 一行摘要：成功打 `OK — N files match (exclude=...)` |
+| **stderr** | FAIL 时打 `diff` 格式（`< baseline`、`> current`）加两边过滤后的文件计数 header |
+
+一致 exit 0，分叉 1，用法错 2。默认 exclude 把两边的 `*.log` 文件丢掉（时间戳 + 多线程调度 nondeterministic），用 `EXCLUDE='/pmet\.log$'` 重设。
 
 <a id="cn-10"></a>
 

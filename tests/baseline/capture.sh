@@ -7,6 +7,12 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
+# Per-step stderr lands here instead of /tmp/baseline_*.log — survives
+# across reboots, lives next to other gitignored test artefacts under
+# results/tests/, and `make clean-tests` wipes the whole tree.
+LOG_DIR="$ROOT/results/tests/baseline"
+mkdir -p "$LOG_DIR"
+
 hash_file() {
   if [ -f "$1" ]; then
     shasum -a 256 "$1" | awk '{print $1}'
@@ -58,12 +64,12 @@ for v in fused; do
        --bgfile "$DEMO_IDX/promoters.bg" \
        --oc "$out_dir/$v" \
        "$DEMO_IDX/motifs.txt" "$DEMO_IDX/promoters.fa" "$DEMO_IDX/promoter_lengths.txt" \
-       >"/tmp/baseline_idx_$v.log" 2>&1; then
+       >"$LOG_DIR/indexing_$v.log" 2>&1; then
     echo "# RUN_OK"
     hash_dir_files "$out_dir"
   else
     echo "# RUN_FAIL exit=$?"
-    tail -20 "/tmp/baseline_idx_$v.log" | sed 's/^/# /'
+    tail -20 "$LOG_DIR/indexing_$v.log" | sed 's/^/# /'
   fi
   rm -rf "$out_dir"
   echo ""
@@ -99,7 +105,7 @@ if build/pairing_parallel \
      -c IC.txt \
      -f fimohits \
      -t 2 \
-     -o "$out_dir" >/tmp/baseline_pair.log 2>&1; then
+     -o "$out_dir" >$LOG_DIR/pairing.log 2>&1; then
   # Merge per-thread temp shards into the canonical motif_output.txt
   # (pairing_parallel writes one shard per thread; the wrapper used to do
   # this concatenation outside the binary).
@@ -112,19 +118,19 @@ if build/pairing_parallel \
   hash_dir_files "$out_dir"
 else
   echo "# RUN_FAIL exit=$?"
-  tail -20 /tmp/baseline_pair.log | sed 's/^/# /'
+  tail -20 $LOG_DIR/pairing.log | sed 's/^/# /'
 fi
 rm -rf "$out_dir"
 echo ""
 
 echo "## section:analysis_smoke"
 if [ -f scripts/workflows/cli/00_env_check.sh ]; then
-  if bash scripts/workflows/cli/00_env_check.sh >/tmp/baseline_smoke.log 2>&1; then
+  if bash scripts/workflows/cli/00_env_check.sh >$LOG_DIR/env_check.log 2>&1; then
     echo "# SMOKE_OK"
-    tail -5 /tmp/baseline_smoke.log | sed 's/^/# /'
+    tail -5 $LOG_DIR/env_check.log | sed 's/^/# /'
   else
     echo "# SMOKE_FAIL exit=$?"
-    tail -20 /tmp/baseline_smoke.log | sed 's/^/# /'
+    tail -20 $LOG_DIR/env_check.log | sed 's/^/# /'
   fi
 else
   echo "# SMOKE_SKIP scripts/workflows/cli/00_env_check.sh not found"
@@ -135,11 +141,11 @@ echo "## section:backend_pytest"
 # Backend smoke needs the package on PYTHONPATH; running from apps/ gets
 # `pmet_backend` discoverable as a top-level package.
 if [ -f apps/pmet_backend/test_api.py ]; then
-  if (cd apps && python3 pmet_backend/test_api.py) >/tmp/baseline_pytest.log 2>&1; then
+  if (cd apps && python3 pmet_backend/test_api.py) >$LOG_DIR/backend_pytest.log 2>&1; then
     echo "# PYTEST_OK"
   else
     echo "# PYTEST_FAIL exit=$?"
-    tail -20 /tmp/baseline_pytest.log | sed 's/^/# /'
+    tail -20 $LOG_DIR/backend_pytest.log | sed 's/^/# /'
   fi
 else
   echo "# PYTEST_SKIP apps/pmet_backend/test_api.py not found"
