@@ -228,6 +228,31 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 7: R vs frontend heatmap motif-selection consistency. Needs
+# Rscript (the verify script can't drive its R-side dump otherwise);
+# skips cleanly when not present so machines without R still pass the
+# rest of the smoke.
+# ---------------------------------------------------------------------------
+section "R vs frontend heatmap consistency"
+
+heatmap_fixture="$repo_root/tests/integration/fixtures/heatmap/motif_output.txt"
+if [[ ! -s "$heatmap_fixture" ]]; then
+    printf '  SKIP  fixture missing: tests/integration/fixtures/heatmap/motif_output.txt\n'
+elif ! command -v Rscript >/dev/null 2>&1; then
+    printf '  SKIP  Rscript not on PATH (heatmap consistency check needs R)\n'
+else
+    if python3 "$script_dir/verify_heatmap_consistency.py" \
+            --input "$heatmap_fixture" > /tmp/heatmap_consistency.log 2>&1; then
+        pass "R and frontend pipelines pick the same motifs on the bundled fixture"
+    else
+        fail "R/frontend heatmap motif selection diverged (see /tmp/heatmap_consistency.log)"
+        # Surface the first DIVERGE block so the failure is actionable
+        # without the user opening the log.
+        sed -n '/^!!/,/^$/p' /tmp/heatmap_consistency.log | head -20 | sed 's/^/  /' >&2
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 
 if (( failed == 0 )); then
     printf '\n[smoke] all checks passed\n'

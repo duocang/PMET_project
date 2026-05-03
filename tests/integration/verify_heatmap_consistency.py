@@ -85,18 +85,18 @@ def parse_pmet_file(path: Path) -> List[dict]:
 
 def frontend_process(rows: List[dict],
                      p_adj_limit: float,
-                     topn: int,
+                     max_motifs: int,
                      unique_combination: bool) -> Dict[str, dict]:
     """Mirror of processPmetResult() in apps/pmet_frontend/app/visualize/page.tsx.
 
-    Returns ``{cluster: {motifs: [...], top_pairs: [...]}}``. Top pairs
-    are kept alongside the motif set so the diff can show *why* the two
-    pipelines chose different motifs (often it's that R's score-based
-    ranking elevated a motif that's in many lower-significance pairs
-    while the frontend stuck to motifs from the single highest-p pair).
+    Both sides now use the same score-based motif selection (sum of
+    -log10(p_adj) per motif, per-cluster cap = ⌊max_motifs / n_clusters⌋
+    with a floor of 3, then a global secondary trim that prefers
+    motifs hit by more clusters when the union still exceeds the cap).
+    Originally the TS side used a different "top-N pairs, collect
+    motifs" rule and this script existed to surface the divergence;
+    after the alignment commit the two should report AGREE.
     """
-    # genesPerCluster: union of every gene mentioned in any row of that
-    # cluster (matches the frontend's Set semantics).
     genes_per_cluster: Dict[str, set] = defaultdict(set)
     for r in rows:
         genes_per_cluster[r["cluster"]].update(r["genes"])
@@ -119,24 +119,62 @@ def frontend_process(rows: List[dict],
     by_cluster: Dict[str, List[dict]] = defaultdict(list)
     for r in filtered:
         by_cluster[r["cluster"]].append(r)
+    clusters = sorted(by_cluster)
+
+    # Score motifs per cluster — Σ −log10(p_adj) over pairs containing
+    # the motif. Floor p_adj at 1e-300 to avoid log(0)=Inf when
+    # extremely-small adjusted p-values underflow.
+    score_per_cluster: Dict[str, Dict[str, float]] = {}
+    for clu in clusters:
+        scores: Dict[str, float] = defaultdict(float)
+        for r in by_cluster[clu]:
+            neg_log_p = -math.log10(max(r["p_adj_bonf"], 1e-300))
+            scores[r["motif1"]] += neg_log_p
+            scores[r["motif2"]] += neg_log_p
+        score_per_cluster[clu] = dict(scores)
+
+    per_cluster_cap = max(3, max_motifs // max(1, len(clusters)))
+    top_per_cluster: Dict[str, List[str]] = {}
+    for clu in clusters:
+        ordered = sorted(score_per_cluster[clu].items(),
+                         key=lambda kv: kv[1], reverse=True)
+        top_per_cluster[clu] = [m for m, _ in ordered[:per_cluster_cap]]
+
+    # Global secondary trim — only when the union still exceeds the cap.
+    union: List[str] = []
+    seen_union = set()
+    for clu in clusters:
+        for m in top_per_cluster[clu]:
+            if m not in seen_union:
+                seen_union.add(m)
+                union.append(m)
+    if len(union) > max_motifs:
+        global_agg: Dict[str, Dict[str, float]] = {}
+        for clu in clusters:
+            for m in top_per_cluster[clu]:
+                score = score_per_cluster[clu].get(m, 0.0)
+                cur = global_agg.setdefault(m, {"n_clu": 0, "global_score": 0.0})
+                cur["n_clu"] += 1
+                cur["global_score"] += score
+        ranked = sorted(
+            global_agg.items(),
+            key=lambda kv: (-kv[1]["n_clu"], -kv[1]["global_score"]),
+        )
+        kept = {m for m, _ in ranked[:max_motifs]}
+        for clu in clusters:
+            top_per_cluster[clu] = [m for m in top_per_cluster[clu] if m in kept]
 
     out: Dict[str, dict] = {}
-    for clu in sorted(by_cluster):
-        sorted_rows = sorted(by_cluster[clu], key=lambda r: r["p_adj_bonf"])
-        topk = sorted_rows[:topn]
-        motif_set: List[str] = []
-        seen = set()
-        for r in topk:
-            for m in (r["motif1"], r["motif2"]):
-                if m not in seen:
-                    seen.add(m)
-                    motif_set.append(m)
+    for clu in clusters:
+        # Re-sort cluster pairs by p_adj_bonf for the diagnostic
+        # "top_pairs" preview the diff function shows on mismatch.
+        sorted_pairs = sorted(by_cluster[clu], key=lambda r: r["p_adj_bonf"])
         out[clu] = {
-            "motifs": motif_set,
+            "motifs": top_per_cluster[clu],
             "top_pairs": [
                 {"motif1": r["motif1"], "motif2": r["motif2"],
                  "p_adj_bonf": r["p_adj_bonf"], "gene_num": r["gene_num"]}
-                for r in topk
+                for r in sorted_pairs[:5]
             ],
         }
     return out
@@ -166,6 +204,84 @@ def run_r_dump(input_path: Path,
         sys.stderr.write(proc.stdout)
         sys.stderr.write(proc.stderr)
         raise SystemExit(f"R dump failed (exit {proc.returncode})")
+
+
+# --------------------------------------------------------------------------
+# Optional visual rendering (--render-dir). The data-level check above is
+# enough to prove the two pipelines pick the same motifs; this section
+# additionally produces side-by-side PNGs so a reviewer can eyeball
+# colour scale, label rotation, axis order, etc. — the things that
+# differ visually even when the underlying data agrees.
+# --------------------------------------------------------------------------
+
+DRAW_HEATMAP_R = REPO_ROOT / "scripts/r/draw_heatmap.R"
+
+
+def render_r_png(input_path: Path, out_png: Path,
+                 max_motifs: int, max_inches: float = 40) -> None:
+    """Drive scripts/r/draw_heatmap.R to produce the All-clusters PNG."""
+    if shutil.which("Rscript") is None:
+        raise RuntimeError("Rscript not found on PATH")
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "Rscript", str(DRAW_HEATMAP_R.relative_to(REPO_ROOT)),
+        "All", str(out_png), str(input_path),
+        "5", "3", "6", "FALSE",                  # legacy positionals (ncol/width/unique)
+        str(max_motifs), str(max_inches),
+    ]
+    proc = subprocess.run(
+        cmd, cwd=REPO_ROOT, capture_output=True, text=True, timeout=120
+    )
+    if proc.returncode != 0:
+        sys.stderr.write(proc.stdout)
+        sys.stderr.write(proc.stderr)
+        raise RuntimeError(f"R render failed (exit {proc.returncode})")
+
+
+def render_frontend_png(input_path: Path, out_png: Path,
+                        base_url: str = "http://localhost:5960") -> None:
+    """Capture the live frontend's heatmap by driving /visualize via
+    Playwright. Requires the docker stack to be up and Playwright +
+    Chromium installed on the host (`pip install playwright &&
+    playwright install chromium`).
+
+    The frontend page accepts a local file via drag-drop; the cleaner
+    headless path is `set_input_files()` against the underlying
+    `<input type="file">`. After upload we wait for the Plotly heatmap
+    container to mount, then screenshot it (not the whole page — the
+    upload zone and surrounding chrome aren't part of the visual diff
+    we care about).
+    """
+    try:
+        from playwright.sync_api import sync_playwright   # type: ignore
+    except ImportError as exc:
+        raise RuntimeError(
+            "playwright not installed. Install with:\n"
+            "  pip install playwright && playwright install chromium"
+        ) from exc
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        try:
+            page = browser.new_page(viewport={"width": 1600, "height": 1200})
+            page.goto(f"{base_url}/visualize", wait_until="networkidle", timeout=20_000)
+            # The page hides a real <input type="file"> behind the drop zone;
+            # set_input_files bypasses the drag-drop UI.
+            file_input = page.locator('input[type="file"]').first
+            file_input.set_input_files(str(input_path))
+            # Wait for any Plotly plot to render. The heatmap may take a
+            # few seconds for large fixtures; bump timeout if needed.
+            page.wait_for_selector(".js-plotly-plot", state="visible",
+                                   timeout=20_000)
+            # Plotly draws asynchronously; let the layout settle before
+            # the screenshot. networkidle isn't enough — the data is
+            # already in memory and the work is on the main thread.
+            page.wait_for_timeout(1_500)
+            plot = page.locator(".js-plotly-plot").first
+            plot.screenshot(path=str(out_png))
+        finally:
+            browser.close()
 
 
 def diff_pipelines(r_data: dict, ts_data: Dict[str, dict]) -> Tuple[bool, List[str]]:
@@ -225,10 +341,9 @@ def main() -> int:
     p.add_argument("--input", default=str(DEFAULT_INPUT),
                    help="motif_output.txt to compare on (default: demo fixture)")
     p.add_argument("--p-adj-limit", type=float, default=0.05)
-    p.add_argument("--topn", type=int, default=5,
-                   help="frontend's per-cluster top-N pair count")
     p.add_argument("--max-motifs", type=int, default=30,
-                   help="R's max_motifs_in_plot cap")
+                   help="global motif cap on the heatmap (matches both R's "
+                        "max_motifs_in_plot and the frontend's maxMotifs knob)")
     p.add_argument("--unique-combination", action="store_true", default=True,
                    help="drop motif pairs that appear in multiple clusters "
                         "(matches the default in both pipelines)")
@@ -237,6 +352,17 @@ def main() -> int:
     p.add_argument("--report", default=str(DEFAULT_REPORT),
                    help="write diff report here (default: "
                         "tests/integration/heatmap_consistency_report.txt)")
+    p.add_argument("--render-dir", default=None,
+                   help="when set, also render side-by-side PNGs of the R "
+                        "and frontend heatmaps to <dir>/r.png and "
+                        "<dir>/frontend.png. R needs Rscript on PATH. "
+                        "Frontend needs the docker stack at --base-url and "
+                        "Playwright (`pip install playwright && playwright "
+                        "install chromium`); skipped with a hint if not "
+                        "available.")
+    p.add_argument("--base-url", default="http://localhost:5960",
+                   help="frontend URL for visual capture (default: "
+                        "http://localhost:5960; only used with --render-dir)")
     args = p.parse_args()
 
     input_path = Path(args.input).resolve()
@@ -249,12 +375,16 @@ def main() -> int:
         print(f"ERROR: no rows parsed from {input_path}", file=sys.stderr)
         return 2
 
-    ts_data = frontend_process(rows, args.p_adj_limit, args.topn,
+    ts_data = frontend_process(rows, args.p_adj_limit, args.max_motifs,
                                args.unique_combination)
 
     with tempfile.TemporaryDirectory() as td:
         r_json = Path(td) / "r.json"
-        run_r_dump(input_path, args.p_adj_limit, args.topn,
+        # The R driver still takes a `topn` arg for backwards compat
+        # with older callers but ignores it inside ProcessPmetResult.
+        # Pass any positive value; max_motifs is what actually drives
+        # the motif selection on both sides.
+        run_r_dump(input_path, args.p_adj_limit, 5,
                    args.unique_combination, args.max_motifs, r_json)
         r_data = json.loads(r_json.read_text())
 
@@ -265,7 +395,7 @@ def main() -> int:
     header = [
         f"# heatmap consistency report",
         f"# input:  {input_path.relative_to(REPO_ROOT) if input_path.is_relative_to(REPO_ROOT) else input_path}",
-        f"# params: p_adj_limit={args.p_adj_limit} topn={args.topn} "
+        f"# params: p_adj_limit={args.p_adj_limit} "
         f"unique={args.unique_combination} max_motifs={args.max_motifs}",
         f"# verdict: {'AGREE' if agrees else 'DIVERGE'}",
         "",
@@ -274,6 +404,24 @@ def main() -> int:
 
     print("\n".join(header + diff_lines))
     print(f"# wrote {report_path}")
+
+    if args.render_dir:
+        render_dir = Path(args.render_dir)
+        render_dir.mkdir(parents=True, exist_ok=True)
+        # R always rendered first — fast, dependency-light, and even if
+        # the frontend capture fails we still want a usable artifact.
+        try:
+            render_r_png(input_path, render_dir / "r.png", args.max_motifs)
+            print(f"# rendered {render_dir / 'r.png'}")
+        except Exception as e:
+            print(f"# R render skipped: {e}", file=sys.stderr)
+        try:
+            render_frontend_png(input_path, render_dir / "frontend.png",
+                                args.base_url)
+            print(f"# rendered {render_dir / 'frontend.png'}")
+        except Exception as e:
+            print(f"# frontend render skipped: {e}", file=sys.stderr)
+
     return 0 if agrees else 1
 
 
