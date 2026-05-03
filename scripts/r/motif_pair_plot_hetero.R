@@ -32,7 +32,14 @@ MotifPairPlotHetero <- function(plot.data = NULL,
     geom_tile(color = "white") +
     scale_alpha(range = c(0.3, 1)) +
     # scale_fill_brewer(palette = "Set1", na.value = "white") +
-    scale_fill_manual(values = colors, na.value = "white") +
+    # na.translate = FALSE tells ggplot: NAs still get coloured by
+    # na.value (white = empty cell, no significant pair in that
+    # motif pair × cluster), but do NOT add a separate "NA" slot to
+    # the legend. Without this the cluster legend ended up reading
+    # "cortex / epidermis / pericycle / Overlapped / NA" — confusing,
+    # because NA isn't a cluster.
+    scale_fill_manual(values = colors, na.value = "white",
+                      na.translate = FALSE) +
     scale_y_discrete(limits = rev, labels = rev(motifs)) +
     theme_bw() +
     theme(
