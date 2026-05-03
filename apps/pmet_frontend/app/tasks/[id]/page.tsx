@@ -9,6 +9,7 @@ import { useTranslation } from '@/lib/i18n';
 import { TranslationKey } from '@/lib/translations';
 import { formatBytes, formatRuntimeRange, humanizeIdentifier, summarizeError } from '@/lib/runtime';
 import StageBadge from '@/components/StageBadge';
+import TaskQuickLook from '@/components/TaskQuickLook';
 
 interface PageProps {
   params: { id: string };
@@ -84,6 +85,11 @@ export default function TaskDetailPage({ params }: PageProps) {
   }
 
   const precomputedInfo = getPrecomputedIndexInfo(task);
+  // motif_output.txt may exist for `completed` runs OR for partial states
+  // (partial_success / failed-with-output). The backend signals the latter
+  // via partial_result_link, so the union covers every case where the
+  // viewer + quick-look have something real to show.
+  const hasMotifOutput = task.status === 'completed' || !!task.partial_result_link;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -196,22 +202,36 @@ export default function TaskDetailPage({ params }: PageProps) {
           </details>
         )}
 
-        {task.status === 'completed' && (
+        {/* Open in Viewer + (when fully completed) Download zip. The viewer
+            CTA is shown whenever motif_output.txt exists — that includes
+            partial_success and any failed-with-output state where the
+            backend has set partial_result_link. The full zip download is
+            only meaningful for the completed case where every artifact
+            (heatmaps, logs, etc.) is bundled. */}
+        {hasMotifOutput && (
           <div className="mt-5 flex flex-wrap gap-3">
-            <a href={taskApi.downloadResult(task.task_id)} className="btn-primary">
-              {t('task.download')}
-              {task.result_size_bytes != null && (
-                <span className="ml-1 font-normal opacity-80">
-                  ({formatBytes(task.result_size_bytes)})
-                </span>
-              )}
-            </a>
-            <Link href={`/tasks/${task.task_id}/visualize`} className="btn-secondary">
-              {t('task.visualize')}
+            {task.status === 'completed' && (
+              <a href={taskApi.downloadResult(task.task_id)} className="btn-primary">
+                {t('task.download')}
+                {task.result_size_bytes != null && (
+                  <span className="ml-1 font-normal opacity-80">
+                    ({formatBytes(task.result_size_bytes)})
+                  </span>
+                )}
+              </a>
+            )}
+            <Link href={`/visualize?task=${task.task_id}`} className="btn-secondary">
+              {t('task.open_in_viewer')}
             </Link>
           </div>
         )}
       </div>
+
+      {/* At-a-glance preview — gated on motif_output.txt existence, not on
+          the strict completed status, so partial_success runs (where pairing
+          finished but a later stage failed) still show their results. The
+          backend's /api/results/{id} endpoint only checks file existence. */}
+      {hasMotifOutput && <TaskQuickLook taskId={task.task_id} />}
 
       {/* Analysis, timeline + parameters */}
       <div className="grid gap-6 md:grid-cols-2">

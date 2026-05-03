@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
+import { resultsApi } from '@/lib/api';
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
@@ -293,7 +295,7 @@ function discardSharedMotifs(motifsMap: Record<string, string[]>): Record<string
   return result;
 }
 
-export default function VisualizePage() {
+function VisualizePageContent() {
   const { t } = useTranslation();
   const [allResults, setAllResults] = useState<MotifResult[]>([]);
   const [fileName, setFileName] = useState('');
@@ -376,6 +378,61 @@ export default function VisualizePage() {
     },
     [handleFile]
   );
+
+  // Task source: when the page is opened as `/visualize?task=<id>` (from
+  // the task detail page's "Open in Viewer" CTA), pull the parsed result
+  // rows from the API and feed the same allResults slot the file/demo
+  // paths use. Page renders identically downstream — only the ingestion
+  // differs.
+  const searchParams = useSearchParams();
+  const taskParam = searchParams?.get('task') ?? null;
+  useEffect(() => {
+    if (!taskParam) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // Cap at 5000 (the backend's hard ceiling). Demo / typical web
+        // tasks are well under this; tasks above 5000 pairs see truncated
+        // data — addressing that needs a separate streaming/server-side
+        // pagination story for the explorer.
+        const data = await resultsApi.get(taskParam, { p_adj_max: 1.0, limit: 5000 });
+        if (cancelled) return;
+        const rows = (data?.results ?? []) as Array<{
+          cluster: string; motif1: string; motif2: string;
+          gene_num: number; total_genes: number; cluster_genes: number;
+          p_value: number; p_adj_bh: number; p_adj_bonf: number; p_adj_global: number;
+          genes: string[];
+        }>;
+        const adapted: MotifResult[] = rows.map((r) => ({
+          cluster: r.cluster ?? '',
+          motif1: r.motif1 ?? '',
+          motif2: r.motif2 ?? '',
+          gene_num: r.gene_num ?? 0,
+          total_genes: r.total_genes ?? 0,
+          cluster_genes: r.cluster_genes ?? 0,
+          p_value: r.p_value ?? 1,
+          p_adj_bh: r.p_adj_bh ?? 1,
+          p_adj_bonf: r.p_adj_bonf ?? 1,
+          p_adj_global: r.p_adj_global ?? 1,
+          genes: Array.isArray(r.genes) ? r.genes : [],
+          // Same pair key the file parser uses (`motif1^^motif2`), so the
+          // dedup / overlap logic downstream stays identical.
+          motif_pair: `${r.motif1}^^${r.motif2}`,
+        }));
+        if (adapted.length === 0) {
+          setError(t('viz.err.no_rows'));
+          return;
+        }
+        setAllResults(adapted);
+        setFileName(`Task ${taskParam}`);
+        setSelectedCluster('All');
+        setTablePage(0);
+      } catch {
+        if (!cancelled) setError(t('viz.err.task_load'));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [taskParam, t]);
 
   // Process data
   const processed = useMemo(() => {
@@ -1900,5 +1957,25 @@ export default function VisualizePage() {
         );
       })()}
     </div>
+  );
+}
+
+// Suspense wrapper required because VisualizePageContent calls
+// useSearchParams() to read the optional ?task=<id> source. Without the
+// boundary Next.js refuses to prerender the page statically.
+function VisualizeFallback() {
+  const { t } = useTranslation();
+  return (
+    <div className="max-w-5xl mx-auto py-8 text-slate-500">
+      {t('quicklook.loading')}
+    </div>
+  );
+}
+
+export default function VisualizePage() {
+  return (
+    <Suspense fallback={<VisualizeFallback />}>
+      <VisualizePageContent />
+    </Suspense>
   );
 }

@@ -41,11 +41,17 @@ export default function TaskCard({ task, onSelect }: TaskCardProps) {
     (task.warnings && task.warnings.length > 0) ||
     !!task.error_message;
 
+  // Whether the detail page has something visual to show beyond stage
+  // metadata — drives the wording of the click-affordance hint at the
+  // bottom of the card. Mirrors the same flag used on the detail page
+  // to gate the embedded TaskQuickLook + "Open in Viewer" CTA.
+  const hasMotifOutput = task.status === 'completed' || !!task.partial_result_link;
+
   const stopPropagation = (e: React.MouseEvent | React.SyntheticEvent) =>
     e.stopPropagation();
 
   return (
-    <div className="card hover:shadow-md transition-shadow cursor-pointer" onClick={onSelect}>
+    <div className="card group hover:shadow-md transition-shadow cursor-pointer" onClick={onSelect}>
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-medium text-slate-900">{task.task_id}</h3>
@@ -157,6 +163,19 @@ export default function TaskCard({ task, onSelect }: TaskCardProps) {
           </div>
         </details>
       )}
+
+      {/* Click-affordance hint. The whole card is already clickable
+          (cursor + onSelect), but without a visible cue users tend to
+          treat the buttons as the only interactive surface. The hint
+          text shifts wording based on whether the detail page has a
+          preview to show — running / pending / failed-without-output
+          still benefits from the link, just for stage timeline +
+          parameters rather than a result preview. */}
+      <div className="mt-3 flex justify-end" aria-hidden>
+        <span className="text-xs text-slate-400 transition-colors group-hover:text-slate-700">
+          {hasMotifOutput ? t('taskcard.preview_hint') : t('taskcard.details_hint')}
+        </span>
+      </div>
     </div>
   );
 }
