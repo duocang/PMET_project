@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 14:14:47 UTC on this machine — workflow `intervals`, exit 0, 14.4s_
+_Audit refreshed 2026-05-03 14:51:11 UTC on this machine — workflow `intervals`, exit 0, 14.8s_
 
 **Source:** [`scripts/workflows/intervals.sh`](../../scripts/workflows/intervals.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs · web `intervals` mode
@@ -72,7 +72,7 @@ python3 tests/audit/generate.py intervals
 
 **Needs** — built host binaries (`make build`); the bundled demo inputs at `data/demos/intervals/` (ship with the repo, no fetch needed); Python 3 standard library; optionally `Rscript`.
 
-**Produces** — overwrites `docs/workflows/intervals.md` (this file). Working files at `tests/audit/runs/intervals/` (gitignored).
+**Produces** — overwrites `docs/workflows/intervals.md` (this file). Working files at `results/tests/audit/runs/intervals/` (gitignored).
 
 **How to read it** — see [§Verification](#verification). PASS means the SHA of `motif_output.txt` matches the anchor for `data/demos/intervals` recorded on this machine. Both the demo data and `pairing_parallel`'s output are deterministic — any SHA drift is a real regression signal.
 
@@ -141,7 +141,7 @@ python3 tests/audit/generate.py intervals
 
 **需要** —— 编好的 host 二进制（`make build`）；`data/demos/intervals/` 下自带的 demo 输入（随仓库走，不用 fetch）；Python 3 标准库；可选 `Rscript`。
 
-**产出** —— 覆盖写 `docs/workflows/intervals.md`（本文件）。工作文件在 `tests/audit/runs/intervals/`（gitignored）。
+**产出** —— 覆盖写 `docs/workflows/intervals.md`（本文件）。工作文件在 `results/tests/audit/runs/intervals/`（gitignored）。
 
 **怎么解读** —— 见 [§Verification](#verification)。PASS 表示 `motif_output.txt` 的 SHA 跟本机录制的 `data/demos/intervals` anchor 一致。demo 数据和 `pairing_parallel` 输出都是确定性的 —— 任何 SHA 漂移都是真回归信号。
 
@@ -154,10 +154,10 @@ python3 tests/audit/generate.py intervals
 This audit just ran:
 
 ```
-bash scripts/workflows/intervals.sh -s data/demos/intervals/indexing/intervals.fa -m data/demos/intervals/indexing/motif.meme -g data/demos/intervals/indexing/peaks.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/tests/audit/runs/intervals/02_pairing -t 4
+bash scripts/workflows/intervals.sh -s data/demos/intervals/indexing/intervals.fa -m data/demos/intervals/indexing/motif.meme -g data/demos/intervals/indexing/peaks.txt -o /Users/nuioi/projects/pmet/results/tests/audit/runs/intervals/01_indexing -x /Users/nuioi/projects/pmet/results/tests/audit/runs/intervals/02_pairing -t 4
 ```
 
-Indexing landed at `tests/audit/runs/intervals/01_indexing/`, pairing at `tests/audit/runs/intervals/02_pairing/`.
+Indexing landed at `results/tests/audit/runs/intervals/01_indexing/`, pairing at `results/tests/audit/runs/intervals/02_pairing/`.
 
 ### Indexing-stage outputs · 同型阶段产出
 

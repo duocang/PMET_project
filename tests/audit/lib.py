@@ -42,7 +42,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-RUNS_DIR = REPO_ROOT / "tests" / "audit" / "runs"
+# Audit replays land under results/tests/ alongside the other gitignored
+# test artefacts (smoke logs, baseline sidecars, heatmap reports), so
+# `make clean-results-tests` is one sweep that wipes everything.
+RUNS_DIR = REPO_ROOT / "results" / "tests" / "audit" / "runs"
 TEMPLATES_DIR = REPO_ROOT / "tests" / "audit" / "templates"
 DOCS_DIR = REPO_ROOT / "docs" / "workflows"
 

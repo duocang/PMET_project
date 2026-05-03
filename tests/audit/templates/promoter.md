@@ -84,7 +84,7 @@ python3 tests/audit/generate.py promoter
 
 **Needs** — built host binaries (`make build`), TAIR10 (`make fetch-data`), Python 3 standard library, optionally `Rscript` for the heatmap step.
 
-**Produces** — overwrites `docs/workflows/promoter.md` (this file). Working files land under `tests/audit/runs/promoter/` (gitignored).
+**Produces** — overwrites `docs/workflows/promoter.md` (this file). Working files land under `results/tests/audit/runs/promoter/` (gitignored).
 
 **How to read it** — see the OVERALL line in [§Verification](#verification) below; PASS means anchors and contract invariants all match. The `motif_output.txt` SHA anchor `4b24906a...` was independently verified against the recorded baseline (cf. commit `d2663c0`'s message). `pair_only.sh` against this same homotypic index produces the same SHA — that's the cross-validation that ties the `pair_only` audit to this `promoter` audit.
 
@@ -165,7 +165,7 @@ python3 tests/audit/generate.py promoter
 
 **需要** —— 编好的 host 二进制（`make build`）、TAIR10（`make fetch-data`）、Python 3 标准库，可选 `Rscript` 用于 heatmap 步。
 
-**产出** —— 覆盖写 `docs/workflows/promoter.md`（本文件）。工作文件落在 `tests/audit/runs/promoter/`（gitignored）。
+**产出** —— 覆盖写 `docs/workflows/promoter.md`（本文件）。工作文件落在 `results/tests/audit/runs/promoter/`（gitignored）。
 
 **怎么解读** —— 看下方 [§Verification](#verification) 里的 OVERALL 行；PASS 表示 anchor 和契约不变量都对得上。`motif_output.txt` 的 SHA anchor `4b24906a...` 独立验证过对得上录制 baseline（参 commit `d2663c0` 的 message）。`pair_only.sh` 跑同一份同型索引产出相同 SHA —— 这就是把 `pair_only` 审计跟本 `promoter` 审计绑在一起的交叉验证。
 

@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 14:18:41 UTC on this machine — workflow `elements`, exit 0, 132.6s_
+_Audit refreshed 2026-05-03 14:53:38 UTC on this machine — workflow `elements`, exit 0, 147.3s_
 
 **Source:** [`scripts/workflows/elements.sh`](../../scripts/workflows/elements.sh)
 &nbsp;&nbsp;**Helper sub-workflow:** [`scripts/workflows/cli/_pmet_index_element.sh`](../../scripts/workflows/cli/_pmet_index_element.sh)
@@ -89,7 +89,7 @@ python3 tests/audit/generate.py elements
 
 **Needs** — built host binaries (`make build`); TAIR10 (`make fetch-data`); Franco-Zorrilla MEME at `data/motifs/Franco-Zorrilla_et_al_2014.meme` (in-repo); Python 3 standard library; optionally `Rscript`.
 
-**Produces** — overwrites `docs/workflows/elements.md` (this file). Working files at `tests/audit/runs/elements/` (gitignored). Per-gene-task heterotypic outputs at `<results>/02_heterotypic_<task>/motif_output.txt`.
+**Produces** — overwrites `docs/workflows/elements.md` (this file). Working files at `results/tests/audit/runs/elements/` (gitignored). Per-gene-task heterotypic outputs at `<results>/02_heterotypic_<task>/motif_output.txt`.
 
 **How to read it** — see [§Verification](#verification). The audit deliberately uses `-s longest -e 5UTR` (smallest element by universe size) for fast iteration. To audit the merged strategy or a larger element, the spec needs another invocation; the architecture verification (FIMO + collapse + pair) is identical regardless of which strategy/element pair runs.
 
@@ -179,7 +179,7 @@ python3 tests/audit/generate.py elements
 
 **需要** —— 编好的 host 二进制（`make build`）；TAIR10（`make fetch-data`）；Franco-Zorrilla MEME 在 `data/motifs/Franco-Zorrilla_et_al_2014.meme`（仓库自带）；Python 3 标准库；可选 `Rscript`。
 
-**产出** —— 覆盖写 `docs/workflows/elements.md`（本文件）。工作文件在 `tests/audit/runs/elements/`（gitignored）。每个 gene-task 的异型输出在 `<results>/02_heterotypic_<task>/motif_output.txt`。
+**产出** —— 覆盖写 `docs/workflows/elements.md`（本文件）。工作文件在 `results/tests/audit/runs/elements/`（gitignored）。每个 gene-task 的异型输出在 `<results>/02_heterotypic_<task>/motif_output.txt`。
 
 **怎么解读** —— 见 [§Verification](#verification)。审计故意用 `-s longest -e 5UTR`（universe 最小的 element）做快迭代。要审 merged 策略或更大的 element，spec 需要再发一次调用；不论跑哪种策略/element 组合，架构验证（FIMO + collapse + pair）相同。
 

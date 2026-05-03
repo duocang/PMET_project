@@ -81,7 +81,8 @@ data/precomputed_indexes/
 
 # Branch comparison output (regeneratable)
 branch-compare/
-tests/audit/runs/
+# tests/audit/runs/ moved to results/tests/audit/runs/; results/ is
+# already covered above.
 
 # Per-session scratch / matrix-run artefacts (regeneratable, often GBs)
 /tmp/

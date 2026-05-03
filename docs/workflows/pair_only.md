@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 14:14:05 UTC on this machine — workflow `pair_only`, exit 0, 13.9s_
+_Audit refreshed 2026-05-03 14:48:58 UTC on this machine — workflow `pair_only`, exit 0, 14.0s_
 
 **Source:** [`scripts/workflows/pair_only.sh`](../../scripts/workflows/pair_only.sh)
 &nbsp;&nbsp;**Used by:** CLI re-runs · web `promoters_pre` mode (`apps/pmet_backend/services/executor.py` SCRIPT_MAP)
@@ -71,7 +71,7 @@ python3 tests/audit/generate.py pair_only
 
 **Needs** — built host binaries (`make build`); the bundled demo index at `data/demos/promoters/pairing/demo/` (ships with the repo); Python 3 standard library; optionally `Rscript`.
 
-**Produces** — overwrites `docs/workflows/pair_only.md` (this file). Working files at `tests/audit/runs/pair_only/` (gitignored). The audit's outputs:
+**Produces** — overwrites `docs/workflows/pair_only.md` (this file). Working files at `results/tests/audit/runs/pair_only/` (gitignored). The audit's outputs:
 
 | File | Purpose |
 |---|---|
@@ -147,7 +147,7 @@ python3 tests/audit/generate.py pair_only
 
 **需要** —— 编好的 host 二进制（`make build`）；`data/demos/promoters/pairing/demo/` 下的 demo 索引（仓库自带）；Python 3 标准库；可选 `Rscript`。
 
-**产出** —— 覆盖写 `docs/workflows/pair_only.md`（本文件）。工作文件在 `tests/audit/runs/pair_only/`（gitignored）。审计的输出：
+**产出** —— 覆盖写 `docs/workflows/pair_only.md`（本文件）。工作文件在 `results/tests/audit/runs/pair_only/`（gitignored）。审计的输出：
 
 | 文件 | 用途 |
 |---|---|
@@ -168,18 +168,18 @@ python3 tests/audit/generate.py pair_only
 This audit just ran:
 
 ```
-bash scripts/workflows/pair_only.sh -d data/demos/promoters/pairing/demo -g data/demos/promoters/pairing/demo/gene.txt -o /Users/nuioi/projects/pmet/tests/audit/runs/pair_only/out -i 4 -t 4
+bash scripts/workflows/pair_only.sh -d data/demos/promoters/pairing/demo -g data/demos/promoters/pairing/demo/gene.txt -o /Users/nuioi/projects/pmet/results/tests/audit/runs/pair_only/out -i 4 -t 4
 ```
 
-into `tests/audit/runs/pair_only/out/`. Outputs landed at:
+into `results/tests/audit/runs/pair_only/out/`. Outputs landed at:
 
 | File | Purpose |
 |---|---|
-| `tests/audit/runs/pair_only/out/motif_output.txt` | enriched motif pairs (one per `cluster, m1, m2`) |
-| `tests/audit/runs/pair_only/out/genes_used_PMET.txt` | input genes that matched the universe |
-| `tests/audit/runs/pair_only/out/genes_not_found.txt` | input genes dropped (universe miss) |
-| `tests/audit/runs/pair_only/out/pmet.log` | `pairing_parallel`'s own log (per-thread progress) |
-| `tests/audit/runs/pair_only/out/plot/` | optional heatmap PNGs (only if `Rscript` available) |
+| `results/tests/audit/runs/pair_only/out/motif_output.txt` | enriched motif pairs (one per `cluster, m1, m2`) |
+| `results/tests/audit/runs/pair_only/out/genes_used_PMET.txt` | input genes that matched the universe |
+| `results/tests/audit/runs/pair_only/out/genes_not_found.txt` | input genes dropped (universe miss) |
+| `results/tests/audit/runs/pair_only/out/pmet.log` | `pairing_parallel`'s own log (per-thread progress) |
+| `results/tests/audit/runs/pair_only/out/plot/` | optional heatmap PNGs (only if `Rscript` available) |
 
 ### Output preview · 输出预览
 

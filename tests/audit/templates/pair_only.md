@@ -71,7 +71,7 @@ python3 tests/audit/generate.py pair_only
 
 **Needs** — built host binaries (`make build`); the bundled demo index at `data/demos/promoters/pairing/demo/` (ships with the repo); Python 3 standard library; optionally `Rscript`.
 
-**Produces** — overwrites `docs/workflows/pair_only.md` (this file). Working files at `tests/audit/runs/pair_only/` (gitignored). The audit's outputs:
+**Produces** — overwrites `docs/workflows/pair_only.md` (this file). Working files at `results/tests/audit/runs/pair_only/` (gitignored). The audit's outputs:
 
 | File | Purpose |
 |---|---|
@@ -147,7 +147,7 @@ python3 tests/audit/generate.py pair_only
 
 **需要** —— 编好的 host 二进制（`make build`）；`data/demos/promoters/pairing/demo/` 下的 demo 索引（仓库自带）；Python 3 标准库；可选 `Rscript`。
 
-**产出** —— 覆盖写 `docs/workflows/pair_only.md`（本文件）。工作文件在 `tests/audit/runs/pair_only/`（gitignored）。审计的输出：
+**产出** —— 覆盖写 `docs/workflows/pair_only.md`（本文件）。工作文件在 `results/tests/audit/runs/pair_only/`（gitignored）。审计的输出：
 
 | 文件 | 用途 |
 |---|---|

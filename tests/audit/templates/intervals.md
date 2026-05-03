@@ -72,7 +72,7 @@ python3 tests/audit/generate.py intervals
 
 **Needs** — built host binaries (`make build`); the bundled demo inputs at `data/demos/intervals/` (ship with the repo, no fetch needed); Python 3 standard library; optionally `Rscript`.
 
-**Produces** — overwrites `docs/workflows/intervals.md` (this file). Working files at `tests/audit/runs/intervals/` (gitignored).
+**Produces** — overwrites `docs/workflows/intervals.md` (this file). Working files at `results/tests/audit/runs/intervals/` (gitignored).
 
 **How to read it** — see [§Verification](#verification). PASS means the SHA of `motif_output.txt` matches the anchor for `data/demos/intervals` recorded on this machine. Both the demo data and `pairing_parallel`'s output are deterministic — any SHA drift is a real regression signal.
 
@@ -141,7 +141,7 @@ python3 tests/audit/generate.py intervals
 
 **需要** —— 编好的 host 二进制（`make build`）；`data/demos/intervals/` 下自带的 demo 输入（随仓库走，不用 fetch）；Python 3 标准库；可选 `Rscript`。
 
-**产出** —— 覆盖写 `docs/workflows/intervals.md`（本文件）。工作文件在 `tests/audit/runs/intervals/`（gitignored）。
+**产出** —— 覆盖写 `docs/workflows/intervals.md`（本文件）。工作文件在 `results/tests/audit/runs/intervals/`（gitignored）。
 
 **怎么解读** —— 见 [§Verification](#verification)。PASS 表示 `motif_output.txt` 的 SHA 跟本机录制的 `data/demos/intervals` anchor 一致。demo 数据和 `pairing_parallel` 输出都是确定性的 —— 任何 SHA 漂移都是真回归信号。
 

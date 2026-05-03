@@ -89,7 +89,7 @@ Each run rewrites `docs/workflows/<name>.md` (one of `promoter.md` / `intervals.
 - **Run snapshot** — fresh on every run: the exact command that was invoked, where the output landed, file counts (`fimohits/*.bin`, `binomial_thresholds.txt` rows, etc.), the first 3 lines of `motif_output.txt`, total enriched-pair count, wall time.
 - **Verification table** — the same machine, with one row per check (`OVERALL`, `motif_output.txt deterministic vs anchor`, `binomial_thresholds rows == motifs`, ...) marked PASS / WARN / FAIL.
 
-Working files for the run land under `tests/audit/runs/<name>/` (gitignored — useful when you want to inspect what the workflow actually produced for that audit).
+Working files for the run land under `results/tests/audit/runs/<name>/` (gitignored — useful when you want to inspect what the workflow actually produced for that audit).
 
 ### What the result means
 
@@ -197,7 +197,7 @@ python3 tests/audit/generate.py promoter
 - **运行快照** —— 每次跑都新的：本次实际调用的命令、输出落到哪、文件计数（`fimohits/*.bin`、`binomial_thresholds.txt` 行数等）、`motif_output.txt` 前 3 行、富集对总数、wall time。
 - **验证表** —— 同上，每条 check 一行（`OVERALL`、`motif_output.txt deterministic vs anchor`、`binomial_thresholds rows == motifs` 等），标 PASS / WARN / FAIL。
 
-跑的工作文件落在 `tests/audit/runs/<name>/`（gitignored —— 想看本次审计 workflow 实际产出什么的时候有用）。
+跑的工作文件落在 `results/tests/audit/runs/<name>/`（gitignored —— 想看本次审计 workflow 实际产出什么的时候有用）。
 
 ### 结果怎么读
 

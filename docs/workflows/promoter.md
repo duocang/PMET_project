@@ -2,7 +2,7 @@
 
 **[English](#en) · [汉文](#cn)**
 
-_Audit refreshed 2026-05-02 14:16:28 UTC on this machine — workflow `promoter`, exit 0, 100.6s_
+_Audit refreshed 2026-05-03 14:50:56 UTC on this machine — workflow `promoter`, exit 0, 109.5s_
 
 **Source:** [`scripts/workflows/promoter.sh`](../../scripts/workflows/promoter.sh)
 &nbsp;&nbsp;**Used by:** CLI research runs · web `promoters` mode
@@ -84,7 +84,7 @@ python3 tests/audit/generate.py promoter
 
 **Needs** — built host binaries (`make build`), TAIR10 (`make fetch-data`), Python 3 standard library, optionally `Rscript` for the heatmap step.
 
-**Produces** — overwrites `docs/workflows/promoter.md` (this file). Working files land under `tests/audit/runs/promoter/` (gitignored).
+**Produces** — overwrites `docs/workflows/promoter.md` (this file). Working files land under `results/tests/audit/runs/promoter/` (gitignored).
 
 **How to read it** — see the OVERALL line in [§Verification](#verification) below; PASS means anchors and contract invariants all match. The `motif_output.txt` SHA anchor `4b24906a...` was independently verified against the recorded baseline (cf. commit `d2663c0`'s message). `pair_only.sh` against this same homotypic index produces the same SHA — that's the cross-validation that ties the `pair_only` audit to this `promoter` audit.
 
@@ -165,7 +165,7 @@ python3 tests/audit/generate.py promoter
 
 **需要** —— 编好的 host 二进制（`make build`）、TAIR10（`make fetch-data`）、Python 3 标准库，可选 `Rscript` 用于 heatmap 步。
 
-**产出** —— 覆盖写 `docs/workflows/promoter.md`（本文件）。工作文件落在 `tests/audit/runs/promoter/`（gitignored）。
+**产出** —— 覆盖写 `docs/workflows/promoter.md`（本文件）。工作文件落在 `results/tests/audit/runs/promoter/`（gitignored）。
 
 **怎么解读** —— 看下方 [§Verification](#verification) 里的 OVERALL 行；PASS 表示 anchor 和契约不变量都对得上。`motif_output.txt` 的 SHA anchor `4b24906a...` 独立验证过对得上录制 baseline（参 commit `d2663c0` 的 message）。`pair_only.sh` 跑同一份同型索引产出相同 SHA —— 这就是把 `pair_only` 审计跟本 `promoter` 审计绑在一起的交叉验证。
 
@@ -178,10 +178,10 @@ python3 tests/audit/generate.py promoter
 This audit just ran:
 
 ```
-bash scripts/workflows/promoter.sh -o /Users/nuioi/projects/pmet/tests/audit/runs/promoter/01_homotypic -x /Users/nuioi/projects/pmet/tests/audit/runs/promoter/02_heterotypic -y /Users/nuioi/projects/pmet/tests/audit/runs/promoter/03_plot -t 4
+bash scripts/workflows/promoter.sh -o /Users/nuioi/projects/pmet/results/tests/audit/runs/promoter/01_homotypic -x /Users/nuioi/projects/pmet/results/tests/audit/runs/promoter/02_heterotypic -y /Users/nuioi/projects/pmet/results/tests/audit/runs/promoter/03_plot -t 4
 ```
 
-Indexing landed at `tests/audit/runs/promoter/01_homotypic/`, pairing at `tests/audit/runs/promoter/02_heterotypic/`, plots at `tests/audit/runs/promoter/03_plot/`.
+Indexing landed at `results/tests/audit/runs/promoter/01_homotypic/`, pairing at `results/tests/audit/runs/promoter/02_heterotypic/`, plots at `results/tests/audit/runs/promoter/03_plot/`.
 
 ### Indexing-stage outputs · 同型阶段产出
 
@@ -205,7 +205,7 @@ Cortex_flg22_up	AHL12	AHL12_3ARY	3	682	119	5.1393905122e-01	1.0000000000e+00	1.0
 
 Total enriched pair rows · 富集对总行数：**37969** — these are the per-cluster motif pairs that survived `pairing_parallel`'s binomial pre-filter and the cluster-level hypergeometric test at the canonical IC and FIMO thresholds.
 
-This run took **100.64423249987885s** at 4 threads. The dominant cost is stage 4 (FIMO scanning 113 motifs across ~30k 1 kb promoters); pair testing in stage 6 takes <30s of that.
+This run took **109.47136970818974s** at 4 threads. The dominant cost is stage 4 (FIMO scanning 113 motifs across ~30k 1 kb promoters); pair testing in stage 6 takes <30s of that.
 
 ### Worked example · 推导示例
 

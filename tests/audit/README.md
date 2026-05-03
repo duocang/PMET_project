@@ -85,7 +85,7 @@ python3 tests/audit/generate.py promoter intervals
 **Produces**
 
 - **Overwrites** `docs/workflows/<name>.md` for each workflow you ran. These are committed; `git diff docs/workflows/` is the signal.
-- Drops working files into `tests/audit/runs/<name>/` (gitignored).
+- Drops working files into `results/tests/audit/runs/<name>/` (gitignored).
 - Stdout: per-check verdicts and a final OVERALL line per workflow.
 
 **How to read it** — start with the terminal output, then look at the rendered docs:
@@ -246,7 +246,7 @@ python3 tests/audit/generate.py promoter intervals
 **产出**
 
 - **覆盖写** `docs/workflows/<name>.md`，每个跑了的 workflow 一份。这些文件入仓；`git diff docs/workflows/` 是信号。
-- 工作文件丢到 `tests/audit/runs/<name>/`（gitignored）。
+- 工作文件丢到 `results/tests/audit/runs/<name>/`（gitignored）。
 - stdout：每条 check 的 verdict + 每个 workflow 一行 OVERALL。
 
 **怎么解读** —— 先看终端输出，再看渲染好的文档：
