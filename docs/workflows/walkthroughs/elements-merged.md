@@ -1,8 +1,8 @@
-# Pipeline 07 walkthrough — Genomic-Element PMET (per-gene UNION across isoforms)
+# Genomic-Element PMET, per-gene UNION across isoforms — walkthrough
 
 **[English](#en) · [汉文](#cn)**
 
-> **Heads-up:** this is a frozen pre-monorepo walkthrough. References like `scripts/pipeline/07_elements_merged.sh` and `scripts/indexing/pmet_index_element.sh` are stale — the consolidated current entry point is `scripts/workflows/elements.sh -s merged`. See [`README.md`](README.md) for the full path mapping. The algorithm and biology described still apply.
+> **About this doc:** path references throughout match the **current** monorepo layout (`scripts/workflows/elements.sh -s merged`, `scripts/workflows/cli/_pmet_index_element.sh`, `results/cli/elements_merged/`). The biology and algorithm content predates the monorepo merge — that's all unchanged from the original PMET. Inline `:line-range` annotations after a script path were captured against the pre-monorepo `07_elements_merged.sh` (retired, folded into `scripts/workflows/elements.sh`); treat them as **section hints**, not exact citations.
 
 ---
 
@@ -48,7 +48,7 @@ The five heterotypic tasks are identical. Defaults are the same.
 Identical to pipeline 06:
 
 ```
-results/07_elements_merged/
+results/cli/elements_merged/
 ├── 01_homotypic/
 ├── 02_heterotypic_<task>/   × 5
 └── 03_plot_<task>/          × 5
@@ -86,7 +86,7 @@ awk -F'\t' -v OFS='\t' '{ sub(/\..*/, "", $4); print }' "$bedfile" \
 mv "$bedfile.tmp" "$bedfile"
 ```
 
-(`scripts/indexing/pmet_index_element.sh:255-270`)
+(`scripts/workflows/cli/_pmet_index_element.sh:255-270`)
 
 This block does three things in sequence:
 
@@ -275,7 +275,7 @@ WARNING (`overlap == overlap_unique` quirk shared with 05 / 06). PASS otherwise.
 ## 5. Final outputs
 
 ```
-results/07_elements_merged/
+results/cli/elements_merged/
 ├── 01_homotypic/                # only contract files (delete_temp=yes)
 │   ├── universe.txt              23 499 genes
 │   ├── promoter_lengths.txt      23 499 rows; min=30, max=4144, mean=347.256
@@ -350,7 +350,7 @@ The outputs are suitable for downstream PMET interpretation as a "per-gene CDS u
 跟 pipeline 06 一致：
 
 ```
-results/07_elements_merged/
+results/cli/elements_merged/
 ├── 01_homotypic/
 ├── 02_heterotypic_<task>/   × 5
 └── 03_plot_<task>/          × 5
@@ -388,7 +388,7 @@ awk -F'\t' -v OFS='\t' '{ sub(/\..*/, "", $4); print }' "$bedfile" \
 mv "$bedfile.tmp" "$bedfile"
 ```
 
-(`scripts/indexing/pmet_index_element.sh:255-270`)
+(`scripts/workflows/cli/_pmet_index_element.sh:255-270`)
 
 这一段顺序做三件事：
 
@@ -577,7 +577,7 @@ WARNING（`overlap == overlap_unique` 怪事，跟 05 / 06 共享）。否则 PA
 ## 5. 最终输出
 
 ```
-results/07_elements_merged/
+results/cli/elements_merged/
 ├── 01_homotypic/                # 仅契约文件（delete_temp=yes）
 │   ├── universe.txt              23 499 基因
 │   ├── promoter_lengths.txt      23 499 行；min=30、max=4144、mean=347.256

@@ -1,8 +1,8 @@
-# Pipeline 06 walkthrough — Genomic-element PMET (longest isoform per gene)
+# Genomic-element PMET, longest isoform per gene — walkthrough
 
 **[English](#en) · [汉文](#cn)**
 
-> **Heads-up:** this is a frozen pre-monorepo walkthrough. References like `scripts/pipeline/06_elements_longest.sh`, `scripts/pipeline/_elements_common.sh`, `scripts/indexing/pmet_index_element.sh`, `data/TAIR10.fasta`, and `build/pmetParallel` are stale — the consolidated current entry point is `scripts/workflows/elements.sh` (`mode=longest`, sharing helpers in `scripts/workflows/cli/`); the pair stage now uses `build/pair_parallel`. See [`README.md`](README.md) for the full path mapping. The algorithm and biology described still apply.
+> **About this doc:** path references throughout match the **current** monorepo layout — entry point `scripts/workflows/elements.sh -s longest`, helpers under `scripts/workflows/cli/_pmet_index_element.sh`, reference at `data/reference/TAIR10.*`, motifs at `data/motifs/...`, indexer `build/indexing_fimo_fused`, pair tester `build/pairing_parallel`, outputs in `results/cli/elements_longest/`. The biology and algorithm content predates the monorepo merge — that's all unchanged from the original PMET. Inline `:line-range` annotations after a script path were captured against the pre-monorepo `06_elements_longest.sh` + `_elements_common.sh` (both retired, folded into the current `scripts/workflows/elements.sh`); treat them as **section hints**, not exact citations. Some embedded code blocks (notably the `build/fimo` GNU-parallel batch loop and the related "Important difference vs 03" callout) reproduce pre-monorepo command lines verbatim; the present-day `_pmet_index_element.sh` uses a single `build/indexing_fimo_fused` call instead, with internal OpenMP batching — read the actual script for the current exact commands.
 
 ---
 
@@ -37,9 +37,9 @@ The "longest isoform" is per-gene representative selection: if a gene has 5 tran
 
 | File | Biological meaning | Format | Truncated sample |
 |---|---|---|---|
-| `data/TAIR10.fasta` | TAIR10 genome | FASTA | `>1`, `>2`, ... |
-| `data/TAIR10.gff3` | TAIR10 annotation | GFF3 v3 | gene/mRNA/exon/CDS rows |
-| `data/Franco-Zorrilla_et_al_2014.meme` | 113 plant TF motifs | MEME v4 | 113 `MOTIF` lines |
+| `data/reference/TAIR10.fasta` | TAIR10 genome | FASTA | `>1`, `>2`, ... |
+| `data/reference/TAIR10.gff3` | TAIR10 annotation | GFF3 v3 | gene/mRNA/exon/CDS rows |
+| `data/motifs/Franco-Zorrilla_et_al_2014.meme` | 113 plant TF motifs | MEME v4 | 113 `MOTIF` lines |
 | `data/genes/<task>.txt` × 5 | five heterotypic test sets | `<cluster> <gene>` | varies |
 | Element choice | interactive prompt: 1=3'UTR, 2=5'UTR, 3=mRNA, 4=CDS, 5=exon | TTY | the canonical real-data check uses `printf '4\n' \| bash …` (CDS) |
 
@@ -59,7 +59,7 @@ The `random_genes_300` task is a designed-for-no-signal control set; the others 
 ## 3. Output contract
 
 ```
-results/06_elements_longest/
+results/cli/elements_longest/
 ├── 01_homotypic/                # canonical homotypic contract files
 │   ├── universe.txt
 │   ├── promoter_lengths.txt
@@ -76,13 +76,13 @@ results/06_elements_longest/
     └── histogram*/               # diagnostic side-cars
 ```
 
-> **Audit-time note:** at the moment this audit was written, the production pipeline was actively re-running into `results/06_elements_longest/01_homotypic/`, so the numbers below for the homotypic stage come from the **prior committed baseline** (Apr 26 run, captured before the re-run began). The contract expectations are unchanged; the actual hashes will be recorded by `docs/verification_log.md` once the re-run completes.
+> **Audit-time note:** at the moment this audit was written, the production pipeline was actively re-running into `results/cli/elements_longest/01_homotypic/`, so the numbers below for the homotypic stage come from the **prior committed baseline** (Apr 26 run, captured before the re-run began). The contract expectations are unchanged; the actual hashes will be recorded by `docs/verification_log.md` once the re-run completes.
 
 <a id="en-4"></a>
 
 ## 4. Step-by-step execution story
 
-The homotypic stage is `scripts/indexing/pmet_index_element.sh`. It does not call `run_homotypic.py` — it has its own logic, in pure shell + awk + Python helpers, because the GFF3-handling for genomic elements (multiple isoforms per gene, multiple fragments per isoform) is fundamentally different from "one promoter per gene".
+The homotypic stage is `scripts/workflows/cli/_pmet_index_element.sh`. It does not call `run_homotypic.py` — it has its own logic, in pure shell + awk + Python helpers, because the GFF3-handling for genomic elements (multiple isoforms per gene, multiple fragments per isoform) is fundamentally different from "one promoter per gene".
 
 ### Step 1 — Chromosome-naming preflight
 
@@ -391,7 +391,7 @@ parallel --jobs="$threads" "build/fimo --no-qvalue --text \
 
 Same as 03's step 7 — FIMO scan plus PMETindex (binomial threshold) in fused calls per batch.
 
-> **Important difference vs 03:** 06 / 07 use `build/fimo` (the standalone FIMO with `--topk` patch), whereas 03 / 05 use `build/index_fimo_fused`. Both are based on MEME 5.x; the API and output format are identical.
+> **Important difference vs 03:** 06 / 07 use `build/fimo` (the standalone FIMO with `--topk` patch), whereas 03 / 05 use `build/indexing_fimo_fused`. Both are based on MEME 5.x; the API and output format are identical.
 
 #### Output
 
@@ -539,7 +539,7 @@ for task in salt_top300 random_genes_300 genes_cell_type_treatment \
             gene_cortex_epidermis_pericycle heat_top300; do
     grep -Ff universe.txt data/genes/$task.txt \
         > heterotypic_$task/new_genes_temp.txt
-    build/pmetParallel \
+    build/pairing_parallel \
         -d . -g new_genes_temp.txt -i 4 \
         -p promoter_lengths.txt -b binomial_thresholds.txt \
         -c IC.txt -f fimohits \
@@ -601,7 +601,7 @@ WARNING (PNG-identity quirk shared with 05/07). PASS otherwise.
 ## 5. Final outputs
 
 ```
-results/06_elements_longest/
+results/cli/elements_longest/
 ├── 01_homotypic/
 │   ├── universe.txt              23 499 genes (CDS-bearing)
 │   ├── promoter_lengths.txt      23 499 rows;  min=30, max=4144, mean=335
@@ -677,9 +677,9 @@ The outputs are suitable as a "coding-region motif" complement to the upstream-p
 
 | 文件 | 生物学含义 | 格式 | 截样 |
 |---|---|---|---|
-| `data/TAIR10.fasta` | TAIR10 基因组 | FASTA | `>1`、`>2` …… |
-| `data/TAIR10.gff3` | TAIR10 注释 | GFF3 v3 | gene/mRNA/exon/CDS 行 |
-| `data/Franco-Zorrilla_et_al_2014.meme` | 113 个植物 TF motif | MEME v4 | 113 行 `MOTIF` |
+| `data/reference/TAIR10.fasta` | TAIR10 基因组 | FASTA | `>1`、`>2` …… |
+| `data/reference/TAIR10.gff3` | TAIR10 注释 | GFF3 v3 | gene/mRNA/exon/CDS 行 |
+| `data/motifs/Franco-Zorrilla_et_al_2014.meme` | 113 个植物 TF motif | MEME v4 | 113 行 `MOTIF` |
 | `data/genes/<task>.txt` × 5 | 5 个异型测试集 | `<cluster> <gene>` | 各异 |
 | 元素选择 | 交互 prompt：1=3'UTR、2=5'UTR、3=mRNA、4=CDS、5=exon | TTY | 真实数据基线用 `printf '4\n' \| bash …`（CDS） |
 
@@ -699,7 +699,7 @@ gene_cortex_epidermis_pericycle, heat_top300
 ## 3. 输出契约
 
 ```
-results/06_elements_longest/
+results/cli/elements_longest/
 ├── 01_homotypic/                # canonical homotypic contract files
 │   ├── universe.txt
 │   ├── promoter_lengths.txt
@@ -716,13 +716,13 @@ results/06_elements_longest/
     └── histogram*/               # diagnostic side-cars
 ```
 
-> **审计期备注：** 写本审计时正式 pipeline 正在向 `results/06_elements_longest/01_homotypic/` 重跑，因此下面同型阶段的数字来自**之前已 commit 的 baseline**（4 月 26 日那次跑，重跑开始前的快照）。契约期望不变；重跑结束后，实际的 hash 由 `docs/verification_log.md` 记录。
+> **审计期备注：** 写本审计时正式 pipeline 正在向 `results/cli/elements_longest/01_homotypic/` 重跑，因此下面同型阶段的数字来自**之前已 commit 的 baseline**（4 月 26 日那次跑，重跑开始前的快照）。契约期望不变；重跑结束后，实际的 hash 由 `docs/verification_log.md` 记录。
 
 <a id="cn-4"></a>
 
 ## 4. 按 step 走读
 
-同型阶段是 `scripts/indexing/pmet_index_element.sh`。它**不**调用 `run_homotypic.py` —— 它有自己的逻辑，纯 shell + awk + Python helper，因为基因组元素的 GFF3 处理（每基因多 isoform、每 isoform 多 fragment）和"每基因一启动子"在根本上不同。
+同型阶段是 `scripts/workflows/cli/_pmet_index_element.sh`。它**不**调用 `run_homotypic.py` —— 它有自己的逻辑，纯 shell + awk + Python helper，因为基因组元素的 GFF3 处理（每基因多 isoform、每 isoform 多 fragment）和"每基因一启动子"在根本上不同。
 
 ### Step 1 —— 染色体命名 preflight
 
@@ -1031,7 +1031,7 @@ parallel --jobs="$threads" "build/fimo --no-qvalue --text \
 
 和 03 step 7 一样 —— 每 batch 内 FIMO 扫 + PMETindex（binomial 阈值）融合调用。
 
-> **与 03 的关键差别：** 06 / 07 用 `build/fimo`（带 `--topk` patch 的独立 FIMO），而 03 / 05 用 `build/index_fimo_fused`。两者都基于 MEME 5.x；API 与输出格式完全一致。
+> **与 03 的关键差别：** 06 / 07 用 `build/fimo`（带 `--topk` patch 的独立 FIMO），而 03 / 05 用 `build/indexing_fimo_fused`。两者都基于 MEME 5.x；API 与输出格式完全一致。
 
 #### 输出
 
@@ -1179,7 +1179,7 @@ for task in salt_top300 random_genes_300 genes_cell_type_treatment \
             gene_cortex_epidermis_pericycle heat_top300; do
     grep -Ff universe.txt data/genes/$task.txt \
         > heterotypic_$task/new_genes_temp.txt
-    build/pmetParallel \
+    build/pairing_parallel \
         -d . -g new_genes_temp.txt -i 4 \
         -p promoter_lengths.txt -b binomial_thresholds.txt \
         -c IC.txt -f fimohits \
@@ -1241,7 +1241,7 @@ WARNING（与 05/07 共有的 PNG 一致性 quirk）。其余 PASS。
 ## 5. 最终输出
 
 ```
-results/06_elements_longest/
+results/cli/elements_longest/
 ├── 01_homotypic/
 │   ├── universe.txt              23 499 genes (CDS-bearing)
 │   ├── promoter_lengths.txt      23 499 rows;  min=30, max=4144, mean=335

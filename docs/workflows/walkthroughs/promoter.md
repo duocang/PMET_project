@@ -1,8 +1,8 @@
-# Pipeline 03 walkthrough — Promoter PMET analysis
+# Promoter PMET analysis — walkthrough
 
 **[English](#en) · [汉文](#cn)**
 
-> **Heads-up:** this is a frozen pre-monorepo walkthrough. References like `scripts/pipeline/03_promoter.sh`, `scripts/python/run_homotypic.py`, and `data/TAIR10.fasta` are stale — the consolidated current entry point is `scripts/workflows/promoter.sh` (driven by `scripts/workflows/cli/run_homotypic.py`), and reference data lives under `data/reference/`. See [`README.md`](README.md) for the full path mapping. The algorithm and biology described still apply.
+> **About this doc:** path references throughout match the **current** monorepo layout (`scripts/workflows/promoter.sh`, `data/reference/TAIR10.*`, `data/motifs/...`, `results/cli/promoter/`, etc). The biology and algorithm content predates the monorepo merge — that's all unchanged from the original PMET. Inline `:line-range` annotations after a script path were captured against the pre-monorepo `03_promoter.sh` (retired, folded into the current `scripts/workflows/promoter.sh`); treat them as **section hints**, not exact citations.
 
 ---
 
@@ -31,14 +31,14 @@ The intuition is the canonical PMET test: most TFs do not act alone; two motifs 
 
 | File | Biological meaning | Format | Truncated sample |
 |---|---|---|---|
-| `data/TAIR10.fasta` | TAIR10 nuclear + organelle genome, ~135 Mb | linear FASTA, 7 records (`1..5,Mt,Pt`) | first headers: `>1`, `>2`, `>3` |
-| `data/TAIR10.gff3` | Ensembl/TAIR10 annotation | GFF3 v3 | `##gff-version 3` then `##sequence-region 1 1 30427671 …` |
-| `data/Franco-Zorrilla_et_al_2014.meme` | 113 plant TF motifs (Franco-Zorrilla 2014) | MEME v4 | 113 lines starting `MOTIF ` |
+| `data/reference/TAIR10.fasta` | TAIR10 nuclear + organelle genome, ~135 Mb | linear FASTA, 7 records (`1..5,Mt,Pt`) | first headers: `>1`, `>2`, `>3` |
+| `data/reference/TAIR10.gff3` | Ensembl/TAIR10 annotation | GFF3 v3 | `##gff-version 3` then `##sequence-region 1 1 30427671 …` |
+| `data/motifs/Franco-Zorrilla_et_al_2014.meme` | 113 plant TF motifs (Franco-Zorrilla 2014) | MEME v4 | 113 lines starting `MOTIF ` |
 | `data/genes/genes_cell_type_treatment.txt` | gene-cluster mapping for the heterotypic test | `<cluster_label> <gene_id>` per line, 1660 rows, 6 clusters | `Epidermis_flg22_up AT1G53080` |
-| `build/index_fimo_fused` | fused FIMO + PMET indexer | ELF/macho binary | n/a |
-| `build/pair_parallel` | heterotypic pair tester | binary | n/a |
+| `build/indexing_fimo_fused` | fused FIMO + PMET indexer | ELF/macho binary | n/a |
+| `build/pairing_parallel` | heterotypic pair tester | binary | n/a |
 
-Each input passes its preflight check in `scripts/pipeline/03_promoter.sh:108-126`:
+Each input passes its preflight check in `scripts/workflows/promoter.sh:108-126`:
 
 - `check_file` confirms non-empty;
 - `check_dep` confirms `samtools / bedtools / sortBed / fasta-get-markov / parallel / python3` exist;
@@ -48,7 +48,7 @@ Each input passes its preflight check in `scripts/pipeline/03_promoter.sh:108-12
 
 ## 3. Output contract
 
-After a clean run the pipeline must populate three subtrees under `results/03_promoter/`:
+After a clean run the pipeline must populate three subtrees under `results/cli/promoter/`:
 
 - `01_homotypic/`
   - `universe.txt` — gene set scanned by FIMO (one id / line).
@@ -77,7 +77,7 @@ For intermediate inspection this audit re-ran only the homotypic stage into `res
 #### Command / code path
 
 ```text
-perl scripts/gff3sort/gff3sort.pl data/TAIR10.gff3 > <out>/sorted.gff3
+perl scripts/third_party/gff3sort/gff3sort.pl data/reference/TAIR10.gff3 > <out>/sorted.gff3
 ```
 
 (`run_homotypic.py:146-149`)
@@ -92,7 +92,7 @@ Hierarchical, sorted GFF3 is the assumption every downstream parser makes. Witho
 
 #### Input
 
-`data/TAIR10.gff3` — first non-comment row:
+`data/reference/TAIR10.gff3` — first non-comment row:
 
 ```
 1   araport11   chromosome   1   30427671   .   .   .   ID=chromosome:1
@@ -207,7 +207,7 @@ Pt   154478
 
 #### Observed result
 
-7 rows, lengths match `data/TAIR10.fasta.fai` byte-for-byte.
+7 rows, lengths match `data/reference/TAIR10.fasta.fai` byte-for-byte.
 
 #### Assessment
 
@@ -405,7 +405,7 @@ PASS.
 #### Command / code path
 
 ```text
-build/index_fimo_fused --no-qvalue --text \
+build/indexing_fimo_fused --no-qvalue --text \
     --thresh 0.05 --bgfile promoters.bg \
     --topn 5000 --topk 5 --oc <out> \
     memefiles/<batch>.txt promoters.fa promoter_lengths.txt
@@ -496,12 +496,12 @@ PASS.
 #### Command / code path
 
 ```text
-build/pair_parallel \
+build/pairing_parallel \
     -d . \
     -g <filtered_gene_list> -i 4 \
     -p promoter_lengths.txt -b binomial_thresholds.txt \
     -c IC.txt -f fimohits \
-    -o results/03_promoter/02_heterotypic -t 4
+    -o results/cli/promoter/02_heterotypic -t 4
 ```
 
 (`03_promoter.sh:171-187`)
@@ -595,7 +595,7 @@ PASS.
 ## 5. Final outputs
 
 ```
-results/03_promoter/
+results/cli/promoter/
 ├── 01_homotypic/
 │   ├── universe.txt              29824 lines (gene set scanned)
 │   ├── promoter_lengths.txt      29824 lines
@@ -658,14 +658,14 @@ The outputs are suitable for downstream PMET interpretation. The two caveats —
 
 | 文件 | 生物学含义 | 格式 | 截样 |
 |---|---|---|---|
-| `data/TAIR10.fasta` | TAIR10 核 + 细胞器基因组，~135 Mb | linear FASTA，7 条 record（`1..5,Mt,Pt`） | 头部：`>1`、`>2`、`>3` |
-| `data/TAIR10.gff3` | Ensembl/TAIR10 注释 | GFF3 v3 | `##gff-version 3` 然后 `##sequence-region 1 1 30427671 …` |
-| `data/Franco-Zorrilla_et_al_2014.meme` | 113 个植物 TF motif（Franco-Zorrilla 2014） | MEME v4 | 113 行 `MOTIF ` 开头 |
+| `data/reference/TAIR10.fasta` | TAIR10 核 + 细胞器基因组，~135 Mb | linear FASTA，7 条 record（`1..5,Mt,Pt`） | 头部：`>1`、`>2`、`>3` |
+| `data/reference/TAIR10.gff3` | Ensembl/TAIR10 注释 | GFF3 v3 | `##gff-version 3` 然后 `##sequence-region 1 1 30427671 …` |
+| `data/motifs/Franco-Zorrilla_et_al_2014.meme` | 113 个植物 TF motif（Franco-Zorrilla 2014） | MEME v4 | 113 行 `MOTIF ` 开头 |
 | `data/genes/genes_cell_type_treatment.txt` | 异型测试用的 gene-cluster 映射 | 每行 `<cluster_label> <gene_id>`，1660 行，6 个 cluster | `Epidermis_flg22_up AT1G53080` |
-| `build/index_fimo_fused` | FIMO + PMET 融合索引器 | ELF/macho 二进制 | n/a |
-| `build/pair_parallel` | 异型 pair 检验器 | 二进制 | n/a |
+| `build/indexing_fimo_fused` | FIMO + PMET 融合索引器 | ELF/macho 二进制 | n/a |
+| `build/pairing_parallel` | 异型 pair 检验器 | 二进制 | n/a |
 
-每个输入在 `scripts/pipeline/03_promoter.sh:108-126` 都过 preflight：
+每个输入在 `scripts/workflows/promoter.sh:108-126` 都过 preflight：
 
 - `check_file` 确认文件非空；
 - `check_dep` 确认 `samtools / bedtools / sortBed / fasta-get-markov / parallel / python3` 都在；
@@ -675,7 +675,7 @@ The outputs are suitable for downstream PMET interpretation. The two caveats —
 
 ## 3. 输出契约
 
-干净跑完之后，pipeline 必须在 `results/03_promoter/` 下填出三个子树：
+干净跑完之后，pipeline 必须在 `results/cli/promoter/` 下填出三个子树：
 
 - `01_homotypic/`
   - `universe.txt` —— FIMO 扫描的 gene 集（一行一个 id）。
@@ -704,7 +704,7 @@ The outputs are suitable for downstream PMET interpretation. The two caveats —
 #### 命令 / 代码路径
 
 ```text
-perl scripts/gff3sort/gff3sort.pl data/TAIR10.gff3 > <out>/sorted.gff3
+perl scripts/third_party/gff3sort/gff3sort.pl data/reference/TAIR10.gff3 > <out>/sorted.gff3
 ```
 
 (`run_homotypic.py:146-149`)
@@ -719,7 +719,7 @@ perl scripts/gff3sort/gff3sort.pl data/TAIR10.gff3 > <out>/sorted.gff3
 
 #### 输入
 
-`data/TAIR10.gff3` —— 第一条非注释行：
+`data/reference/TAIR10.gff3` —— 第一条非注释行：
 
 ```
 1   araport11   chromosome   1   30427671   .   .   .   ID=chromosome:1
@@ -834,7 +834,7 @@ Pt   154478
 
 #### 观察结果
 
-7 行，长度与 `data/TAIR10.fasta.fai` 逐字节一致。
+7 行，长度与 `data/reference/TAIR10.fasta.fai` 逐字节一致。
 
 #### 评估
 
@@ -1032,7 +1032,7 @@ PASS。
 #### 命令 / 代码路径
 
 ```text
-build/index_fimo_fused --no-qvalue --text \
+build/indexing_fimo_fused --no-qvalue --text \
     --thresh 0.05 --bgfile promoters.bg \
     --topn 5000 --topk 5 --oc <out> \
     memefiles/<batch>.txt promoters.fa promoter_lengths.txt
@@ -1123,12 +1123,12 @@ PASS。
 #### 命令 / 代码路径
 
 ```text
-build/pair_parallel \
+build/pairing_parallel \
     -d . \
     -g <filtered_gene_list> -i 4 \
     -p promoter_lengths.txt -b binomial_thresholds.txt \
     -c IC.txt -f fimohits \
-    -o results/03_promoter/02_heterotypic -t 4
+    -o results/cli/promoter/02_heterotypic -t 4
 ```
 
 (`03_promoter.sh:171-187`)
@@ -1222,7 +1222,7 @@ PASS。
 ## 5. 最终输出
 
 ```
-results/03_promoter/
+results/cli/promoter/
 ├── 01_homotypic/
 │   ├── universe.txt              29824 lines (gene set scanned)
 │   ├── promoter_lengths.txt      29824 lines

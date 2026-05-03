@@ -1,8 +1,8 @@
-# Pipeline 05 walkthrough — Promoter PMET with TSS-proximal gap
+# Promoter PMET with TSS-proximal gap — walkthrough
 
 **[English](#en) · [汉文](#cn)**
 
-> **Heads-up:** this is a frozen pre-monorepo walkthrough. References like `scripts/pipeline/05_promoter_gap.sh` and `data/TAIR10.fasta` are stale — see [`../README.md`](README.md) for the current path mapping. The algorithm and biology described still apply.
+> **About this doc:** path references throughout match the **current** monorepo layout (`scripts/workflows/cli/05_promoter_gap.sh`, `data/reference/TAIR10.*`, `build/pairing_parallel`, `results/cli/promoter_gap/`). The biology and algorithm content predates the monorepo merge — that's all unchanged from the original PMET. Inline `:line-range` annotations after a script path were captured against the pre-monorepo `05_promoter_gap.sh` (path was `scripts/pipeline/`; the file moved largely unchanged to `scripts/workflows/cli/`); treat them as **section hints**, not exact citations.
 
 ---
 
@@ -47,7 +47,7 @@ if (( gap != 0 )) && [[ "$utr" =~ ^(yes|y|true|t)$ ]]; then
 fi
 ```
 
-(`scripts/pipeline/05_promoter_gap.sh:50-54`)
+(`scripts/workflows/cli/05_promoter_gap.sh:50-54`)
 
 #### Bioinformatics meaning
 
@@ -60,7 +60,7 @@ The 5' UTR sits *between* the TSS and the start codon — exactly the region we 
 Identical to pipeline 03:
 
 ```
-results/05_promoter_gap/
+results/cli/promoter_gap/
 ├── 01_homotypic/      # universe / lengths / IC / binomial / fimohits
 ├── 02_heterotypic/    # motif_output.txt + pmet.log
 └── plot/              # 3 heatmaps
@@ -86,7 +86,7 @@ python3 scripts/python/build_promoters.py \
     [...]
 ```
 
-(`scripts/pipeline/05_promoter_gap.sh:158-174`)
+(`scripts/workflows/cli/05_promoter_gap.sh:158-174`)
 
 The relevant logic inside `build_promoters.py` is the `shrink_for_gap` helper:
 
@@ -150,14 +150,14 @@ Identical to pipeline 03. 113 motifs in, 113 fimohits files out, 113 binomial-th
 #### Command / code path
 
 ```text
-build/pair_parallel \
+build/pairing_parallel \
     -d . -g <filtered_gene_list> -i 4 \
     -p promoter_lengths.txt -b binomial_thresholds.txt \
     -c IC.txt -f fimohits \
-    -o results/05_promoter_gap/02_heterotypic -t 4
+    -o results/cli/promoter_gap/02_heterotypic -t 4
 ```
 
-(`scripts/pipeline/05_promoter_gap.sh:188-197`)
+(`scripts/workflows/cli/05_promoter_gap.sh:188-197`)
 
 #### Output
 
@@ -210,7 +210,7 @@ This is the same observation as for 06 and 07, but **not** for 03. The differenc
 ## 5. Final outputs
 
 ```
-results/05_promoter_gap/
+results/cli/promoter_gap/
 ├── 01_homotypic/
 │   ├── universe.txt              27500 lines  (vs 29824 in 03)
 │   ├── promoter_lengths.txt      27500 rows; max length 900 (vs 14813 in 03)
@@ -286,7 +286,7 @@ if (( gap != 0 )) && [[ "$utr" =~ ^(yes|y|true|t)$ ]]; then
 fi
 ```
 
-(`scripts/pipeline/05_promoter_gap.sh:50-54`)
+(`scripts/workflows/cli/05_promoter_gap.sh:50-54`)
 
 #### 生物学含义
 
@@ -299,7 +299,7 @@ fi
 跟 pipeline 03 完全一样：
 
 ```
-results/05_promoter_gap/
+results/cli/promoter_gap/
 ├── 01_homotypic/      # universe / lengths / IC / binomial / fimohits
 ├── 02_heterotypic/    # motif_output.txt + pmet.log
 └── plot/              # 3 张 heatmap
@@ -325,7 +325,7 @@ python3 scripts/python/build_promoters.py \
     [...]
 ```
 
-(`scripts/pipeline/05_promoter_gap.sh:158-174`)
+(`scripts/workflows/cli/05_promoter_gap.sh:158-174`)
 
 `build_promoters.py` 里相关的逻辑是 `shrink_for_gap` 助手：
 
@@ -389,14 +389,14 @@ PASS。gap 干的事跟脚本说的一致：最大长度从 03 的 `1000 + UTR �
 #### 命令 / 代码路径
 
 ```text
-build/pair_parallel \
+build/pairing_parallel \
     -d . -g <filtered_gene_list> -i 4 \
     -p promoter_lengths.txt -b binomial_thresholds.txt \
     -c IC.txt -f fimohits \
-    -o results/05_promoter_gap/02_heterotypic -t 4
+    -o results/cli/promoter_gap/02_heterotypic -t 4
 ```
 
-(`scripts/pipeline/05_promoter_gap.sh:188-197`)
+(`scripts/workflows/cli/05_promoter_gap.sh:188-197`)
 
 #### 输出
 
@@ -449,7 +449,7 @@ WARNING。`unique=TRUE` flag 的设计是把跨 cluster 重复出现的 motif �
 ## 5. 最终输出
 
 ```
-results/05_promoter_gap/
+results/cli/promoter_gap/
 ├── 01_homotypic/
 │   ├── universe.txt              27500 行（vs 03 的 29824）
 │   ├── promoter_lengths.txt      27500 行；最大长度 900（vs 03 的 14813）
