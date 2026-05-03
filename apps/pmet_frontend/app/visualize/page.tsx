@@ -447,10 +447,16 @@ function VisualizePageContent() {
   );
 
   // Task source: when the page is opened as `/visualize?task=<id>` (from
-  // the task detail page's "Open in Viewer" CTA), pull the parsed result
-  // rows from the API and feed the same allResults slot the file/demo
-  // paths use. Page renders identically downstream — only the ingestion
-  // differs.
+  // the task detail page's "Open in Viewer" CTA), fetch the raw
+  // motif_output.txt and feed it through the same parsePmetFile() the
+  // upload-zone path uses. Earlier this went through resultsApi.get
+  // (paginated JSON), but that endpoint caps at 5000 rows in pair_parallel's
+  // file-order layout; large tasks (e.g. pmet_04359f067bbd, 18984 rows
+  // with 360 Bonf-significant pairs spread throughout) saw truncated
+  // input → wrong motif scoring → wrong heatmap vs the R-rendered PNG.
+  // The raw endpoint streams the full file, no cap, and parsePmetFile
+  // is the same function the upload zone already uses → both paths
+  // are now byte-for-byte equivalent.
   const searchParams = useSearchParams();
   const taskParam = searchParams?.get('task') ?? null;
   useEffect(() => {
@@ -458,39 +464,14 @@ function VisualizePageContent() {
     let cancelled = false;
     (async () => {
       try {
-        // Cap at 5000 (the backend's hard ceiling). Demo / typical web
-        // tasks are well under this; tasks above 5000 pairs see truncated
-        // data — addressing that needs a separate streaming/server-side
-        // pagination story for the explorer.
-        const data = await resultsApi.get(taskParam, { p_adj_max: 1.0, limit: 5000 });
+        const text = await resultsApi.raw(taskParam);
         if (cancelled) return;
-        const rows = (data?.results ?? []) as Array<{
-          cluster: string; motif1: string; motif2: string;
-          gene_num: number; total_genes: number; cluster_genes: number;
-          p_value: number; p_adj_bh: number; p_adj_bonf: number; p_adj_global: number;
-          genes: string[];
-        }>;
-        const adapted: MotifResult[] = rows.map((r) => ({
-          cluster: r.cluster ?? '',
-          motif1: r.motif1 ?? '',
-          motif2: r.motif2 ?? '',
-          gene_num: r.gene_num ?? 0,
-          total_genes: r.total_genes ?? 0,
-          cluster_genes: r.cluster_genes ?? 0,
-          p_value: r.p_value ?? 1,
-          p_adj_bh: r.p_adj_bh ?? 1,
-          p_adj_bonf: r.p_adj_bonf ?? 1,
-          p_adj_global: r.p_adj_global ?? 1,
-          genes: Array.isArray(r.genes) ? r.genes : [],
-          // Same pair key the file parser uses (`motif1^^motif2`), so the
-          // dedup / overlap logic downstream stays identical.
-          motif_pair: `${r.motif1}^^${r.motif2}`,
-        }));
-        if (adapted.length === 0) {
+        const results = parsePmetFile(text);
+        if (results.length === 0) {
           setError(t('viz.err.no_rows'));
           return;
         }
-        setAllResults(adapted);
+        setAllResults(results);
         setFileName(`Task ${taskParam}`);
         setSelectedCluster('All');
         setTablePage(0);

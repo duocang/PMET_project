@@ -125,6 +125,19 @@ export const resultsApi = {
     const response = await api.get(`/api/results/${taskId}/genes-used`);
     return response.data;
   },
+
+  // Raw motif_output.txt as text, no filtering, no row cap. Used by
+  // the /visualize page when opened with ?task=<id> so it parses the
+  // same bytes the upload-zone path would — keeps the two flows in
+  // perfect sync. The paginated `get()` above stays for the task
+  // detail page's table view, where pagination is what you want.
+  raw: async (taskId: string): Promise<string> => {
+    const response = await api.get(`/api/results/${taskId}/raw`, {
+      responseType: 'text',
+      transformResponse: (v) => v,
+    });
+    return response.data as string;
+  },
 };
 
 export interface IndexingFixedParams {

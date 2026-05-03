@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
 from pathlib import Path
 import csv
 from typing import Optional
@@ -42,6 +43,38 @@ def _parse_row(row: list[str]) -> dict:
         "p_adj_global": float(row[9]) if len(row) > 9 else 1.0,
         "genes": [g for g in row[10].split(";") if g] if len(row) > 10 and row[10] else [],
     }
+
+
+@router.get("/{task_id}/raw")
+async def get_task_raw_output(task_id: str):
+    """Return the task's motif_output.txt as a plain text/tab-separated
+    file, with no row cap and no server-side filtering.
+
+    Why this exists alongside `/{task_id}`: the JSON endpoint applies a
+    paginated `limit` (default 200, hard ceiling 5000) and returns
+    rows in file order, which is the order pair_parallel writes them
+    — basically by cluster + motif name, *not* by significance. For
+    inputs with > limit rows that's enough: the visualizer's
+    motif-selection scoring needs every row to compute Σ −log10(p_adj)
+    correctly, and the most significant pairs can sit anywhere in the
+    file. Truncation produced different heatmaps than the file-upload
+    path for the same task (verified on pmet_04359f067bbd: 18984
+    rows, only 360 Bonferroni-significant, 5000-row truncation
+    silently dropped most of those).
+
+    This endpoint hands the raw file back so the frontend can run
+    parsePmetFile against the same bytes that the upload-zone path
+    feeds — single source of truth, no truncation, no parser drift.
+    """
+    output_file = _find_output_file(task_id)
+    return FileResponse(
+        output_file,
+        media_type="text/tab-separated-values",
+        # Keep the original filename so a curl > file.txt naturally
+        # ends up with motif_output.txt; not a download trigger
+        # (frontend reads it as text via fetch().text()).
+        filename="motif_output.txt",
+    )
 
 
 @router.get("/{task_id}")
