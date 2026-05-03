@@ -19,7 +19,30 @@ cd "$SCRIPT_DIR/.."
 
 REF_DIR="data/reference"
 INDEX_DIR="data/precomputed_indexes"
+
+# Staging root for in-flight downloads and extractions. Lives next to
+# (NOT inside) INDEX_DIR for two reasons:
+#   1. The web backend's species scan iterates `precomputed_indexes/*`
+#      and treats every directory it finds as an available species (see
+#      apps/pmet_backend/api/routes/indexing.py). Putting partial state
+#      anywhere under INDEX_DIR would expose half-extracted species in
+#      the submit-page dropdown.
+#   2. Same filesystem as INDEX_DIR, so the final `mv` to publish a
+#      finished species is an atomic rename(2) rather than a copy.
+STAGING_ROOT="data/.precomputed_indexes_staging"
+
 mkdir -p "$REF_DIR" "$INDEX_DIR"
+
+# Two cleanup hooks ensure the staging root is never left lying around:
+#   1. Wipe on entry — clears anything left behind by a previous run that
+#      was killed before its EXIT trap could fire (e.g. kill -9, OOM,
+#      power loss). Without this, leftover staging would just accumulate.
+#   2. Wipe on EXIT — bash runs EXIT traps on every exit path, including
+#      normal completion, errexit failures, Ctrl+C (SIGINT) and SIGTERM,
+#      so a single trap handles all the "graceful" cleanup cases.
+rm -rf "$STAGING_ROOT"
+mkdir -p "$STAGING_ROOT"
+trap 'rm -rf "$STAGING_ROOT"' EXIT
 
 log() { printf '\n>>> %s\n' "$*"; }
 
@@ -58,28 +81,58 @@ urls=(
 failed=()
 for url in "${urls[@]}"; do
     species=$(basename "$url" .tar.gz)
-    tarball="$INDEX_DIR/$species.tar.gz"
     if [[ -d "$INDEX_DIR/$species" ]]; then
         log "Already have indexing for ${species//_/ }, skipping"
         continue
     fi
     log "Downloading indexing for ${species//_/ }"
+
+    # Per-species staging dir. Both the .tar.gz and the extracted tree
+    # live here while the work is in flight, so a single `rm -rf` wipes
+    # everything for this species regardless of which step failed.
+    # mktemp's random suffix prevents collisions if a previous run's
+    # cleanup somehow missed this species' staging dir.
+    staging=$(mktemp -d "$STAGING_ROOT/${species}.XXXXXX")
+    tarball="$staging/$species.tar.gz"
+
     # Don't let one species' network/tar failure abort the whole batch;
-    # collect the names and report at the end.
+    # collect the names and report at the end so the user knows what to
+    # retry. INDEX_DIR is left untouched on failure — there is no partial
+    # state to clean up there because we only publish on full success.
     if ! curl -fL --progress-bar "$url" -o "$tarball"; then
         log "Download failed for ${species//_/ }"
-        rm -f "$tarball"
+        rm -rf "$staging"
         failed+=("$species")
         continue
     fi
-    if ! tar -xzf "$tarball" -C "$INDEX_DIR"; then
+    if ! tar -xzf "$tarball" -C "$staging"; then
         log "Extraction failed for ${species//_/ }"
-        rm -f "$tarball"
-        rm -rf "${INDEX_DIR:?}/$species"
+        rm -rf "$staging"
         failed+=("$species")
         continue
     fi
-    rm -f "$tarball"
+    # Defensive: every Zenodo tarball in this list extracts a top-level
+    # `<species>/` directory. If a future tarball has a different layout
+    # we want to know up front rather than silently producing nothing.
+    if [[ ! -d "$staging/$species" ]]; then
+        log "Tarball did not contain expected directory '$species/' for ${species//_/ }"
+        rm -rf "$staging"
+        failed+=("$species")
+        continue
+    fi
+
+    # Atomic publish: on the same filesystem, `mv` is a single rename(2)
+    # syscall, so the species directory either appears complete under
+    # INDEX_DIR or not at all. This is what keeps the app from ever
+    # observing a half-built species, even if the script is killed
+    # immediately after this line.
+    if ! mv "$staging/$species" "$INDEX_DIR/$species"; then
+        log "Failed to publish ${species//_/ } into $INDEX_DIR"
+        rm -rf "$staging"
+        failed+=("$species")
+        continue
+    fi
+    rm -rf "$staging"
 done
 
 if (( ${#failed[@]} > 0 )); then
