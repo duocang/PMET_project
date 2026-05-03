@@ -73,12 +73,16 @@ done
 # Demo pairing — same rationale as indexing above; previously delegated to
 # the now-deleted apps/cli/scripts/run_pairing.sh.
 #
-# Scoring model: `-x 1` (Poisson). The retired apps/cli wrapper passed
-# `-x "true"`, which the binary parses as Poisson because of its
-# `value[0] != '0'` rule (see core/pairing/src/main.cpp:184). Mirroring
-# that here keeps the recorded fingerprint anchor unchanged across this
-# refactor — the goal of *this* commit is "make the harness work again
-# after apps/cli retirement", not "change what we anchor on".
+# Scoring model: `-x 0` (binomial). The binary parses `-x` as
+# `value[0] != '0'` (see core/pairing/src/main.cpp:184), so `-x 0`
+# selects binomial and any other value flips Poisson on. The retired
+# apps/cli wrapper passed `-x "true"` (Poisson), but every production
+# code path — workflows/pair_only.sh, promoter.sh, intervals.sh, plus
+# the modern tests/audit/ harness — runs binomial by default. Pinning
+# baseline to binomial too makes this anchor representative of what
+# the pipeline actually computes. The audit anchor 0af5b936... is the
+# binomial counterpart and now matches the pairing anchor recorded in
+# fingerprints.txt.
 # --------------------------------------------------------------------------
 DEMO_PAIR="data/demos/promoters/pairing/demo"
 echo "## section:core_demo_run_pairing"
@@ -87,7 +91,7 @@ gene_filt="$out_dir/gene.filt"
 grep -Ff "$DEMO_PAIR/universe.txt" "$DEMO_PAIR/gene.txt" > "$gene_filt"
 if build/pairing_parallel \
      -d "$DEMO_PAIR" \
-     -x 1 \
+     -x 0 \
      -g "$gene_filt" \
      -i 4 \
      -p promoter_lengths.txt \

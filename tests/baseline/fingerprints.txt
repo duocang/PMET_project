@@ -1,6 +1,6 @@
-# baseline captured: 2026-05-03T10:29:14Z
+# baseline captured: 2026-05-03T10:29:47Z
 # host: Darwin 24.6.0 arm64
-# git: bd353e3 on main
+# git: 644b64b on main
 
 ## section:binaries
 build/indexing_fimo_fused	23374bf20e118e64f453ac92a6e9ba50086f00fc004e8845d9a74bb20165d316
@@ -22,7 +22,7 @@ fa80eecf9fec14263fe95c45fa0c4b70c9e8343ccd715b29271d8126a08806c2  ./fused/fimohi
 
 ## section:core_demo_run_pairing
 # RUN_OK
-cb2a9f55d7bf4524761e1b6654336f2341813f33e7405405f7992345488acdef  ./motif_output.txt
+0af5b936606fd30f3e4989c3658170e93e208d1277fa97882a2e83c130a83d8f  ./motif_output.txt
 
 ## section:analysis_smoke
 # SMOKE_OK
