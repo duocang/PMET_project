@@ -466,6 +466,7 @@ function SubmitPageContent() {
         email,
         mode,
         task_id: uploadSessionId,
+        session_token: uploadSessionToken,
         ...effectiveParams,
         genes_file: genesPath,
         fasta_file: fastaPath || undefined,

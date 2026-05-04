@@ -26,8 +26,9 @@
 | [13](#issue-13) | `/api/results` 默认 sort 把全部匹配行加载内存（修 #7 引入）| 🟡 大文件风险 | ⏳ **未修** — 39 k 行 ~10 MB OK；100 万行需换 `heapq.nsmallest` |
 | [14](#issue-14) | ~~DELETE /upload 仍依赖 session_id secrecy（修 #5 后残留）~~ | 🟡 公网严格化 | ✅ **已修** — 同 session_token 机制 |
 | [15](#issue-15) | ~~`use-example` symlink + writable `/app/data` 可被同名上传写穿覆盖原始数据~~ | 🔴 critical | ✅ **已修** — 不再创建 symlink/copy；compose `data` mount 改 `:ro` |
+| [16](#issue-16) | ~~`POST /api/tasks` 未绑定 session_token，可伪造 task_id / 跨 session 路径~~ | 🔴 critical | ✅ **已修** — create-task 校验 token + path ownership + duplicate 409 + token 不落盘 |
 
-10 修 + 1 决策不修 + 1 hardening backlog（#13）。下方各问题段落附"复现 / 修法 / 验证"详情。
+11 修 + 1 决策不修 + 1 hardening backlog（#13）。下方各问题段落附"复现 / 修法 / 验证"详情。
 
 ---
 
@@ -168,7 +169,7 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 
 ### Hardening backlog（已修批次的延伸）
 
-#12 / #13 / #14 是修问题 5 / 7 / 8 时的收紧项。**pmet.online 上线后 #12 + #14 已落地**（共享同一个 session_token 机制），#13 仍是 backlog（39 k 行实战 OK，等真碰到百万行任务再做）。#15 是 2026-05-05 安全复查新增的 symlink 写穿问题，已随 direct data path 方案修掉。
+#12 / #13 / #14 是修问题 5 / 7 / 8 时的收紧项。**pmet.online 上线后 #12 + #14 已落地**（共享同一个 session_token 机制），#13 仍是 backlog（39 k 行实战 OK，等真碰到百万行任务再做）。#15 / #16 是 2026-05-05 安全复查新增的问题，分别修掉 symlink 写穿和 create-task 所有权断点。
 
 <a id="issue-12"></a>
 
@@ -210,6 +211,26 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 
 **残留**：生产机需 `docker compose up -d --force-recreate api worker liveness-watchdog` 或等下一次重建，让 `:ro` mount 真正生效。
 
+<a id="issue-16"></a>
+
+#### ~~问题 16：`POST /api/tasks` 未绑定 session_token，可伪造 task_id / 跨 session 路径~~ ✓ 已修
+
+**复现模型**（2026-05-05 代码审查）：`/api/files/use-example` 和 `DELETE /upload` 已经要求 session token，但最终的 `POST /api/tasks` 仍信任客户端传来的 `task_id` 和 `genes_file/fasta_file/gff3_file/meme_file`。绕过前端直接 POST 时，攻击者可以尝试：
+- 用已知/猜到的 `task_id` 覆盖旧 task metadata。
+- 让自己的 task 读取别人 `results/<other>/upload/...` 下的输入文件。
+- 把 task 输入指向任意 `data/...` 文件，而不是当前槽位允许的 app demo。
+
+**修法**：
+- 新增 `api/upload_sessions.py`，把 session store 从 `files.py` 抽成共享模块；`files.py` 和 `tasks.py` 共用同一份 token 校验。
+- `TaskCreate` 增加 `session_token`；前端提交 task 时随 `task_id` 一起发送，但后端 `model_dump(exclude={"session_token"})`，不把 token 写入 task JSON。
+- `POST /api/tasks` 现在要求：`task_id` 存在且符合 session id regex、`session_token` 匹配、`tasks/<task_id>.json` 不存在（否则 409）。
+- 创建前逐项校验输入路径：用户上传文件必须 resolve 到 `RESULT_DIR/<task_id>/upload/`；app demo 必须是 `DEMO_FILES` 中同 slot 白名单路径；`premade_index` 必须在 `data/precomputed_indexes/` 下。
+- 校验通过后 consume session，防止同一个 token 重复创建 task。
+
+**验证**：
+- 后端单测新增 `test_task_creation_security.py`，覆盖成功提交不落盘 token、坏 token 401、跨 session 上传路径 400、错误 slot demo path 400、重复 task id 409。
+- `test_upload_routes.py + test_task_creation_security.py` 共 19 case 全 pass。
+
 <a id="issue-13"></a>
 
 #### 问题 13：`/api/results` 默认 sort 收集全部匹配行进内存 🟡 大文件风险
@@ -223,7 +244,7 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 
 修 #5 后已收紧到 `RESULT_DIR/<session_id>/upload/<filename>`。但任何拿到 `<session_id>`（48-bit 随机 hex）的人仍可未经鉴权地删除该 session 的 upload 文件。
 
-**修法**：跟 #12 共享同一个 session_token 机制——[files.py:444-478](apps/pmet_backend/api/routes/files.py#L444-L478) `DELETE /upload` 新增 `session_token` 查询参数，`_validate_session(parts[0], session_token)` 校验失败 401。前端 `fileApi.deleteUpload(path, sessionToken)` 同步加参数。
+**修法**：跟 #12 共享同一个 session_token 机制——`DELETE /upload` 新增 `session_token` 查询参数，`validate_upload_session(parts[0], session_token)` 校验失败 401。前端 `fileApi.deleteUpload(path, sessionToken)` 同步加参数。
 **公网部署后实际行为**：知道 path 的攻击者还需要同时知道**配套的 64-hex token**，而 token 只在原页面 mount 那一次返回（HTTP body 不入 localStorage、不进 cookie），跨浏览器/跨 tab 不可获取。
 
 **curl 验证**（同 #12 的 T6/T7）：

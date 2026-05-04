@@ -8,6 +8,7 @@ import json
 from pydantic import BaseModel
 
 from ..models.task import TaskCreate, TaskResponse, TaskStatus, TaskMode, TaskListResponse
+from ..upload_sessions import UPLOAD_SESSION_RE, consume_upload_session, validate_upload_session
 from ...config import config
 from ...proc import kill_process_tree
 from ...services.storage import StorageService
@@ -17,6 +18,13 @@ from .admin import require_admin
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 storage = StorageService()
+
+_TASK_INPUT_SLOTS = {
+    "genes_file": "genes",
+    "fasta_file": "fasta",
+    "gff3_file": "gff3",
+    "meme_file": "meme",
+}
 
 
 class CancelPayload(BaseModel):
@@ -89,6 +97,74 @@ def _resolve_safe_index_dir(rel: Optional[str]):
     if not candidate.is_dir():
         return None
     return candidate
+
+
+def _demo_paths_for_slot(slot: str) -> set[Path]:
+    from .demo import DEMO_FILES
+
+    data_root = (config.PROJECT_ROOT / "data").resolve()
+    paths: set[Path] = set()
+    for (_mode, demo_slot), (rel_path, _public_name) in DEMO_FILES.items():
+        if demo_slot == slot:
+            paths.add((data_root / rel_path).resolve())
+    return paths
+
+
+def _canonical_project_rel(path: Path) -> str:
+    return str(path.relative_to(config.PROJECT_ROOT.resolve()))
+
+
+def _validate_task_input_path(task_id: str, field: str, rel: Optional[str]) -> Optional[str]:
+    """Require task inputs to belong to this upload session or app demos."""
+    if not rel:
+        return None
+    if not isinstance(rel, str):
+        raise HTTPException(status_code=400, detail=f"{field} must be a path string")
+
+    root = config.PROJECT_ROOT.resolve()
+    try:
+        candidate = (root / rel).resolve(strict=False)
+    except (OSError, RuntimeError) as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid {field} path") from exc
+
+    upload_root = (config.RESULT_DIR / task_id / "upload").resolve()
+    try:
+        candidate.relative_to(upload_root)
+        if not candidate.is_file():
+            raise HTTPException(status_code=400, detail=f"{field} is missing from this upload session")
+        return _canonical_project_rel(candidate)
+    except ValueError:
+        pass
+
+    slot = _TASK_INPUT_SLOTS[field]
+    if candidate in _demo_paths_for_slot(slot) and candidate.is_file():
+        return _canonical_project_rel(candidate)
+
+    raise HTTPException(
+        status_code=400,
+        detail=f"{field} must be under this session's upload directory or an allowed app demo file",
+    )
+
+
+def _validate_task_index_path(rel: Optional[str]) -> Optional[str]:
+    if not rel:
+        return None
+    candidate = _resolve_safe_index_dir(rel)
+    if not candidate:
+        raise HTTPException(
+            status_code=400,
+            detail="premade_index must be under data/precomputed_indexes",
+        )
+    return _canonical_project_rel(candidate)
+
+
+def _validated_task_meta(task: TaskCreate, task_id: str) -> dict:
+    task_meta = task.model_dump(exclude={"session_token"})
+    task_meta["task_id"] = task_id
+    for field in _TASK_INPUT_SLOTS:
+        task_meta[field] = _validate_task_input_path(task_id, field, task_meta.get(field))
+    task_meta["premade_index"] = _validate_task_index_path(task_meta.get("premade_index"))
+    return task_meta
 
 
 # Safety cap on file reads inside the estimate endpoint. Above this we just
@@ -345,20 +421,33 @@ def _locate_motif_output(task_id: str) -> Optional[Path]:
 @router.post("", response_model=TaskResponse)
 async def create_task(task: TaskCreate):
     """Create a new PMET task"""
-    task_id = storage.generate_task_id(task.email, override=task.task_id)
+    if not task.task_id:
+        raise HTTPException(status_code=400, detail="task_id is required; call /api/files/issue-session first")
+    if not UPLOAD_SESSION_RE.match(task.task_id):
+        raise HTTPException(status_code=400, detail="Invalid task_id")
+
+    task_id = task.task_id
+    if not validate_upload_session(task_id, task.session_token):
+        raise HTTPException(status_code=401, detail="Invalid or expired session token")
+
+    meta_file = config.TASKS_DIR / f"{task_id}.json"
+    if meta_file.exists():
+        raise HTTPException(status_code=409, detail="Task already exists")
+
+    task_meta = _validated_task_meta(task, task_id)
+    if not consume_upload_session(task_id, task.session_token):
+        raise HTTPException(status_code=401, detail="Invalid or expired session token")
+
     task_dir = storage.create_task_directory(task_id)
 
     # Save task metadata. Overwrite the (optional) inbound task_id with the
     # validated server-side value so downstream consumers always see the
     # canonical id.
-    task_meta = task.model_dump()
-    task_meta["task_id"] = task_id
     task_meta["status"] = TaskStatus.PENDING.value
     task_meta["created_at"] = datetime.utcnow().isoformat()
     task_meta["runtime_estimate"] = _runtime_estimate_response(task_meta)
     task_meta.update(_premade_index_summary(task_meta.get("premade_index")))
 
-    meta_file = config.TASKS_DIR / f"{task_id}.json"
     meta_file.parent.mkdir(parents=True, exist_ok=True)
     meta_file.write_text(json.dumps(task_meta, indent=2))
 

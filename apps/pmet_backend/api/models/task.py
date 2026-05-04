@@ -21,11 +21,12 @@ class TaskStatus(str, Enum):
 class TaskCreate(BaseModel):
     email: EmailStr
     mode: TaskMode
-    # Frontend-generated UUID used as both the upload-session id (uploaded
-    # files land under results/app/<task_id>/upload/) and the task id. Optional
-    # for legacy / curl callers — the server falls back to an email-stamped
-    # id if not provided.
+    # Server-issued upload-session id used as both the upload root and task id.
+    # POST /api/tasks requires the matching session_token; keeping both fields
+    # optional at the model layer lets the route return a clearer 400/401 than
+    # Pydantic's generic 422 for legacy callers.
     task_id: Optional[str] = None
+    session_token: Optional[str] = None
 
     # Common parameters
     ic_threshold: int = Field(default=24, ge=2, le=32)

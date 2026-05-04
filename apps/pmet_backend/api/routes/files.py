@@ -1,86 +1,22 @@
 import gzip
-import hmac
 import json
 import os
 import re
-import secrets
 import shutil
 import time
 from pathlib import Path
-from threading import Lock
 from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 
 from ...config import config
+from ..upload_sessions import (
+    UPLOAD_SESSION_RE,
+    check_issue_rate_limit,
+    issue_upload_session,
+    validate_upload_session,
+)
 
 router = APIRouter(prefix="/files", tags=["files"])
-
-
-# ─── Session token store ──────────────────────────────────────────────
-# A "session" is a transient binding between a session_id (the directory
-# under RESULT_DIR/<session_id>/upload/ that holds the files for one
-# pending submission) and a server-issued secret token. Required for
-# DELETE /upload so an unauthenticated public caller can't delete another
-# session's upload by guessing the path (#14). /use-example also requires
-# the token so the submit flow has one consistent session boundary, even
-# though it now returns read-only data/ paths without touching upload/.
-#
-# In-memory module-level state is fine for the dev/single-worker layout.
-# Multi-worker prod would want redis here; the API surface stays the
-# same and only `_validate_session` / `_issue_session` change.
-_SESSIONS: dict[str, dict] = {}
-_SESSIONS_LOCK = Lock()
-_SESSION_TTL_SECONDS = 60 * 60  # 1 h is more than enough to fill the form
-
-# Per-IP rate limit on issue-session so a bot can't farm millions of
-# upload/delete tokens. Sliding window via a deque of timestamps per IP.
-# _ISSUE_RATE_LIMIT requests per _ISSUE_RATE_WINDOW_SECONDS are allowed.
-_ISSUE_RATE_LIMIT = 10
-_ISSUE_RATE_WINDOW_SECONDS = 60
-_RATE_BUCKETS: dict[str, list[float]] = {}
-_RATE_LOCK = Lock()
-
-
-def _purge_expired_sessions() -> None:
-    """Drop expired session records. Cheap O(N) sweep — N is the number
-    of in-flight forms (typically < 100), called only when a new session
-    is issued or validated, not per file op."""
-    now = time.time()
-    with _SESSIONS_LOCK:
-        for sid in [k for k, v in _SESSIONS.items() if v["expires_at"] < now]:
-            _SESSIONS.pop(sid, None)
-
-
-def _validate_session(session_id: Optional[str], token: Optional[str]) -> bool:
-    """Constant-time check that ``token`` matches the secret we issued
-    for ``session_id`` and the session hasn't aged out."""
-    if not session_id or not token:
-        return False
-    now = time.time()
-    with _SESSIONS_LOCK:
-        record = _SESSIONS.get(session_id)
-        if not record:
-            return False
-        if record["expires_at"] < now:
-            _SESSIONS.pop(session_id, None)
-            return False
-        return hmac.compare_digest(record["token"], token)
-
-
-def _check_issue_rate_limit(ip: str) -> bool:
-    """Sliding window: at most _ISSUE_RATE_LIMIT issue-session calls
-    per _ISSUE_RATE_WINDOW_SECONDS from the same IP. Returns True when
-    the request fits inside the window, False once the cap is hit."""
-    now = time.time()
-    cutoff = now - _ISSUE_RATE_WINDOW_SECONDS
-    with _RATE_LOCK:
-        bucket = _RATE_BUCKETS.setdefault(ip, [])
-        # Trim old entries in place.
-        bucket[:] = [t for t in bucket if t >= cutoff]
-        if len(bucket) >= _ISSUE_RATE_LIMIT:
-            return False
-        bucket.append(now)
-        return True
 
 # Maps the user-facing slot name (genes / fasta / gff3 / meme) to the
 # corresponding key in the persisted task metadata. Must match the keys
@@ -111,8 +47,6 @@ ALLOWED_EXTENSIONS: dict[str, tuple[str, ...]] = {
 }
 
 GZIP_ENABLED_FILE_TYPES = {"fasta", "gff3"}
-
-UPLOAD_SESSION_RE = re.compile(r"^[A-Za-z0-9_\-]{1,64}$")
 
 
 def _match_extension(filename: str, allowed_extensions: tuple[str, ...]) -> Optional[str]:
@@ -251,33 +185,15 @@ async def issue_session(request: Request):
     cheaply.
     """
     ip = request.client.host if request.client else "unknown"
-    if not _check_issue_rate_limit(ip):
+    if not check_issue_rate_limit(ip):
         raise HTTPException(
             status_code=429,
             detail=f"Too many session requests from {ip}; try again in a minute",
         )
-    _purge_expired_sessions()
-
-    # 12 hex chars (48-bit entropy) keeps URLs short and matches the
-    # legacy frontend-side generator that this replaces. Retry on the
-    # astronomically unlikely collision.
-    for _ in range(5):
-        session_id = f"pmet_{secrets.token_hex(6)}"
-        with _SESSIONS_LOCK:
-            if session_id not in _SESSIONS:
-                token = secrets.token_hex(32)  # 64 hex chars, 256-bit
-                _SESSIONS[session_id] = {
-                    "token": token,
-                    "expires_at": time.time() + _SESSION_TTL_SECONDS,
-                }
-                break
-    else:
+    try:
+        return issue_upload_session()
+    except RuntimeError:
         raise HTTPException(status_code=500, detail="Could not allocate session id")
-    return {
-        "session_id": session_id,
-        "session_token": token,
-        "expires_in": _SESSION_TTL_SECONDS,
-    }
 
 
 @router.post("/upload")
@@ -323,7 +239,7 @@ async def use_example_file(
     from .demo import DEMO_FILES
 
     _validate_session_id(task_id)
-    if not _validate_session(task_id, session_token):
+    if not validate_upload_session(task_id, session_token):
         raise HTTPException(status_code=401, detail="Invalid or expired session token")
     entry = DEMO_FILES.get((mode, slot))
     if not entry:
@@ -465,7 +381,7 @@ async def delete_upload(path: str, session_token: Optional[str] = None):
         )
     if not UPLOAD_SESSION_RE.match(parts[0]):
         raise HTTPException(status_code=400, detail="Invalid session id")
-    if not _validate_session(parts[0], session_token):
+    if not validate_upload_session(parts[0], session_token):
         raise HTTPException(status_code=401, detail="Invalid or expired session token")
     try:
         target.unlink()

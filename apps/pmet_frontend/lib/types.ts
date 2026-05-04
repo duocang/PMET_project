@@ -7,6 +7,8 @@ export interface TaskCreate {
   mode: TaskMode;
   // Frontend-generated UUID reused for upload + task id.
   task_id?: string;
+  // Server-issued secret bound to task_id; never persisted by the backend.
+  session_token: string;
   ic_threshold: number;
   max_match: number;
   promoter_num: number;
