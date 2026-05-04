@@ -91,11 +91,11 @@ function SubmitPageContent() {
 
   // Server-issued session_id + session_token pair. Replaces the
   // earlier client-side `pmet_<random>` generator. Required for
-  // /use-example (otherwise the server is a 116 MB-per-request disk
-  // amplifier) and DELETE /upload (otherwise anyone who guesses or
-  // observes a session_id can wipe its uploads). The token stays in
-  // memory only — never localStorage — so closing the tab invalidates
-  // it on the next visit.
+  // DELETE /upload (otherwise anyone who guesses or observes a
+  // session_id can wipe its uploads) and used by /use-example so the
+  // submit flow has one consistent server-issued session boundary. The
+  // token stays in memory only — never localStorage — so closing the tab
+  // invalidates it on the next visit.
   const [uploadSession, setUploadSession] = useState<{ id: string; token: string } | null>(null);
   const uploadSessionId = uploadSession?.id ?? '';
   const uploadSessionToken = uploadSession?.token ?? '';
@@ -243,13 +243,31 @@ function SubmitPageContent() {
     }
   };
 
+  const isSessionUploadPath = (path: string) => {
+    if (!uploadSessionId) return false;
+    const parts = path.split('/').filter(Boolean);
+    return (
+      (parts.length >= 4 &&
+        parts[0] === 'results' &&
+        parts[1] === uploadSessionId &&
+        parts[2] === 'upload') ||
+      (parts.length >= 5 &&
+        parts[0] === 'results' &&
+        parts[1] === 'app' &&
+        parts[2] === uploadSessionId &&
+        parts[3] === 'upload')
+    );
+  };
+
   const handleUseExample = async (fileType: FileFieldType) => {
-    // Server-side fast path: backend copies the demo file straight into
-    // the user's upload dir, avoiding the 100+ MB browser ferry the
-    // legacy fetch-then-reupload flow used to do for FASTA / GFF3.
+    // Server-side fast path: backend returns the immutable data/ file
+    // path directly, avoiding the 100+ MB browser ferry the legacy
+    // fetch-then-reupload flow used to do for FASTA / GFF3. We do not
+    // create upload/ symlinks or copies; the worker reads the app data
+    // asset straight from the read-only data mount.
     // We construct a stub File for the UI (correct .name + .size) and
     // mark uploadedPaths so handleSubmit later sees the file is already
-    // on the server and skips the re-upload branch.
+    // on the server and skips the upload branch.
     if (!uploadSession) {
       throw new Error('Upload session not ready yet — please retry in a moment.');
     }
@@ -263,10 +281,14 @@ function SubmitPageContent() {
   const handleFileClear = async (fileType: FileFieldType) => {
     const path = uploadedPaths[fileType];
     if (path) {
-      // Best-effort: even if server delete fails, clear the local state so
-      // the user can re-pick. The toast inside FileUpload surfaces any
-      // server-side failure.
-      try { await fileApi.deleteUpload(path, uploadSessionToken || undefined); }
+      // Only delete files physically under this submit session's upload/
+      // directory. "Use example" now points directly at immutable data/
+      // assets, so clearing that UI state must not call DELETE /upload.
+      try {
+        if (isSessionUploadPath(path)) {
+          await fileApi.deleteUpload(path, uploadSessionToken || undefined);
+        }
+      }
       finally {
         updatePaths({ [fileType]: '' });
         updateFiles({ [fileType]: null });

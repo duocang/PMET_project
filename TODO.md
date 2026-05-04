@@ -17,16 +17,17 @@
 | [5](#issue-5) | ~~`DELETE /api/files/upload` 无鉴权可删 RESULT_DIR 任意文件~~ | 🔴 critical | ✅ **已修** — 合规 / 旧 exploit / 删 ZIP / 删 task JSON / 幂等 / `../` 穿越 6 案例全 pass |
 | [6](#issue-6) | ~~admin login `next` open redirect~~ | 🔴 critical | ✅ **已修** — `//evil` / `https://evil` / `javascript:` / `/tasks` 4 vector 全 pass |
 | [7](#issue-7) | ~~TaskQuickLook "Top-N 显著" 字母序非 p 序~~ | 🔴 数据正确性 | ✅ **已修** — 真 top 现在是 HSFA1E/HSFB2B (3.4e-38)，UI 验证 |
-| [8](#issue-8) | ~~Use Example 116 MB FASTA 浏览器双向中转~~ | 🟡 公网体验 | ✅ **已修** — 客户端 220 MB → server-side **symlink** 0.019 s（含再优化：cp → symlink，磁盘增量 32 B 而非 116 MB） |
+| [8](#issue-8) | ~~Use Example 116 MB FASTA 浏览器双向中转~~ | 🟡 公网体验 | ✅ **已修** — 客户端 220 MB → server-side **direct data path**（不 copy、不 symlink） |
 | [9](#issue-9) | ~~`parseFloat(...) \|\| 1` 把 p=0 误转 1~~ | 🟡 防御性 | ✅ **已修** — `numOr / intOr` 包装，41760 行热图渲染 OK |
 | [10](#issue-10) | ~~`resetSubmitForm` 死代码，提交后表单不清（含 email）~~ | 🟡 UX | ✅ **已修**（含审查后补 email 重置）— 真 SPA 重测 OK，单测 8/8 |
 | [11](#issue-11) | ~~admin token 字符串 `==` 比较（计时攻击）~~ | 🟡 安全 | ✅ **已修** — `hmac.compare_digest`，5 case + UI 真 token 流程 |
 | [11b](#issue-11b) | docker-compose 默认 `--reload` 进 prod | 🟡 部署决策 | ⏸ **不修默认** — 拆 prod compose 会破开发流；上公网时手动改 |
-| [12](#issue-12) | ~~`/api/files/use-example` 无鉴权磁盘放大器（修 #8 引入）~~ | 🟡 公网限流 | ✅ **已修**（pmet.online 上线后）— session_token 闸门 + IP rate limit + dedup |
+| [12](#issue-12) | ~~`/api/files/use-example` 无鉴权磁盘放大器（修 #8 引入）~~ | 🟡 公网限流 | ✅ **已修**（pmet.online 上线后）— session_token 闸门 + IP rate limit + direct data path |
 | [13](#issue-13) | `/api/results` 默认 sort 把全部匹配行加载内存（修 #7 引入）| 🟡 大文件风险 | ⏳ **未修** — 39 k 行 ~10 MB OK；100 万行需换 `heapq.nsmallest` |
 | [14](#issue-14) | ~~DELETE /upload 仍依赖 session_id secrecy（修 #5 后残留）~~ | 🟡 公网严格化 | ✅ **已修** — 同 session_token 机制 |
+| [15](#issue-15) | ~~`use-example` symlink + writable `/app/data` 可被同名上传写穿覆盖原始数据~~ | 🔴 critical | ✅ **已修** — 不再创建 symlink/copy；compose `data` mount 改 `:ro` |
 
-9 修 + 1 决策不修 + 1 hardening backlog（#13）。净改动 ~380 LOC，5 文件 backend + 5 文件 frontend，无新依赖。下方各问题段落附"复现 / 修法 / MCP browser 验证"详情。
+10 修 + 1 决策不修 + 1 hardening backlog（#13）。下方各问题段落附"复现 / 修法 / 验证"详情。
 
 ---
 
@@ -91,25 +92,24 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 
 <a id="issue-8"></a>
 
-### ~~问题 8：Use Example 把 100+ MB 的 demo FASTA / GFF3 通过浏览器中转~~ ✓ 已修（含 symlink 优化）
+### ~~问题 8：Use Example 把 100+ MB 的 demo FASTA / GFF3 通过浏览器中转~~ ✓ 已修（direct data path）
 
 **复现**（2026-05-04）：`time curl -o - /api/demo/promoters/fasta` → 116 MB / 1.3s（本地 docker）。但 Use Example 流程是 `fetch → blob → File → multipart POST 116 MB`，**228 MB 浏览器双向**。公网 1 Mbps 用户：**16 分钟**等"加载示例"。
 
-**修法**：选择性优化——大文件走 server-side，小文件保留客户端 fetch（小文件占带宽可忽略，且 GeneClusterFilter 需要真 File 解析 cluster）：
-- 后端 [files.py:152-191](apps/pmet_backend/api/routes/files.py#L152-L191) 新增 `POST /api/files/use-example`，form fields `{task_id, mode, slot}`，从 `DEMO_FILES` 表把文件**通过 symlink** 接到 `RESULT_DIR/<task_id>/upload/`（不是 `cp`——demo 文件是只读服务器资产，没必要每个 session 重复 116 MB 磁盘）。
-- **为什么 symlink 不是 hardlink**：docker bind-mount 把 `/app/data` 和 `/app/results` 挂成不同设备，`os.link` 会 `Invalid cross-device link`；symlink 是路径级链接跨 mount 可用。Worker 容器同样挂 `/app/data` 至同路径，symlink target 在两边都解析到同一文件。
-- **symlink 引入的 DELETE 副作用**：`Path.resolve()` 会 follow symlink，把 `RESULT_DIR/<sid>/upload/TAIR10.fasta` 解析到 `/app/data/...`，导致 DELETE 误判 "outside upload area"。改用 `os.path.normpath`（解 `../` 但不 follow symlink）。
-- 实际效果：116 MB FASTA "加载" **0.019 秒** + 真实磁盘增量 ~32 字节（symlink 路径自身）；对比修复前 cp 0.6 秒 + 磁盘增 116 MB；用户看到的 stub File 大小仍是 116 MB（`stat()` 默认 follow symlink），UI 完全无差。
+**修法**：选择性优化——大文件走 server-side direct reference，小文件保留客户端 fetch（小文件占带宽可忽略，且 GeneClusterFilter 需要真 File 解析 cluster）：
+- 后端 `POST /api/files/use-example` 不再 copy / symlink 到 `RESULT_DIR/<task_id>/upload/`；它只校验 `session_token`，从 `DEMO_FILES` 表返回原始 `data/...` 路径和真实文件大小。Worker 后续直接读取 `data/reference/TAIR10.fasta` / `data/demos/...`。
+- 2026-05-05 安全复查修正：放弃 symlink 方案。原因是 `upload/TAIR10.fasta -> data/reference/TAIR10.fasta` 这种链接如果留在可写 upload 目录里，后续同名普通上传会 follow symlink 写穿到 `/app/data`，有覆盖原始 demo/reference 数据的风险。
+- Docker 侧把 API / worker / watchdog 的 `../data:/app/data` bind mount 改成 `../data:/app/data:ro`，把"应用数据只读"变成容器级约束。
+- 实际效果：Use Example 没有浏览器中转、没有服务器复制、没有 upload 目录增量；用户看到的 stub File 大小仍取自原始 data 文件，UI 体验不变。
 - 前端 [lib/api.ts:248-263](apps/pmet_frontend/lib/api.ts#L248-L263) 加 `fileApi.useExample(taskId, mode, slot)`。
 - [FileUpload.tsx](apps/pmet_frontend/components/FileUpload.tsx) 新 prop `onUseExample?: () => Promise<void>` 走 server-side fast path（设 sentinel `__use_example__` 走 loadingUrl 显示 spinner，不 fetchAndUpload）。
 - [submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) 加 `handleUseExample(slot)`：调 API → 构 stub File（`new File([], filename)` + `Object.defineProperty(stub, 'size', {value: response.size})`）→ 同时更新 `paths` + `files` 状态。FASTA / GFF3 / intervals MEME 用 `onUseExample`；genes / peaks / promoters MEME（chip picker）保留旧路径。
 
-**MCP browser 验证**（2026-05-04）：
-- 后端 endpoint：`curl POST /use-example` 116 MB FASTA **0.62 秒** server-side 完成 ✓
-- promoters 模式 → 点 FASTA "使用示例"：UI 立刻显示 `TAIR10.fasta (116 MB)` ✓ stub File `.size` 正确反映 ✓
-- 同模式 → 点 GFF3 "使用示例"：UI 显示 `TAIR10.gff3 (105 MB)` ✓
-- 点"移除"：dropzone 回 idle 态，`fileApi.deleteUpload` 走问题 5 收紧后的合规 path ✓
-- **节省**：promoters 一次完整 Use Example 流，从 ~440 MB 浏览器中转（FASTA+GFF3 各双向）→ **~0**
+**验证**：
+- 后端单测：`/use-example` 带真 token 返回 `data/demos/intervals/indexing/motif.meme`，且 `results/<sid>/upload/motif.meme` 不存在 ✓
+- 后端单测：历史遗留 upload symlink 遇到同名上传时被替换为普通文件，不 follow 到 target ✓
+- 前端 build：`handleUseExample` 仍用返回的 filename/size 构 stub File，`handleFileClear` 对 `data/...` 只清本地状态 ✓
+- **节省**：promoters 一次完整 Use Example 流，从 ~440 MB 浏览器中转（FASTA+GFF3 各双向）→ **~0**，且服务器磁盘写入也为 0
 
 <a id="issue-9"></a>
 
@@ -168,7 +168,7 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 
 ### Hardening backlog（已修批次的延伸）
 
-3 条都不是新发现——是我修问题 5 / 7 / 8 时收紧度仍不够。**pmet.online 上线后 #12 + #14 已落地**（共享同一个 session_token 机制），#13 仍是 backlog（39 k 行实战 OK，等真碰到百万行任务再做）。
+#12 / #13 / #14 是修问题 5 / 7 / 8 时的收紧项。**pmet.online 上线后 #12 + #14 已落地**（共享同一个 session_token 机制），#13 仍是 backlog（39 k 行实战 OK，等真碰到百万行任务再做）。#15 是 2026-05-05 安全复查新增的 symlink 写穿问题，已随 direct data path 方案修掉。
 
 <a id="issue-12"></a>
 
@@ -180,26 +180,35 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 **修法**：三层闸门 + 一个根本性优化——
 1. [files.py:14-87](apps/pmet_backend/api/routes/files.py#L14-L87) 新增 module-level `_SESSIONS` dict + `_SESSIONS_LOCK` + `_SESSION_TTL_SECONDS=3600`，配 `_validate_session(session_id, token)` 用 `hmac.compare_digest`。
 2. [files.py:226-263](apps/pmet_backend/api/routes/files.py#L226-L263) 新端点 `POST /api/files/issue-session`：返 `{session_id, session_token, expires_in}`；自带 sliding-window 每 IP rate limit（10/min）。
-3. [files.py:289-346](apps/pmet_backend/api/routes/files.py#L289-L346) `/use-example` 强制带 `session_token`，无 token / token 过期 / 跨 session 全 401。同 session 同名 demo 已存在则**返回 dedup**——攻击者拿到一个 token 也只能放大有限。
-4. **根本优化（用户 review 提出）**：底层从 `shutil.copy2` 换成 `os.symlink`。demo 文件是只读服务器资产，复制本身就是浪费——symlink 后磁盘增量从 116 MB 降到 32 字节（path 字符串自身），即便没有限流也几乎不放大。Hardlink 因 docker bind-mount 跨设备不可用，symlink 跨 mount 工作（worker 容器同样挂 `/app/data`，target 解析一致）。
+3. `/use-example` 强制带 `session_token`，错 token / token 过期 / 跨 session 全 401（缺字段由 FastAPI 返回 422）。
+4. **根本优化（2026-05-05 修正）**：底层不再 `copy2`，也不再 `symlink`。demo 文件是只读服务器资产，直接返回 `data/...` 原始路径给任务元数据即可。这样磁盘增量为 0，也消除了 symlink 被同名上传写穿覆盖 `/app/data` 的风险。
 5. [lib/api.ts:227-268](apps/pmet_frontend/lib/api.ts#L227-L268) 加 `fileApi.issueSession()`；`useExample()` / `deleteUpload()` 接收 token 参数。
 6. [submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) mount 时 `fileApi.issueSession()`，token 存内存（不入 localStorage——重启浏览器就要换 session，token harvest 寿命有限）；`handleSubmit` 加 `if (!uploadSession)` guard 防 race。
+7. [deploy/docker-compose.yml](deploy/docker-compose.yml) 把 API / worker / watchdog 的 `/app/data` mount 改成 read-only (`:ro`)。
 
-**curl 验证**（2026-05-04，docker restart 后）：
-- T1 不带 token call /use-example → **401**
+**验证**：
+- T1 错 token call /use-example → **401**（缺少 `session_token` form field 时 FastAPI 先返回 422）
 - T2 issue-session → 200 `{session_id, session_token: 64-hex, expires_in: 3600}`
-- T3 真 token call /use-example → **200** (intervals.fa 25 MB symlink 完)
-- T4 同 session 重复 → **200 + `deduplicated: true`**
+- T3 真 token call /use-example → **200**，返回 `data/demos/intervals/indexing/motif.meme`
+- T4 同 session 重复 → **200**，仍返回同一个 `data/...` path（无磁盘写入）
 - T5 用 SID-A 的 token 操作 SID-B → **401**
 - T6/T7 DELETE /upload 同样 token 闸门 → 401 / 200 各对
-- **symlink 实测**：116 MB FASTA "use example" 用时 **0.019s**（cp 时代 0.6s），磁盘增量 **32 字节**（path 字符串）
+- **磁盘实测目标**：Use Example 不再触碰 `results/<sid>/upload/`，磁盘增量为 0；`data` mount 在容器内只读。
+- 本次 2026-05-05 已由后端 unittest 锁定 direct data path / no upload symlink；compose `:ro` 需容器重建后生效。
 
-**MCP browser 验证**（真 UI 流，symlink 路径）：
-- `/submit?mode=intervals` mount → 自动 `POST /api/files/issue-session` 200 ✓
-- 点 FASTA "使用示例" → `POST /api/files/use-example` **带 token form field** → 200 ✓
-- UI 显示 `TAIR10.fasta (116 MB)` ✓（`stat()` follow symlink，size 是 target 真实尺寸）
-- 点"移除" → `DELETE /api/files/upload?path=...&session_token=...` → 200 ✓ dropzone 回 idle 态
-- symlink target 完整性确认：`/Users/nuioi/projects/pmet/data/reference/TAIR10.fasta` 121 662 621 字节未变 ✓
+<a id="issue-15"></a>
+
+#### ~~问题 15：`use-example` symlink + writable `/app/data` 可写穿覆盖原始数据~~ ✓ 已修
+
+**复现模型**（2026-05-05 代码审查）：旧方案把示例文件 symlink 到 `results/<sid>/upload/<name>`。如果用户随后上传同名文件，`destination.open("wb")` 会 follow symlink，把内容写到 symlink target，也就是 `/app/data/...` 原始 demo/reference 文件。compose 里 `/app/data` 当时是可写 bind mount，风险成立。
+
+**修法**：
+- `/use-example` 不再创建 symlink/copy，只返回 `data/...` 原始路径。
+- 上传写入前会移除目标位置的历史遗留 symlink，并用 `O_NOFOLLOW` 兜底，防止旧 session 同名上传继续 follow link。
+- 清除按钮遇到 `data/...` path 时只清前端状态，不调用 `DELETE /upload`。
+- compose 三个后端相关容器的 `../data:/app/data` 全部改成 `../data:/app/data:ro`。
+
+**残留**：生产机需 `docker compose up -d --force-recreate api worker liveness-watchdog` 或等下一次重建，让 `:ro` mount 真正生效。
 
 <a id="issue-13"></a>
 
@@ -221,7 +230,7 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 - 无 token → **401 invalid token**
 - 真 token → **200 deleted**
 
-**MCP browser 验证**：见上面 #12 的"MCP browser 验证"——同一次操作链路覆盖。
+**前端行为**：用户上传文件仍调用 token 化 DELETE；Use Example 的 `data/...` path 只清本地状态，不再走 DELETE。
 
 ---
 

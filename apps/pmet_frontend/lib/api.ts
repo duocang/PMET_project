@@ -232,10 +232,10 @@ export interface IssueSessionResponse {
 
 export const fileApi = {
   // Hand the caller a fresh session_id + session_token pair. Required
-  // by /use-example and DELETE /upload now that PMET is on a public
-  // domain (without it, anyone could make the server `cp` 116 MB demo
-  // FASTA per request, or delete another session's uploads by guessing
-  // the path). Frontend calls this once on submit-page mount.
+  // by DELETE /upload now that PMET is on a public domain, and also
+  // passed to /use-example so the submit flow has one consistent
+  // server-issued session boundary. Frontend calls this once on
+  // submit-page mount.
   issueSession: async (): Promise<IssueSessionResponse> => {
     const response = await api.post('/api/files/issue-session');
     return response.data;
@@ -261,16 +261,16 @@ export const fileApi = {
     return response.data;
   },
 
-  // Server-side copy of a demo file into the user's upload dir.
-  // Replaces the wasteful "fetch 116 MB demo, repackage as Blob, repost
-  // 116 MB" round-trip the legacy `Use Example` flow had to do for the
-  // big FASTA / GFF3 inputs.
+  // Server-side reference to a demo file under data/. Replaces the
+  // wasteful "fetch 116 MB demo, repackage as Blob, repost 116 MB"
+  // round-trip the legacy `Use Example` flow had to do for the big
+  // FASTA / GFF3 inputs, without creating upload/ copies or symlinks.
   useExample: async (
     taskId: string,
     mode: string,
     slot: string,
     sessionToken: string,
-  ): Promise<UploadResponse & { deduplicated?: boolean }> => {
+  ): Promise<UploadResponse> => {
     const formData = new FormData();
     formData.append('task_id', taskId);
     formData.append('mode', mode);

@@ -20,10 +20,10 @@ router = APIRouter(prefix="/files", tags=["files"])
 # A "session" is a transient binding between a session_id (the directory
 # under RESULT_DIR/<session_id>/upload/ that holds the files for one
 # pending submission) and a server-issued secret token. Required for
-# /use-example and DELETE /upload so an unauthenticated public caller
-# can't (a) make the server `cp` 100+ MB demo files for free
-# (#12, the "disk amplifier" issue) or (b) delete another session's
-# upload by guessing the path (#14).
+# DELETE /upload so an unauthenticated public caller can't delete another
+# session's upload by guessing the path (#14). /use-example also requires
+# the token so the submit flow has one consistent session boundary, even
+# though it now returns read-only data/ paths without touching upload/.
 #
 # In-memory module-level state is fine for the dev/single-worker layout.
 # Multi-worker prod would want redis here; the API surface stays the
@@ -33,9 +33,8 @@ _SESSIONS_LOCK = Lock()
 _SESSION_TTL_SECONDS = 60 * 60  # 1 h is more than enough to fill the form
 
 # Per-IP rate limit on issue-session so a bot can't farm millions of
-# tokens to drive the use-example endpoint. Sliding window via a deque
-# of timestamps per IP. _ISSUE_RATE_LIMIT requests per
-# _ISSUE_RATE_WINDOW_SECONDS are allowed.
+# upload/delete tokens. Sliding window via a deque of timestamps per IP.
+# _ISSUE_RATE_LIMIT requests per _ISSUE_RATE_WINDOW_SECONDS are allowed.
 _ISSUE_RATE_LIMIT = 10
 _ISSUE_RATE_WINDOW_SECONDS = 60
 _RATE_BUCKETS: dict[str, list[float]] = {}
@@ -152,18 +151,40 @@ def _sanitize_filename(filename: str, fallback: str = "upload") -> str:
     return safe or fallback
 
 
+def _open_upload_destination(destination: Path):
+    """Open an upload target without following a stale symlink.
+
+    Older /use-example revisions placed symlinks under upload/. If a user
+    later uploaded a same-name file, plain open("wb") would follow the link
+    and overwrite the read-only app data target. New code no longer creates
+    those links, but this keeps old sessions and local dev runs safe.
+    """
+    if destination.is_symlink():
+        destination.unlink()
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(destination, flags, 0o644)
+    return os.fdopen(fd, "wb")
+
+
 def _store_upload(file: UploadFile, destination: Path, decompress_gzip: bool) -> None:
     try:
-        with destination.open("wb") as buffer:
+        with _open_upload_destination(destination) as buffer:
             file.file.seek(0)
             if decompress_gzip:
                 with gzip.GzipFile(fileobj=file.file, mode="rb") as gzipped:
                     shutil.copyfileobj(gzipped, buffer)
             else:
                 shutil.copyfileobj(file.file, buffer)
-    except OSError as exc:
+    except (OSError, EOFError, gzip.BadGzipFile) as exc:
         destination.unlink(missing_ok=True)
-        raise HTTPException(status_code=400, detail="Uploaded gzip file is invalid or corrupted") from exc
+        detail = (
+            "Uploaded gzip file is invalid or corrupted"
+            if decompress_gzip
+            else f"Could not store uploaded file: {exc}"
+        )
+        raise HTTPException(status_code=400, detail=detail) from exc
 
 
 def _save_uploaded_file(file: UploadFile, task_id: Optional[str], file_type: str) -> dict:
@@ -221,13 +242,13 @@ async def issue_session(request: Request):
     """Hand the caller a fresh ``(session_id, session_token)`` pair.
 
     The frontend calls this once on /submit page mount and uses the pair
-    for every subsequent upload / use-example / delete-upload during the
-    same form session. Server keeps the token in a rolling in-memory
-    map for ``_SESSION_TTL_SECONDS``; calls without a valid token are
-    rejected on use-example and DELETE.
+    for every subsequent use-example / delete-upload during the same
+    form session. Server keeps the token in a rolling in-memory map for
+    ``_SESSION_TTL_SECONDS``; calls without a valid token are rejected
+    on use-example and DELETE.
 
-    IP-rate-limited so a hostile client can't farm tokens fast enough to
-    drive use-example into a disk-amplification DoS.
+    IP-rate-limited so a hostile client can't farm upload/delete tokens
+    cheaply.
     """
     ip = request.client.host if request.client else "unknown"
     if not _check_issue_rate_limit(ip):
@@ -268,10 +289,10 @@ async def upload_file(
     """Upload a file for PMET analysis.
 
     Note: not gated by session_token — attackers uploading their own
-    files would still have to pay their own bandwidth, and the more
-    serious "server-side amplifier" path is /use-example, which is
-    gated below. Keeping /upload open also preserves backwards
-    compatibility with any non-form caller during the rollout.
+    files still have to pay their own bandwidth. Keeping /upload open
+    preserves backwards compatibility with any non-form caller during
+    the rollout; session ownership is enforced on delete and example
+    selection.
     """
     return _save_uploaded_file(file, task_id, file_type)
 
@@ -283,19 +304,18 @@ async def use_example_file(
     slot: str = Form(...),
     session_token: str = Form(...),
 ):
-    """Server-side copy of a demo file into the user's upload dir.
+    """Return a read-only app demo file path for the user's task.
 
     Skips the wasteful "browser fetches 116 MB FASTA, then re-uploads
     the same 116 MB" round-trip that the client-side Use Example flow
-    used to do. Gated by session_token (issued via /issue-session) —
-    without that gate any anonymous caller could make the server `cp`
-    100+ MB demo files for free, a textbook disk-amplification DoS.
+    used to do. Earlier revisions installed the file into upload/ via
+    copy and later symlink; the symlink avoided disk amplification but
+    created a write-through hazard if a later same-name upload followed
+    the link. The safer model is zero install: workflow metadata points
+    straight at the immutable data/ asset, and docker mounts data/ read-only.
 
-    Idempotent: if a demo file with the same target name + size is
-    already in the user's upload dir, we skip the second copy. Stops a
-    legitimate user double-clicking "Use example" from doubling disk
-    cost, and trims attacker amplification gain to a single ~120 MB cap
-    per token.
+    Gated by session_token (issued via /issue-session) so the submit flow
+    keeps one consistent server-issued session boundary.
     """
     # Imported lazily so the route module doesn't pull demo's table on
     # every cold start; demo.py has no side effects but the indirection
@@ -309,52 +329,18 @@ async def use_example_file(
     if not entry:
         raise HTTPException(status_code=404, detail=f"No demo file for ({mode}, {slot})")
     rel_src, public_name = entry
-    src = config.PROJECT_ROOT / "data" / rel_src
-    if not src.exists():
-        raise HTTPException(status_code=404, detail="Demo file missing on server")
-
-    upload_dir = _resolve_upload_dir(task_id)
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    dest = upload_dir / public_name
-
-    src_size = src.stat().st_size
-    # Path.exists() / Path.stat() follow symlinks by default — the
-    # second-call dedup check transparently handles a previous symlink
-    # too (size resolves to target size).
-    if dest.exists() and dest.stat().st_size == src_size:
-        return {
-            "filename": public_name,
-            "path": str(dest.relative_to(config.PROJECT_ROOT)),
-            "size": src_size,
-            "deduplicated": True,
-        }
-
-    # Symlink instead of copy. The demo files (TAIR10 116 MB FASTA,
-    # 105 MB GFF3, motif libraries) are read-only server assets the
-    # workflow scripts only consume — no point spending the disk + I/O
-    # to duplicate them per session. Hard link would be cheaper still
-    # but docker bind-mounts /app/data and /app/results as separate
-    # devices ("Invalid cross-device link"), so symlink is the
-    # portable choice. os.symlink takes the absolute target path so it
-    # resolves identically in the api and worker containers (both
-    # mount /app/data at the same path). Fallback to copy if the
-    # platform doesn't support symlink at all (unusual — Windows
-    # without privileges might).
-    src_abs = src.resolve()
+    data_root = (config.PROJECT_ROOT / "data").resolve()
+    src = (data_root / rel_src).resolve()
     try:
-        os.symlink(src_abs, dest)
-    except (OSError, NotImplementedError) as link_exc:
-        try:
-            shutil.copy2(src, dest)
-        except OSError as copy_exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to install demo file (symlink: {link_exc}; copy: {copy_exc})",
-            ) from copy_exc
+        src.relative_to(data_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail="Demo file escaped data root") from exc
+    if not src.is_file():
+        raise HTTPException(status_code=404, detail="Demo file missing on server")
     return {
         "filename": public_name,
-        "path": str(dest.relative_to(config.PROJECT_ROOT)),
-        "size": dest.stat().st_size,
+        "path": str(src.relative_to(config.PROJECT_ROOT)),
+        "size": src.stat().st_size,
     }
 
 
@@ -462,13 +448,10 @@ async def delete_upload(path: str, session_token: Optional[str] = None):
     files — fine on a closed VPN, not fine on a public domain.
     """
     result_root = config.RESULT_DIR.resolve()
-    # NOTE: do *not* resolve() the target — when use-example installs
-    # a demo file as a symlink (the cheap path), Path.resolve() would
-    # follow it back to /app/data/<demo>, which then fails the
-    # relative_to(RESULT_DIR) containment check and returns a
-    # confusing "outside the upload area" error. os.path.normpath
-    # collapses ../ traversal without dereferencing symlinks, which
-    # is exactly the safety property we need here.
+    # NOTE: do *not* resolve() the target. Old use-example revisions may
+    # have left upload/ symlinks behind; unlinking those should remove the
+    # link itself, never follow it into data/. os.path.normpath collapses
+    # ../ traversal without dereferencing symlinks.
     target = Path(os.path.normpath(config.PROJECT_ROOT / path))
     try:
         rel = target.relative_to(result_root)

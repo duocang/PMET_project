@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import gzip
+import os
 import shutil
 import unittest
 
@@ -31,6 +34,11 @@ class UploadRouteTests(unittest.TestCase):
             saved_path = config.PROJECT_ROOT / response.json()["path"]
             self.created_dirs.add(str(saved_path.parent))
         return response
+
+    def _issue_session(self):
+        response = self.client.post("/api/files/issue-session")
+        self.assertEqual(response.status_code, 200)
+        return response.json()
 
     def test_accepts_gene_text_upload(self):
         response = self._upload("genes.txt", b"AT1G01010\nAT1G01020\n", "genes")
@@ -91,6 +99,26 @@ class UploadRouteTests(unittest.TestCase):
         saved_path = config.PROJECT_ROOT / payload["path"]
         self.assertIn("##gff-version 3", saved_path.read_text())
 
+    def test_upload_replaces_stale_symlink_without_following_it(self):
+        session = "pmet_stale_link"
+        upload_dir = config.RESULT_DIR / session / "upload"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        self.created_dirs.add(str(config.RESULT_DIR / session))
+        target = config.RESULT_DIR / session / "target.txt"
+        target.write_text("original\n")
+        stale_link = upload_dir / "genes.txt"
+        try:
+            os.symlink(target, stale_link)
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest(f"symlink unsupported: {exc}")
+
+        response = self._upload("genes.txt", b"new upload\n", "genes", task_id=session)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(target.read_text(), "original\n")
+        self.assertFalse(stale_link.is_symlink())
+        self.assertEqual(stale_link.read_text(), "new upload\n")
+
     def test_session_id_groups_uploads_in_one_directory(self):
         session = "pmet_abc123"
         r1 = self._upload("genes.txt", b"AT1G01010\n", "genes", task_id=session)
@@ -127,6 +155,41 @@ class UploadRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("Invalid file extension for fasta", response.json()["detail"])
+
+    def test_use_example_requires_session_token(self):
+        session = self._issue_session()
+        response = self.client.post(
+            "/api/files/use-example",
+            data={
+                "task_id": session["session_id"],
+                "mode": "intervals",
+                "slot": "meme",
+                "session_token": "wrong-token",
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_use_example_returns_data_path_without_upload_symlink(self):
+        session = self._issue_session()
+        response = self.client.post(
+            "/api/files/use-example",
+            data={
+                "task_id": session["session_id"],
+                "mode": "intervals",
+                "slot": "meme",
+                "session_token": session["session_token"],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["filename"], "motif.meme")
+        self.assertEqual(payload["path"], "data/demos/intervals/indexing/motif.meme")
+        self.assertTrue((config.PROJECT_ROOT / payload["path"]).is_file())
+        self.assertFalse(
+            (config.RESULT_DIR / session["session_id"] / "upload" / payload["filename"]).exists()
+        )
 
 
 if __name__ == "__main__":

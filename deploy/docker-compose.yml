@@ -34,7 +34,7 @@ services:
       # binaries — is baked into the image so the container is self-contained.
       - ../apps/pmet_backend:/app/pmet_backend
       - ../scripts:/app/scripts
-      - ../data:/app/data
+      - ../data:/app/data:ro
       - ../deploy/configure:/app/deploy/configure
       - ../results/app:/app/results
     depends_on:
@@ -62,7 +62,7 @@ services:
     volumes:
       - ../apps/pmet_backend:/app/pmet_backend
       - ../scripts:/app/scripts
-      - ../data:/app/data
+      - ../data:/app/data:ro
       - ../deploy/configure:/app/deploy/configure
       - ../results/app:/app/results
     depends_on:
@@ -90,7 +90,7 @@ services:
     volumes:
       - ../apps/pmet_backend:/app/pmet_backend
       - ../scripts:/app/scripts
-      - ../data:/app/data
+      - ../data:/app/data:ro
       - ../deploy/configure:/app/deploy/configure
       - ../results/app:/app/results
     pid: "service:worker"
