@@ -22,7 +22,18 @@ function AdminLoginPageInner() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const next = searchParams.get('next') || '/admin/settings';
+  // Whitelist `next` to internal absolute paths only. Without this
+  // guard `?next=//evil.com` (or `next=https://evil.com`) made
+  // router.push send a freshly-authenticated admin off-site,
+  // a textbook phishing primitive.
+  const rawNext = searchParams.get('next');
+  const next =
+    rawNext &&
+    rawNext.startsWith('/') &&
+    !rawNext.startsWith('//') &&
+    !rawNext.startsWith('/\\')
+      ? rawNext
+      : '/admin/settings';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

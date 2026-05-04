@@ -8,6 +8,7 @@ endpoints check the cookie via ``Depends(require_admin)``.
 This is intentionally minimal — single-admin internal tool, not user RBAC.
 """
 
+import hmac
 import json
 from pathlib import Path
 from typing import Optional
@@ -21,6 +22,20 @@ from ...config import config
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 ADMIN_COOKIE = "pmet_admin"
+
+
+def _token_matches(candidate: Optional[str]) -> bool:
+    """Constant-time comparison against the configured admin token.
+
+    Plain ``==`` is timing-distinguishable on CPython's interpolated
+    string compare and gives a small but real signal to a remote
+    attacker. ``hmac.compare_digest`` walks both strings in fixed time
+    even on a mismatch. Both inputs need a defined length first — an
+    empty / None ``candidate`` is short-circuited above.
+    """
+    if not candidate or not config.ADMIN_TOKEN:
+        return False
+    return hmac.compare_digest(candidate, config.ADMIN_TOKEN)
 
 
 class LoginPayload(BaseModel):
@@ -41,7 +56,7 @@ def require_admin(pmet_admin: Optional[str] = Cookie(default=None)) -> bool:
     if not config.ADMIN_TOKEN:
         # Token not configured on the server — admin features disabled.
         raise HTTPException(status_code=503, detail="Admin not configured")
-    if not pmet_admin or pmet_admin != config.ADMIN_TOKEN:
+    if not _token_matches(pmet_admin):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return True
 
@@ -50,7 +65,7 @@ def require_admin(pmet_admin: Optional[str] = Cookie(default=None)) -> bool:
 async def login(payload: LoginPayload, response: Response):
     if not config.ADMIN_TOKEN:
         raise HTTPException(status_code=503, detail="Admin not configured")
-    if payload.token != config.ADMIN_TOKEN:
+    if not _token_matches(payload.token):
         raise HTTPException(status_code=401, detail="Invalid token")
     # 30-day cookie. httpOnly + samesite=lax. Secure flag is omitted because
     # the dev stack runs over plain http on localhost; nginx in production
@@ -77,10 +92,7 @@ async def me(pmet_admin: Optional[str] = Cookie(default=None)):
     rather than 401 so the frontend can render anonymously without spamming
     the console with errors.
     """
-    is_admin = bool(
-        config.ADMIN_TOKEN and pmet_admin and pmet_admin == config.ADMIN_TOKEN
-    )
-    return {"is_admin": is_admin}
+    return {"is_admin": _token_matches(pmet_admin)}
 
 
 @router.get("/settings", dependencies=[Depends(require_admin)])
