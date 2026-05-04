@@ -8,6 +8,7 @@ const en = {
   'nav.visualize': 'Visualize',
   'nav.data': 'Data',
   'nav.about': 'About',
+  'nav.contributors': 'Contributors',
   'nav.tagline': 'Paired Motif Enrichment Tool',
   // footer
   'footer.text': 'PMET — Paired Motif Enrichment Tool',
@@ -125,6 +126,15 @@ const en = {
     "A CLI-only research workflow (elements.sh) that indexes any GFF3 feature type — 5' UTR, 3' UTR, CDS, mRNA, or exon — instead of the 1 kb upstream window. Useful for asking whether motif-pair patterns differ between promoters, UTRs, and coding regions.",
   'about.modes.elements.figure_alt': 'What each -e option indexes',
   'about.modes.elements.figure_caption': 'Top row: one gene on the chromosome. Rows below: each `-e` option with the indexed regions highlighted.',
+
+  // contributors page
+  'contributors.title': 'Contributors',
+  'contributors.intro': 'People who built and maintain PMET.',
+  'contributors.contributing_note': 'Found a bug or want to help? Open an issue or pull request on GitHub.',
+  'contributors.homepage': 'Homepage',
+  'contributors.role.pi': 'Principal Investigator',
+  'contributors.role.researcher': 'Research',
+  'contributors.role.developer': 'Development',
 
   // ParameterPanel
   'params.heading': 'Parameters',
@@ -499,6 +509,7 @@ const zh: Record<keyof typeof en, string> = {
   'nav.visualize': '可视化',
   'nav.data': '数据',
   'nav.about': '关于',
+  'nav.contributors': '贡献者',
   'nav.tagline': 'Paired Motif Enrichment Tool',
   // footer
   'footer.text': 'PMET — Paired Motif Enrichment Tool',
@@ -611,6 +622,15 @@ const zh: Record<keyof typeof en, string> = {
     '仅 CLI 的研究型工作流（elements.sh），不再固定扫描 TSS 上游 1 kb，而是索引 GFF3 中任意 feature 类型 — 5\' UTR、3\' UTR、CDS、mRNA 或 exon。用于回答"motif pair 模式在启动子、UTR 与编码区之间是否不同"这类问题。',
   'about.modes.elements.figure_alt': '每种 -e 选项索引的区域',
   'about.modes.elements.figure_caption': '最上面一行是基因在染色体上的物理结构，下面 5 行对应 5 种 -e 选项，**高亮**部分就是该选项实际索引的区间。',
+
+  // contributors page
+  'contributors.title': '贡献者',
+  'contributors.intro': 'PMET 的开发者与维护者。',
+  'contributors.contributing_note': '发现 bug 或想参与？欢迎在 GitHub 上提 issue 或 pull request。',
+  'contributors.homepage': '主页',
+  'contributors.role.pi': '负责人',
+  'contributors.role.researcher': '研究人员',
+  'contributors.role.developer': '开发者',
 
   // ParameterPanel
   'params.heading': '参数',

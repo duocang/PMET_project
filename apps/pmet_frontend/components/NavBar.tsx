@@ -71,6 +71,9 @@ export function NavBar() {
             <Link href="/about" className={linkClass('/about')}>
               {t('nav.about')}
             </Link>
+            <Link href="/contributors" className={linkClass('/contributors')}>
+              {t('nav.contributors')}
+            </Link>
             <LangToggle />
             <a
               href={GITHUB_URL}
