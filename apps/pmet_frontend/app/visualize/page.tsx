@@ -73,21 +73,38 @@ const R_COLOR_PAIRS: Array<[string, string]> = [
   ['#47484c', '#2f2f35'],
 ];
 
+// `|| fallback` is wrong for numeric parsing because 0 is a perfectly
+// valid result value (a literal-zero p-value would be the *most*
+// significant pair). PMET's R workflow always emits scientific notation
+// like 1.5e-43 today, so the bug is unreachable in practice — but a
+// user-supplied custom TSV or a future precision tweak could trip it.
+// Use a Number.isFinite gate so 0 stays 0 and only non-numeric junk
+// falls back.
+function numOr(value: string | undefined, fallback: number): number {
+  const n = parseFloat(value ?? '');
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function intOr(value: string | undefined, fallback: number): number {
+  const n = parseInt(value ?? '', 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function parseRow(cols: string[]): MotifResult | null {
   if (cols.length < 8) return null;
   const p_bh = parseFloat(cols[7]);
-  if (isNaN(p_bh)) return null;
+  if (!Number.isFinite(p_bh)) return null;
   return {
     cluster: cols[0] ?? '',
     motif1: cols[1] ?? '',
     motif2: cols[2] ?? '',
-    gene_num: parseInt(cols[3]) || 0,
-    total_genes: parseInt(cols[4]) || 0,
-    cluster_genes: parseInt(cols[5]) || 0,
-    p_value: parseFloat(cols[6]) || 1,
+    gene_num: intOr(cols[3], 0),
+    total_genes: intOr(cols[4], 0),
+    cluster_genes: intOr(cols[5], 0),
+    p_value: numOr(cols[6], 1),
     p_adj_bh: p_bh,
-    p_adj_bonf: parseFloat(cols[8]) || 1,
-    p_adj_global: parseFloat(cols[9]) || 1,
+    p_adj_bonf: numOr(cols[8], 1),
+    p_adj_global: numOr(cols[9], 1),
     genes: cols[10] ? cols[10].split(';').filter(Boolean) : [],
     motif_pair: `${cols[1]}^^${cols[2]}`,
   };

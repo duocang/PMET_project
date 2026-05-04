@@ -84,16 +84,29 @@ async def get_task_results(
     p_adj_max: float = Query(1.0, description="Max adjusted p-value (BH) filter"),
     limit: int = Query(200, ge=1, le=5000),
     offset: int = Query(0, ge=0),
+    sort: bool = Query(True, description="Return rows ranked by p_adj_bh ascending. Set to false for raw file order."),
 ):
+    """List motif-pair results for a task.
+
+    Default sort=true returns the most significant ``limit`` rows
+    (lowest p_adj_bh first). The previous behaviour — first ``limit``
+    rows in file order — silently misled callers like TaskQuickLook,
+    which advertised "Top 10 significant pairs" but actually showed
+    "first 10 rows alphabetically" because the source file is sorted by
+    motif1/motif2, not by p-value.
+    """
     output_file = _find_output_file(task_id)
 
     try:
-        results = []
-        total_matched = 0
+        # First pass: stream the file, collect every matching row in
+        # tuple form (sort key + parsed row). Memory ceiling is
+        # total_matched * ~250 bytes; even 100 k pairs ≈ 25 MB which is
+        # fine for an API request and lets us compute total_matched in
+        # the same pass.
+        matched: list[tuple[float, dict]] = []
         with open(output_file, newline="") as f:
             reader = csv.reader(f, delimiter="\t")
             next(reader, None)
-
             for row in reader:
                 if len(row) < 8:
                     continue
@@ -105,16 +118,21 @@ async def get_task_results(
                     continue
                 if p_bh > p_adj_max:
                     continue
+                matched.append((p_bh, _parse_row(row)))
 
-                total_matched += 1
-                if total_matched > offset and len(results) < limit:
-                    results.append(_parse_row(row))
+        if sort:
+            matched.sort(key=lambda kv: kv[0])
+
+        total_matched = len(matched)
+        page = matched[offset: offset + limit]
+        results = [row for _, row in page]
 
         return {
             "task_id": task_id,
             "total_matched": total_matched,
             "offset": offset,
             "limit": limit,
+            "sorted_by_p_adj_bh": sort,
             "results": results,
         }
     except Exception as e:
