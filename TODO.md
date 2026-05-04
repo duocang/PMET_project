@@ -27,8 +27,9 @@
 | [14](#issue-14) | ~~DELETE /upload 仍依赖 session_id secrecy（修 #5 后残留）~~ | 🟡 公网严格化 | ✅ **已修** — `X-PMET-Session-Token` header |
 | [15](#issue-15) | ~~`use-example` symlink + writable `/app/data` 可被同名上传写穿覆盖原始数据~~ | 🔴 critical | ✅ **已修** — 不再创建 symlink/copy；compose `data` mount 改 `:ro` |
 | [16](#issue-16) | ~~`POST /api/tasks` 未绑定 session_token，可伪造 task_id / 跨 session 路径~~ | 🔴 critical | ✅ **已修** — create-task 校验 token + path ownership + duplicate 409 + token 不落盘 |
+| [17](#issue-17) | ~~`/upload` 无 token 鉴权 + 无 size cap + gzip 解压无上限~~ | 🔴 critical | ✅ **已修** — 三层闸：raw 200 MB / decompressed 500 MB / X-PMET-Session-Token 必须 |
 
-11 修 + 1 决策不修 + 1 hardening backlog（#13）。下方各问题段落附"复现 / 修法 / 验证"详情。
+12 修 + 1 决策不修 + 1 hardening backlog（#13）。下方各问题段落附"复现 / 修法 / 验证"详情。
 
 ---
 
@@ -253,6 +254,40 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 - `X-PMET-Session-Token` header 真 token → **200 deleted**
 
 **前端行为**：用户上传文件仍调用 token 化 DELETE；Use Example 的 `data/...` path 只清本地状态，不再走 DELETE。
+
+<a id="issue-17"></a>
+
+#### ~~问题 17：`/upload` 无 token 鉴权 + 无 size cap + gzip 解压无上限~~ ✓ 已修
+
+**复现**（2026-05-05）：
+- nginx `client_max_body_size 500M`，应用层零 size cap
+- `_store_upload` 的 gzip 路径用 `shutil.copyfileobj(gzipped, buffer)` 流式解压**无累计上限**
+- 实测：`dd if=/dev/zero bs=1024 count=102400 | gzip -9` → 100 KB 输入 / **100 MB 输出**（1024× 放大）。1 KB 全零 gzip 更夸张
+- `/upload` 端点无任何 token 鉴权——匿名 IP 可直接 POST 任意 task_id 到 `temp_<ms>` 临时目录
+
+**攻击模型**：
+- 匿名 anon raw POST 500 MB → 1 个请求耗 500 MB 磁盘
+- 匿名 anon gzip bomb 100 KB → 100+ MB 解压；1 个 fd 耗资源不对等
+- 100 个并发匿名请求 → 50 GB / 几分钟内打满磁盘
+
+**修法**：三层闸门——
+1. [files.py:42-49](apps/pmet_backend/api/routes/files.py#L42-L49) 加常量：`_UPLOAD_MAX_BYTES = 200 MB`（覆盖最大合法输入 TAIR 116 MB + 余量）和 `_DECOMPRESSED_MAX_BYTES = 500 MB`，1 MiB chunk 流式 copy。
+2. [files.py:_copy_capped](apps/pmet_backend/api/routes/files.py) 新 helper：流式 read + 累计字节计数，超 cap 立刻 raise `_UploadTooLarge` 中止；caller catch 后 `unlink(missing_ok=True)` partial dest。替代 `shutil.copyfileobj`（后者无 cap）。
+3. [files.py:upload_file](apps/pmet_backend/api/routes/files.py) 端点签名加 `task_id: str = Form(...)` 必需 + `session_token: Header(alias="X-PMET-Session-Token")`，`validate_upload_session` 失败 401。`/upload-multiple` 同样 gate。
+4. 前端 [lib/api.ts:fileApi.upload](apps/pmet_frontend/lib/api.ts) 接收 `sessionToken` 必传参数，发到 `X-PMET-Session-Token` header；[submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) 6 处 `fileApi.upload` 调用全部传入 `uploadSessionToken`。
+
+**curl 攻击验证**（2026-05-05）：
+- 匿名 `POST /upload`（无 token）→ **401 Invalid or expired session token** ✓
+- 597 KB gzip → 期望解压 600 MB → **413 "decompressed-size cap"** + partial dest unlinked ✓
+- 200 MB+1 raw bytes → **413 "size cap"** ✓
+
+**单测**：
+- `test_upload_requires_session_token_header`（无 header / 错 token / 跨 session token / 真 token 四态）
+- `test_upload_rejects_oversize_raw`（>200 MB → 413）
+- `test_upload_rejects_gzip_bomb`（1 KB gzip → 600 MB 期望 → 413）
+- 旧 fixtures 全部更新通过 token gate；23/23 单测全 pass
+
+**MCP browser**：peaks.txt（339 B）走 client fetch+upload 路径，`X-PMET-Session-Token` header 正确发出，POST 200。
 
 ---
 

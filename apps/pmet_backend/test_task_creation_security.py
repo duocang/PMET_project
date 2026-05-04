@@ -7,6 +7,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from pmet_backend.api.main import app
+from pmet_backend.api import upload_sessions as _sessions
 from pmet_backend.config import config
 
 
@@ -14,6 +15,10 @@ class TaskCreationSecurityTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.task_ids: set[str] = set()
+        # Reset session/rate-limit state so cross-suite ordering doesn't
+        # tip the per-IP issue-session rate limit.
+        _sessions._SESSIONS.clear()
+        _sessions._RATE_BUCKETS.clear()
 
     def tearDown(self):
         self.client.close()
@@ -28,11 +33,12 @@ class TaskCreationSecurityTests(unittest.TestCase):
         self.task_ids.add(session["session_id"])
         return session
 
-    def _upload(self, session_id: str, filename: str, body: bytes, file_type: str) -> str:
+    def _upload(self, session: dict, filename: str, body: bytes, file_type: str) -> str:
         response = self.client.post(
             "/api/files/upload",
             files={"file": (filename, body, "application/octet-stream")},
-            data={"task_id": session_id, "file_type": file_type},
+            data={"task_id": session["session_id"], "file_type": file_type},
+            headers={"X-PMET-Session-Token": session["session_token"]},
         )
         self.assertEqual(response.status_code, 200)
         return response.json()["path"]
@@ -65,7 +71,7 @@ class TaskCreationSecurityTests(unittest.TestCase):
 
     def test_create_task_binds_session_and_drops_token_from_metadata(self):
         session = self._issue_session()
-        genes = self._upload(session["session_id"], "genes.txt", b"peak1\n", "genes")
+        genes = self._upload(session, "genes.txt", b"peak1\n", "genes")
         fasta = self._use_example(session, "intervals", "fasta")
         meme = self._use_example(session, "intervals", "meme")
 
@@ -99,7 +105,7 @@ class TaskCreationSecurityTests(unittest.TestCase):
     def test_create_task_rejects_cross_session_upload_path(self):
         owner = self._issue_session()
         attacker = self._issue_session()
-        stolen_genes = self._upload(owner["session_id"], "genes.txt", b"peak1\n", "genes")
+        stolen_genes = self._upload(owner, "genes.txt", b"peak1\n", "genes")
         fasta = self._use_example(attacker, "intervals", "fasta")
         meme = self._use_example(attacker, "intervals", "meme")
 

@@ -235,7 +235,7 @@ function SubmitPageContent() {
     onProgress?: (pct: number) => void
   ) => {
     try {
-      const result = await fileApi.upload(file, fileType, uploadSessionId, onProgress);
+      const result = await fileApi.upload(file, fileType, uploadSessionId, uploadSessionToken, onProgress);
       updatePaths({ [fileType]: result.path });
       updateFiles({ [fileType]: file });
     } catch (error) {
@@ -394,7 +394,7 @@ function SubmitPageContent() {
       // Upload files first
       let genesPath = uploadedPaths.genes;
       if (files.genes && !genesPath) {
-        const result = await fileApi.upload(files.genes, 'genes', uploadSessionId);
+        const result = await fileApi.upload(files.genes, 'genes', uploadSessionId, uploadSessionToken);
         genesPath = result.path;
       }
 
@@ -429,7 +429,7 @@ function SubmitPageContent() {
         const filteredFile = new File([filteredText], filteredName, {
           type: files.genes.type || 'text/plain',
         });
-        const filteredUpload = await fileApi.upload(filteredFile, 'genes', uploadSessionId);
+        const filteredUpload = await fileApi.upload(filteredFile, 'genes', uploadSessionId, uploadSessionToken);
         genesPath = filteredUpload.path;
       }
 
@@ -439,15 +439,15 @@ function SubmitPageContent() {
 
       if (mode !== 'promoters_pre') {
         if (files.fasta && !fastaPath) {
-          const result = await fileApi.upload(files.fasta, 'fasta', uploadSessionId);
+          const result = await fileApi.upload(files.fasta, 'fasta', uploadSessionId, uploadSessionToken);
           fastaPath = result.path;
         }
         if (files.gff3 && !gff3Path && mode === 'promoters') {
-          const result = await fileApi.upload(files.gff3, 'gff3', uploadSessionId);
+          const result = await fileApi.upload(files.gff3, 'gff3', uploadSessionId, uploadSessionToken);
           gff3Path = result.path;
         }
         if (files.meme && !memePath) {
-          const result = await fileApi.upload(files.meme, 'meme', uploadSessionId);
+          const result = await fileApi.upload(files.meme, 'meme', uploadSessionId, uploadSessionToken);
           memePath = result.path;
         }
       }

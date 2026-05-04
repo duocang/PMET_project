@@ -2,7 +2,6 @@ import gzip
 import json
 import os
 import re
-import shutil
 import time
 from pathlib import Path
 from typing import Optional
@@ -38,6 +37,17 @@ _PREVIEW_BYTE_CAP = 1 * 1024 * 1024  # 1 MiB
 # only uses the count to size pagination on small line-oriented files
 # like a gene list, where the file is well under this threshold).
 _LINE_COUNT_MAX_BYTES = 5 * 1024 * 1024  # 5 MiB
+
+# Hard caps on what /upload accepts. Anything exceeding either bound is
+# aborted mid-stream and the partial dest file is unlinked. nginx caps
+# the request body at 500 MB before we even see it; these app-level caps
+# are tighter and additionally guard the gzip decompression path against
+# a "10 KB gzip → 10 GB plaintext" zip-bomb. Sized to comfortably cover
+# the largest legitimate inputs (TAIR10 FASTA 116 MB, GFF3 105 MB) plus
+# headroom for slightly bigger non-Arabidopsis genomes.
+_UPLOAD_MAX_BYTES = 200 * 1024 * 1024            # raw / on-the-wire bytes
+_DECOMPRESSED_MAX_BYTES = 500 * 1024 * 1024      # gzip output bytes
+_UPLOAD_CHUNK_BYTES = 1 * 1024 * 1024            # 1 MiB per loop iteration
 
 ALLOWED_EXTENSIONS: dict[str, tuple[str, ...]] = {
     "genes": (".txt", ".tsv"),
@@ -102,15 +112,53 @@ def _open_upload_destination(destination: Path):
     return os.fdopen(fd, "wb")
 
 
+class _UploadTooLarge(Exception):
+    """Raised mid-stream when the running byte count crosses a cap."""
+
+    def __init__(self, kind: str, limit: int) -> None:
+        super().__init__(kind)
+        self.kind = kind  # "raw" or "decompressed"
+        self.limit = limit
+
+
+def _copy_capped(src, dest, cap: int, kind: str) -> int:
+    """Stream src→dest in 1-MiB chunks, aborting once written > cap.
+
+    Returns the total byte count on success. On overflow it stops writing
+    immediately, raises _UploadTooLarge, and lets the caller unlink the
+    partial dest. We avoid shutil.copyfileobj because it has no built-in
+    way to enforce a running cap, which is exactly the gzip-bomb gap
+    we're closing.
+    """
+    written = 0
+    while True:
+        chunk = src.read(_UPLOAD_CHUNK_BYTES)
+        if not chunk:
+            return written
+        written += len(chunk)
+        if written > cap:
+            raise _UploadTooLarge(kind, cap)
+        dest.write(chunk)
+
+
 def _store_upload(file: UploadFile, destination: Path, decompress_gzip: bool) -> None:
     try:
         with _open_upload_destination(destination) as buffer:
             file.file.seek(0)
             if decompress_gzip:
                 with gzip.GzipFile(fileobj=file.file, mode="rb") as gzipped:
-                    shutil.copyfileobj(gzipped, buffer)
+                    _copy_capped(gzipped, buffer, _DECOMPRESSED_MAX_BYTES, "decompressed")
             else:
-                shutil.copyfileobj(file.file, buffer)
+                _copy_capped(file.file, buffer, _UPLOAD_MAX_BYTES, "raw")
+    except _UploadTooLarge as exc:
+        destination.unlink(missing_ok=True)
+        mb = exc.limit // (1024 * 1024)
+        detail = (
+            f"Uploaded gzip expands beyond the {mb} MB decompressed-size cap"
+            if exc.kind == "decompressed"
+            else f"Uploaded file exceeds the {mb} MB size cap"
+        )
+        raise HTTPException(status_code=413, detail=detail) from exc
     except (OSError, EOFError, gzip.BadGzipFile) as exc:
         destination.unlink(missing_ok=True)
         detail = (
@@ -199,17 +247,24 @@ async def issue_session(request: Request):
 @router.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
-    task_id: Optional[str] = Form(None),
+    task_id: str = Form(...),
     file_type: str = Form(...),  # genes, fasta, gff3, meme
+    session_token: Optional[str] = Header(default=None, alias="X-PMET-Session-Token"),
 ):
     """Upload a file for PMET analysis.
 
-    Note: not gated by session_token — attackers uploading their own
-    files still have to pay their own bandwidth. Keeping /upload open
-    preserves backwards compatibility with any non-form caller during
-    the rollout; session ownership is enforced on delete and example
-    selection.
+    Public-facing post-pmet.online: gated by the same session_token that
+    /use-example and DELETE /upload require. Earlier "attackers pay their
+    own bandwidth" reasoning was an understatement — gzip uploads expand
+    server-side (a small request → large disk write) and 100 anon POSTs
+    can fill the disk before nginx body limits fire. issue-session is
+    IP-rate-limited (10/min), so the token gate also caps the upload
+    arrival rate per IP indirectly. Combined with the raw + decompressed
+    byte caps in _store_upload, this leaves only token-armed clients in
+    the path and bounds disk per request.
     """
+    if not validate_upload_session(task_id, session_token):
+        raise HTTPException(status_code=401, detail="Invalid or expired session token")
     return _save_uploaded_file(file, task_id, file_type)
 
 
@@ -263,9 +318,12 @@ async def use_example_file(
 @router.post("/upload-multiple")
 async def upload_multiple_files(
     files: list[UploadFile] = File(...),
-    task_id: Optional[str] = Form(None),
+    task_id: str = Form(...),
+    session_token: Optional[str] = Header(default=None, alias="X-PMET-Session-Token"),
 ):
-    """Upload multiple files at once"""
+    """Upload multiple files at once. Same session-token gate as /upload."""
+    if not validate_upload_session(task_id, session_token):
+        raise HTTPException(status_code=401, detail="Invalid or expired session token")
     results = []
     for file in files:
         result = _save_uploaded_file(file, task_id, "auto")

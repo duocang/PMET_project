@@ -244,16 +244,23 @@ export const fileApi = {
   upload: async (
     file: File,
     fileType: string,
-    taskId?: string,
+    taskId: string,
+    sessionToken: string,
     onProgress?: (pct: number) => void
   ): Promise<UploadResponse> => {
+    // task_id + session_token both required since the public-facing
+    // hardening — the backend 401s without a valid pair to keep
+    // anonymous gzip-bomb / disk-fill attacks off the endpoint.
     const formData = new FormData();
     formData.append('file', file);
     formData.append('file_type', fileType);
-    if (taskId) formData.append('task_id', taskId);
+    formData.append('task_id', taskId);
 
     const response = await api.post('/api/files/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'X-PMET-Session-Token': sessionToken,
+      },
       onUploadProgress: onProgress
         ? (e) => onProgress(Math.round((e.loaded / (e.total || e.loaded || 1)) * 100))
         : undefined,
