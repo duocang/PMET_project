@@ -294,10 +294,13 @@ export const fileApi = {
   },
 
   deleteUpload: async (path: string, sessionToken?: string): Promise<void> => {
-    // session_token is optional in the type for legacy/test callers,
-    // but the backend now 401s without it on a session-bound path.
+    // sessionToken is optional in the type for legacy/test callers, but
+    // the backend now 401s without it on a session-bound path. Send it
+    // as a header, not a query parameter, so it does not end up in URLs
+    // or access logs.
     await api.delete('/api/files/upload', {
-      params: sessionToken ? { path, session_token: sessionToken } : { path },
+      params: { path },
+      headers: sessionToken ? { 'X-PMET-Session-Token': sessionToken } : undefined,
     });
   },
 

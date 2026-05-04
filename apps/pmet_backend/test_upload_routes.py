@@ -133,6 +133,33 @@ class UploadRouteTests(unittest.TestCase):
         parents = {(config.PROJECT_ROOT / r.json()["path"]).parent for r in (r1, r2, r3)}
         self.assertEqual(len(parents), 1)
 
+    def test_delete_upload_requires_session_token_header(self):
+        session = self._issue_session()
+        upload = self._upload(
+            "genes.txt",
+            b"AT1G01010\n",
+            "genes",
+            task_id=session["session_id"],
+        )
+        path = upload.json()["path"]
+
+        no_header = self.client.delete("/api/files/upload", params={"path": path})
+        self.assertEqual(no_header.status_code, 401)
+
+        query_token = self.client.delete(
+            "/api/files/upload",
+            params={"path": path, "session_token": session["session_token"]},
+        )
+        self.assertEqual(query_token.status_code, 401)
+
+        with_header = self.client.delete(
+            "/api/files/upload",
+            params={"path": path},
+            headers={"X-PMET-Session-Token": session["session_token"]},
+        )
+        self.assertEqual(with_header.status_code, 200)
+        self.assertFalse((config.PROJECT_ROOT / path).exists())
+
     def test_session_id_rejects_unsafe_value(self):
         response = self._upload("genes.txt", b"x\n", "genes", task_id="../etc/passwd")
         self.assertEqual(response.status_code, 400)

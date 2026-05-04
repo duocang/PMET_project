@@ -6,7 +6,7 @@ import shutil
 import time
 from pathlib import Path
 from typing import Optional
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
+from fastapi import APIRouter, UploadFile, File, Form, Header, HTTPException, Request
 
 from ...config import config
 from ..upload_sessions import (
@@ -353,15 +353,20 @@ async def preview_uploaded_file(task_id: str, slot: str):
 
 
 @router.delete("/upload")
-async def delete_upload(path: str, session_token: Optional[str] = None):
+async def delete_upload(
+    path: str,
+    session_token: Optional[str] = Header(default=None, alias="X-PMET-Session-Token"),
+):
     """Delete a file the user previously uploaded.
 
     Strict scope: ``path`` must resolve to
     ``RESULT_DIR/<upload_session_id>/upload/<filename>`` exactly. The
-    session_token must be the one we issued for that session_id. The
-    earlier revision only enforced the path shape, which let any
-    caller who knew (or guessed) a session_id delete that session's
-    files — fine on a closed VPN, not fine on a public domain.
+    X-PMET-Session-Token must be the one we issued for that session_id.
+    The token is intentionally a header rather than a query parameter so
+    it does not land in browser history, access logs, or referrer-like
+    telemetry. The earlier revision only enforced the path shape, which
+    let any caller who knew (or guessed) a session_id delete that
+    session's files — fine on a closed VPN, not fine on a public domain.
     """
     result_root = config.RESULT_DIR.resolve()
     # NOTE: do *not* resolve() the target. Old use-example revisions may

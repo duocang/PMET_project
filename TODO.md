@@ -24,7 +24,7 @@
 | [11b](#issue-11b) | docker-compose 默认 `--reload` 进 prod | 🟡 部署决策 | ⏸ **不修默认** — 拆 prod compose 会破开发流；上公网时手动改 |
 | [12](#issue-12) | ~~`/api/files/use-example` 无鉴权磁盘放大器（修 #8 引入）~~ | 🟡 公网限流 | ✅ **已修**（pmet.online 上线后）— session_token 闸门 + IP rate limit + direct data path |
 | [13](#issue-13) | `/api/results` 默认 sort 把全部匹配行加载内存（修 #7 引入）| 🟡 大文件风险 | ⏳ **未修** — 39 k 行 ~10 MB OK；100 万行需换 `heapq.nsmallest` |
-| [14](#issue-14) | ~~DELETE /upload 仍依赖 session_id secrecy（修 #5 后残留）~~ | 🟡 公网严格化 | ✅ **已修** — 同 session_token 机制 |
+| [14](#issue-14) | ~~DELETE /upload 仍依赖 session_id secrecy（修 #5 后残留）~~ | 🟡 公网严格化 | ✅ **已修** — `X-PMET-Session-Token` header |
 | [15](#issue-15) | ~~`use-example` symlink + writable `/app/data` 可被同名上传写穿覆盖原始数据~~ | 🔴 critical | ✅ **已修** — 不再创建 symlink/copy；compose `data` mount 改 `:ro` |
 | [16](#issue-16) | ~~`POST /api/tasks` 未绑定 session_token，可伪造 task_id / 跨 session 路径~~ | 🔴 critical | ✅ **已修** — create-task 校验 token + path ownership + duplicate 409 + token 不落盘 |
 
@@ -244,12 +244,13 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 
 修 #5 后已收紧到 `RESULT_DIR/<session_id>/upload/<filename>`。但任何拿到 `<session_id>`（48-bit 随机 hex）的人仍可未经鉴权地删除该 session 的 upload 文件。
 
-**修法**：跟 #12 共享同一个 session_token 机制——`DELETE /upload` 新增 `session_token` 查询参数，`validate_upload_session(parts[0], session_token)` 校验失败 401。前端 `fileApi.deleteUpload(path, sessionToken)` 同步加参数。
+**修法**：跟 #12 共享同一个 session_token 机制——`DELETE /upload` 通过 `X-PMET-Session-Token` header 接收 token，`validate_upload_session(parts[0], session_token)` 校验失败 401。前端 `fileApi.deleteUpload(path, sessionToken)` 同步加 header。
 **公网部署后实际行为**：知道 path 的攻击者还需要同时知道**配套的 64-hex token**，而 token 只在原页面 mount 那一次返回（HTTP body 不入 localStorage、不进 cookie），跨浏览器/跨 tab 不可获取。
 
-**curl 验证**（同 #12 的 T6/T7）：
-- 无 token → **401 invalid token**
-- 真 token → **200 deleted**
+**验证**：
+- 无 header → **401 invalid token**
+- 旧 query 参数 `?session_token=...` → **401**（不再接受，避免 token 进 URL / access log）
+- `X-PMET-Session-Token` header 真 token → **200 deleted**
 
 **前端行为**：用户上传文件仍调用 token 化 DELETE；Use Example 的 `data/...` path 只清本地状态，不再走 DELETE。
 
