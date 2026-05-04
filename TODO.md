@@ -1,10 +1,244 @@
 # TODO
 
-矩阵测试跑（2026-04-30，72 个任务横扫 heat / salt / cell-type 多组基因列表）暴露的待办，按优先级粗排。已划掉的条目表示已修复，仅保留为历史记录；早期讨论稿在 `tmp/` 与 `tmp_cli/`。
+两批待办按时间分层。**最近一批（2026-05-04）**：3 方代码审查（我 + DeepSeek + GPT）+ MCP 浏览器实地验证后筛出来的安全/正确性/性能问题。**老的（2026-04-30）**：矩阵测试 72 个任务暴露的工作流问题，多数已修。
 
 > 本文件聚焦"已知问题与改进路线"。"如何安装/使用"在 [README.md](README.md)，两者不重叠。
 
 ---
+
+## 系统审查（2026-05-04）
+
+3 方独立审查（我 / DeepSeek V4 pro / GPT 5.5）+ MCP browser 实地验证。每条都附"已 reproduce 的证据"。
+
+### 当日汇总
+
+| # | 问题 | 严重度 | 状态 / 实证 |
+|---|---|---|---|
+| [5](#issue-5) | ~~`DELETE /api/files/upload` 无鉴权可删 RESULT_DIR 任意文件~~ | 🔴 critical | ✅ **已修** — 合规 / 旧 exploit / 删 ZIP / 删 task JSON / 幂等 / `../` 穿越 6 案例全 pass |
+| [6](#issue-6) | ~~admin login `next` open redirect~~ | 🔴 critical | ✅ **已修** — `//evil` / `https://evil` / `javascript:` / `/tasks` 4 vector 全 pass |
+| [7](#issue-7) | ~~TaskQuickLook "Top-N 显著" 字母序非 p 序~~ | 🔴 数据正确性 | ✅ **已修** — 真 top 现在是 HSFA1E/HSFB2B (3.4e-38)，UI 验证 |
+| [8](#issue-8) | ~~Use Example 116 MB FASTA 浏览器双向中转~~ | 🟡 公网体验 | ✅ **已修** — 客户端 220 MB → server-side **symlink** 0.019 s（含再优化：cp → symlink，磁盘增量 32 B 而非 116 MB） |
+| [9](#issue-9) | ~~`parseFloat(...) \|\| 1` 把 p=0 误转 1~~ | 🟡 防御性 | ✅ **已修** — `numOr / intOr` 包装，41760 行热图渲染 OK |
+| [10](#issue-10) | ~~`resetSubmitForm` 死代码，提交后表单不清（含 email）~~ | 🟡 UX | ✅ **已修**（含审查后补 email 重置）— 真 SPA 重测 OK，单测 8/8 |
+| [11](#issue-11) | ~~admin token 字符串 `==` 比较（计时攻击）~~ | 🟡 安全 | ✅ **已修** — `hmac.compare_digest`，5 case + UI 真 token 流程 |
+| [11b](#issue-11b) | docker-compose 默认 `--reload` 进 prod | 🟡 部署决策 | ⏸ **不修默认** — 拆 prod compose 会破开发流；上公网时手动改 |
+| [12](#issue-12) | ~~`/api/files/use-example` 无鉴权磁盘放大器（修 #8 引入）~~ | 🟡 公网限流 | ✅ **已修**（pmet.online 上线后）— session_token 闸门 + IP rate limit + dedup |
+| [13](#issue-13) | `/api/results` 默认 sort 把全部匹配行加载内存（修 #7 引入）| 🟡 大文件风险 | ⏳ **未修** — 39 k 行 ~10 MB OK；100 万行需换 `heapq.nsmallest` |
+| [14](#issue-14) | ~~DELETE /upload 仍依赖 session_id secrecy（修 #5 后残留）~~ | 🟡 公网严格化 | ✅ **已修** — 同 session_token 机制 |
+
+9 修 + 1 决策不修 + 1 hardening backlog（#13）。净改动 ~380 LOC，5 文件 backend + 5 文件 frontend，无新依赖。下方各问题段落附"复现 / 修法 / MCP browser 验证"详情。
+
+---
+
+<a id="issue-5"></a>
+
+### ~~问题 5：`DELETE /api/files/upload` 无鉴权可删 RESULT_DIR 下任意文件~~ ✓ 已修
+
+**复现**（2026-05-04）：
+```bash
+mkdir results/app/security_test/ ; echo data > .../critical.txt
+curl -X DELETE "http://localhost:5960/api/files/upload?path=results/security_test/critical.txt"
+→ {"deleted":"results/security_test/critical.txt"} HTTP 200
+```
+**爆炸半径**：任何在 `RESULT_DIR` 下的文件——别人 task 的上传 / 结果 ZIP（`results/<id>.zip`）/ task JSON 元数据（`results/tasks/<id>.json`）。攻击者只要知道 / 猜到路径就能删。
+
+**修法**：[files.py:249-281](apps/pmet_backend/api/routes/files.py#L249-L281) 把 path 校验从"在 RESULT_DIR 下"收紧到精确匹配 `RESULT_DIR/<session_id>/upload/<filename>`：要求 `rel.parts == 3` 且 `parts[1] == "upload"` 且 `UPLOAD_SESSION_RE.match(parts[0])`。同时把 TOCTOU race 改为 idempotent（catch `FileNotFoundError` → 200 noop）。
+
+**MCP browser 验证**（2026-05-04）：
+- T1 旧 exploit `path=results/pwn_test/critical.txt` → **400** ✓
+- T2 删别人 task ZIP → **400** ✓
+- T3 删 task JSON 元数据 → **400** ✓
+- T4 合规 `path=results/<session>/upload/genes.txt` → **200 deleted** ✓
+- T5 重复删（idempotent）→ **200 noop:true** ✓
+- T6 traversal `../../tasks/<id>.json` → **400** ✓
+- 真实 UI 流程：`/submit?mode=intervals` → 点"使用示例" 加 motif.meme (8.1 KB) → 点 "移除" → dropzone 回到 idle 态 ✓
+
+<a id="issue-6"></a>
+
+### ~~问题 6：admin login `next` 参数 open-redirect~~ ✓ 已修
+
+**复现**（2026-05-04）：访问 `http://localhost:5960/admin/login?next=//example.com` → 输入真实 admin token → 浏览器**真的跳到 `https://example.com/`**。
+**爆炸半径**：钓鱼。攻击者发 `pmet.online/admin/login?next=//phish.example` 给管理员，admin 输完真 token，被引到攻击者控制的 "session expired, please re-login" 页面再钓一次。
+
+**修法**：[admin/login/page.tsx:25-37](apps/pmet_frontend/app/admin/login/page.tsx#L25-L37) `next` 加白名单：必须 `startsWith('/')` 且 `!startsWith('//')` 且 `!startsWith('/\\')`，否则回退默认 `/admin/settings`。
+
+**MCP browser 验证**（2026-05-04）：
+| next | 期望落点 | 实测落点 |
+|---|---|---|
+| `//example.com` | `/admin/settings` | `/admin/settings` ✓ |
+| `https://evil.com/x` | `/admin/settings` | `/admin/settings` ✓ |
+| `javascript:alert(1)` | `/admin/settings` | `/admin/settings` ✓ |
+| `/tasks` (合法) | `/tasks` | `/tasks` ✓ |
+
+<a id="issue-7"></a>
+
+### ~~问题 7：TaskQuickLook "Top-N 显著 pair" 不按 p-value 排序~~ ✓ 已修
+
+**复现**（2026-05-04）：
+```
+GET /api/results/<task>?limit=10&p_adj_max=0.05
+→ ABF1/ABF2 (p=1.05e-09), ABF1/ABF3, ABF1/ABF4, ... ABF1/AGL13 (字母序)
+真 top（按 p_adj_bh 升序）应是: HSFA1E/HSFB2B (p=3.4e-38)
+```
+**爆炸半径**：QuickLook 给用户看的"最显著的 10 对"是文件出现序前 10 行，**不是真 top 10**。最显著 pair 可能埋在数千行后。**误导性产物**。
+
+**修法**：[results.py:80-134](apps/pmet_backend/api/routes/results.py#L80-L134) 加 `sort: bool = True` 默认参数，filter 后 in-memory `sort(key=lambda kv: kv[0])` 再 paginate。memory 上限 ~25 MB（100k pair），可接受；同时新增 `sorted_by_p_adj_bh` 字段返回值，便于前端识别。`sort=false` 保留旧行为给特殊调用方。
+
+**MCP browser 验证**（2026-05-04）：
+- API 直查：`/api/results/phase1_.../?limit=10` → top 1 = HSFA1E/HSFB2B 3.41e-38 ✓
+- `sort=false` 兼容：返回 ABF1/ABF2 字母序 ✓
+- 任务详情页 `/tasks/phase1_0fb1357653a54a0b` "前 10 对显著 pair" 表格：HSFA1E/HSFB2B → HSFA6A/HSFB3 → ... 全部 HSF 家族最显著对 ✓
+
+<a id="issue-8"></a>
+
+### ~~问题 8：Use Example 把 100+ MB 的 demo FASTA / GFF3 通过浏览器中转~~ ✓ 已修（含 symlink 优化）
+
+**复现**（2026-05-04）：`time curl -o - /api/demo/promoters/fasta` → 116 MB / 1.3s（本地 docker）。但 Use Example 流程是 `fetch → blob → File → multipart POST 116 MB`，**228 MB 浏览器双向**。公网 1 Mbps 用户：**16 分钟**等"加载示例"。
+
+**修法**：选择性优化——大文件走 server-side，小文件保留客户端 fetch（小文件占带宽可忽略，且 GeneClusterFilter 需要真 File 解析 cluster）：
+- 后端 [files.py:152-191](apps/pmet_backend/api/routes/files.py#L152-L191) 新增 `POST /api/files/use-example`，form fields `{task_id, mode, slot}`，从 `DEMO_FILES` 表把文件**通过 symlink** 接到 `RESULT_DIR/<task_id>/upload/`（不是 `cp`——demo 文件是只读服务器资产，没必要每个 session 重复 116 MB 磁盘）。
+- **为什么 symlink 不是 hardlink**：docker bind-mount 把 `/app/data` 和 `/app/results` 挂成不同设备，`os.link` 会 `Invalid cross-device link`；symlink 是路径级链接跨 mount 可用。Worker 容器同样挂 `/app/data` 至同路径，symlink target 在两边都解析到同一文件。
+- **symlink 引入的 DELETE 副作用**：`Path.resolve()` 会 follow symlink，把 `RESULT_DIR/<sid>/upload/TAIR10.fasta` 解析到 `/app/data/...`，导致 DELETE 误判 "outside upload area"。改用 `os.path.normpath`（解 `../` 但不 follow symlink）。
+- 实际效果：116 MB FASTA "加载" **0.019 秒** + 真实磁盘增量 ~32 字节（symlink 路径自身）；对比修复前 cp 0.6 秒 + 磁盘增 116 MB；用户看到的 stub File 大小仍是 116 MB（`stat()` 默认 follow symlink），UI 完全无差。
+- 前端 [lib/api.ts:248-263](apps/pmet_frontend/lib/api.ts#L248-L263) 加 `fileApi.useExample(taskId, mode, slot)`。
+- [FileUpload.tsx](apps/pmet_frontend/components/FileUpload.tsx) 新 prop `onUseExample?: () => Promise<void>` 走 server-side fast path（设 sentinel `__use_example__` 走 loadingUrl 显示 spinner，不 fetchAndUpload）。
+- [submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) 加 `handleUseExample(slot)`：调 API → 构 stub File（`new File([], filename)` + `Object.defineProperty(stub, 'size', {value: response.size})`）→ 同时更新 `paths` + `files` 状态。FASTA / GFF3 / intervals MEME 用 `onUseExample`；genes / peaks / promoters MEME（chip picker）保留旧路径。
+
+**MCP browser 验证**（2026-05-04）：
+- 后端 endpoint：`curl POST /use-example` 116 MB FASTA **0.62 秒** server-side 完成 ✓
+- promoters 模式 → 点 FASTA "使用示例"：UI 立刻显示 `TAIR10.fasta (116 MB)` ✓ stub File `.size` 正确反映 ✓
+- 同模式 → 点 GFF3 "使用示例"：UI 显示 `TAIR10.gff3 (105 MB)` ✓
+- 点"移除"：dropzone 回 idle 态，`fileApi.deleteUpload` 走问题 5 收紧后的合规 path ✓
+- **节省**：promoters 一次完整 Use Example 流，从 ~440 MB 浏览器中转（FASTA+GFF3 各双向）→ **~0**
+
+<a id="issue-9"></a>
+
+### ~~问题 9：`parseFloat(...) || 1` 把 p=0 误转 1~~ ✓ 已修
+
+**复现**（2026-05-04）：`node -e "parseFloat('0')||1"` → `1`。但 grep 真 PMET 输出 `motif_output.txt`，**所有 p-value 都用科学计数法**（最小见过 `1.5e-43`），裸 `0` 实战不出现。
+**爆炸半径**：实战零；如果未来代码改成输出裸 `0` 或用户 visualize 自定义 TSV，最显著行会被静默丢弃。
+
+**修法**：[visualize/page.tsx:76-110](apps/pmet_frontend/app/visualize/page.tsx#L76-L110) 加 `numOr(value, fallback)` 和 `intOr(value, fallback)` 工具函数，`parseRow` 把 6 处 `parseFloat(x) || N` / `parseInt(x) || N` 全部换成 `numOr/intOr`。`Number.isFinite(n)` 把 0 和 1.5e-43 都放过、`abc` / `undefined` 才走 fallback。
+
+**MCP browser 验证**（2026-05-04）：
+- `node` sanity：`numOr('0',1)===0` ✓ `numOr('0.0e+00',1)===0` ✓ `numOr('1.5e-43',1)===1.5e-43` ✓ `numOr('abc',1)===1` ✓
+- 真实数据：`/visualize` → 加载示例 PMET 结果（41760 行）→ 热图正常渲染 me-G1 / me-G2 cluster ✓ tsc + 生产 build 全 pass
+
+<a id="issue-10"></a>
+
+### ~~问题 10：`resetSubmitForm` 是死代码，提交后表单状态永不重置~~ ✓ 已修
+
+**复现**（2026-05-04）：`grep -rn resetSubmitForm` 只在 `tests/test_settings_store.ts` 出现，生产代码 0 引用。`handleSubmit` 成功后只 `router.push(/tasks/<id>)`，zustand state 保留——回 /submit 看到上次的 species / 文件 / 参数还在。
+
+**修法**：
+1. [submit/page.tsx:423-433](apps/pmet_frontend/app/submit/page.tsx#L423-L433) `taskApi.create` 成功、`router.push` 跳转前加一行 `useSettingsStore.getState().resetSubmitForm()`。
+2. [store.ts:141-167](apps/pmet_frontend/lib/store.ts#L141-L167) `resetSubmitForm` 把顶层 `email` 也并入清空范围（之前漏了——`email` 在 store 顶层、不在任何 `*ByMode` 里）。
+
+**MCP browser 验证**（2026-05-04，**SPA-only**，无 page.goto 全页面 reload 干扰）：
+- 流程：填 `user@example.com` + 三个槽 Use Example（intervals: FASTA 24 MB / MEME 8.1 KB / Peaks）→ 点"提交分析" → SPA `router.push` 到 `/tasks/pmet_ae7a6ec25467` ✓
+- 关键：**点 nav 的"分析"链接**（Next.js `<Link>` SPA nav，不是 `browser_navigate=page.goto`）→ 邮箱真空白、3 个 dropzone idle ✓
+- 单测 [test_settings_store.ts:116-134](apps/pmet_frontend/tests/test_settings_store.ts#L116-L134) 加 `email` 检查，8/8 pass
+
+**注**：之前的 `browser_navigate` 全页面 reload 杀掉了所有 in-memory state，让 reset 的真实效果被掩盖；本次重测点 nav `<Link>` 走 React Router，纯内存路径，是真正的 SPA-stay 验证。
+
+<a id="issue-11"></a>
+
+### ~~问题 11：admin token 字符串 `==` 比较~~ ✓ 已修
+
+[admin.py](apps/pmet_backend/api/routes/admin.py) `pmet_admin != config.ADMIN_TOKEN` 走 Python `!=`——理论可计时攻击。
+
+**修法**：[admin.py:11-32](apps/pmet_backend/api/routes/admin.py#L11-L32) 加 `import hmac` + `_token_matches(candidate)` helper，内部用 `hmac.compare_digest(candidate, config.ADMIN_TOKEN)` 常量时间比较。`require_admin` / `login` / `me` 三处全部走 `_token_matches`，统一一份 truthy 检查；short-circuit `if not candidate or not config.ADMIN_TOKEN: return False` 防 None / 空配置。
+
+**验证**（2026-05-04）：
+- T1 错 token → 401 ✓
+- T2 长度不同的错 token → 401（compare_digest 等长比较 + 短路保护）✓
+- T3 真 token → 200 cookie 正确发回 ✓
+- T4 用 cookie 调 `/api/admin/me` → `is_admin: true` ✓
+- T5 空 cookie → `is_admin: false` ✓
+- MCP browser：`/admin/login` 真 token → 跳到 `/admin/settings` ✓
+
+<a id="issue-11b"></a>
+
+### 问题 11b：docker-compose 默认带 `--reload` 🟡 部署决策（不修）
+
+[deploy/docker-compose.yml:43](deploy/docker-compose.yml#L43) `uvicorn ... --reload` 是**有意的 dev 行为**，配合 backend bind-mount 让代码改动 5 秒内生效。本地 docker 跑没问题。**公网部署人需手动改这行**为 `gunicorn -k uvicorn.workers.UvicornWorker -w 4` 之类。
+
+**为什么不动默认**：拆 `docker-compose.yml`（prod）+ `docker-compose.override.yml`（dev）会破坏现有 `make up` 一行起服的开发体验，对所有本地用户增加摩擦，仅惠及公网部署一种场景。**留给真上公网时再决定**。
+**Workaround**：上线前把那一行改成 `--workers 4 --no-access-log`，或维护一份 `docker-compose.prod.yml`。
+
+### Hardening backlog（已修批次的延伸）
+
+3 条都不是新发现——是我修问题 5 / 7 / 8 时收紧度仍不够。**pmet.online 上线后 #12 + #14 已落地**（共享同一个 session_token 机制），#13 仍是 backlog（39 k 行实战 OK，等真碰到百万行任务再做）。
+
+<a id="issue-12"></a>
+
+#### ~~问题 12：`/api/files/use-example` 无鉴权磁盘放大器~~ ✓ 已修（pmet.online 上线触发）
+
+[files.py:152-191](apps/pmet_backend/api/routes/files.py#L152-L191) 修 #8 时新加的端点。最初实现用 `shutil.copy2` 真复制，所以任何人 POST 一次就让服务器拷一份 116 MB demo FASTA 到新 session 目录。原 `/api/files/upload` 也无鉴权，但攻击者至少要自己出上传带宽；这里**服务器替他出带宽 + 出磁盘**——典型 disk-amplification DoS。
+**触发模型**（历史 cp 实现）：1 POST = 服务器 `cp` 116 MB；100 POST/min = 11 GB/min 磁盘消耗。
+
+**修法**：三层闸门 + 一个根本性优化——
+1. [files.py:14-87](apps/pmet_backend/api/routes/files.py#L14-L87) 新增 module-level `_SESSIONS` dict + `_SESSIONS_LOCK` + `_SESSION_TTL_SECONDS=3600`，配 `_validate_session(session_id, token)` 用 `hmac.compare_digest`。
+2. [files.py:226-263](apps/pmet_backend/api/routes/files.py#L226-L263) 新端点 `POST /api/files/issue-session`：返 `{session_id, session_token, expires_in}`；自带 sliding-window 每 IP rate limit（10/min）。
+3. [files.py:289-346](apps/pmet_backend/api/routes/files.py#L289-L346) `/use-example` 强制带 `session_token`，无 token / token 过期 / 跨 session 全 401。同 session 同名 demo 已存在则**返回 dedup**——攻击者拿到一个 token 也只能放大有限。
+4. **根本优化（用户 review 提出）**：底层从 `shutil.copy2` 换成 `os.symlink`。demo 文件是只读服务器资产，复制本身就是浪费——symlink 后磁盘增量从 116 MB 降到 32 字节（path 字符串自身），即便没有限流也几乎不放大。Hardlink 因 docker bind-mount 跨设备不可用，symlink 跨 mount 工作（worker 容器同样挂 `/app/data`，target 解析一致）。
+5. [lib/api.ts:227-268](apps/pmet_frontend/lib/api.ts#L227-L268) 加 `fileApi.issueSession()`；`useExample()` / `deleteUpload()` 接收 token 参数。
+6. [submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) mount 时 `fileApi.issueSession()`，token 存内存（不入 localStorage——重启浏览器就要换 session，token harvest 寿命有限）；`handleSubmit` 加 `if (!uploadSession)` guard 防 race。
+
+**curl 验证**（2026-05-04，docker restart 后）：
+- T1 不带 token call /use-example → **401**
+- T2 issue-session → 200 `{session_id, session_token: 64-hex, expires_in: 3600}`
+- T3 真 token call /use-example → **200** (intervals.fa 25 MB symlink 完)
+- T4 同 session 重复 → **200 + `deduplicated: true`**
+- T5 用 SID-A 的 token 操作 SID-B → **401**
+- T6/T7 DELETE /upload 同样 token 闸门 → 401 / 200 各对
+- **symlink 实测**：116 MB FASTA "use example" 用时 **0.019s**（cp 时代 0.6s），磁盘增量 **32 字节**（path 字符串）
+
+**MCP browser 验证**（真 UI 流，symlink 路径）：
+- `/submit?mode=intervals` mount → 自动 `POST /api/files/issue-session` 200 ✓
+- 点 FASTA "使用示例" → `POST /api/files/use-example` **带 token form field** → 200 ✓
+- UI 显示 `TAIR10.fasta (116 MB)` ✓（`stat()` follow symlink，size 是 target 真实尺寸）
+- 点"移除" → `DELETE /api/files/upload?path=...&session_token=...` → 200 ✓ dropzone 回 idle 态
+- symlink target 完整性确认：`/Users/nuioi/projects/pmet/data/reference/TAIR10.fasta` 121 662 621 字节未变 ✓
+
+<a id="issue-13"></a>
+
+#### 问题 13：`/api/results` 默认 sort 收集全部匹配行进内存 🟡 大文件风险
+
+[results.py:80-134](apps/pmet_backend/api/routes/results.py#L80-L134) 修 #7 时改成"先 filter+collect 后 sort+slice"。一个 39047 row 的 task 大概 ~10 MB Python 对象——OK；100 万 row → ~250 MB。`p_adj_max=1` + `sort=true` 默认的请求会把整个文件 + 所有行加载到内存。
+**修法**：换成 `heapq.nsmallest(limit, generator, key=lambda r: r.p_adj_bh)`——内存恒定 `O(limit)`，I/O 仍是单次扫描。同时保留 `sort=false` 走原 streaming-pagination 路径供大数据全量分页用。
+
+<a id="issue-14"></a>
+
+#### ~~问题 14：DELETE /upload 仍依赖 `<session_id>` secrecy~~ ✓ 已修
+
+修 #5 后已收紧到 `RESULT_DIR/<session_id>/upload/<filename>`。但任何拿到 `<session_id>`（48-bit 随机 hex）的人仍可未经鉴权地删除该 session 的 upload 文件。
+
+**修法**：跟 #12 共享同一个 session_token 机制——[files.py:444-478](apps/pmet_backend/api/routes/files.py#L444-L478) `DELETE /upload` 新增 `session_token` 查询参数，`_validate_session(parts[0], session_token)` 校验失败 401。前端 `fileApi.deleteUpload(path, sessionToken)` 同步加参数。
+**公网部署后实际行为**：知道 path 的攻击者还需要同时知道**配套的 64-hex token**，而 token 只在原页面 mount 那一次返回（HTTP body 不入 localStorage、不进 cookie），跨浏览器/跨 tab 不可获取。
+
+**curl 验证**（同 #12 的 T6/T7）：
+- 无 token → **401 invalid token**
+- 真 token → **200 deleted**
+
+**MCP browser 验证**：见上面 #12 的"MCP browser 验证"——同一次操作链路覆盖。
+
+---
+
+### 已验证为伪问题（不修）
+
+| Agent 报警 | 实测发现 |
+|---|---|
+| Plotly chunk 4.5MB 压垮 /visualize 首屏 | **lazy-loaded**——只在用户加载示例后才拉，初始访问只 ~150 KB |
+| `_load_*` 配置每次重读使 estimate 慢 | 实测 25-30 ms/次，submit 一次会话累积 ~500 ms，**被 debounce 覆盖、用户无感** |
+| `/admin/settings` 未登录闪现 UI | **页面有 `if(loading) return <Loading/>` 守卫，不闪现** |
+| Watchdog kill race | 已做 status 检查 + 重读 JSON 守卫 |
+
+---
+
+## 矩阵测试（2026-04-30）
+
+> 4-30 矩阵测试（72 个任务横扫 heat / salt / cell-type 多组基因列表）暴露的工作流问题，多数已修。保留作历史记录 + 后续 backlog 跟踪。**下方所有同级章节（目录 / 问题 1-4 / 优先级建议 / 其它 backlog）均属于这一批。**
 
 ## 目录
 
