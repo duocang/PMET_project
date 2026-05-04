@@ -7,6 +7,29 @@ import { useTranslation } from '@/lib/i18n';
 import { formatBytes } from '@/lib/runtime';
 import FilePreview from './FilePreview';
 
+export interface ExampleItem {
+  /** Display label, already humanised + extension-stripped. */
+  label: string;
+  /** URL to fetch the file blob from. */
+  url: string;
+  /** Filename to give the fetched file when handed to runUpload. */
+  filename: string;
+}
+
+// Same palette as GeneClusterFilter / scripts/r/process_pmet_result.R so
+// chip colours stay stable across the submit form, the gene-cluster
+// filter, and downstream visualisations. Index modulo length covers any
+// future catalog growth past 7 entries.
+const EXAMPLE_PALETTE = [
+  '#ed3333', // red
+  '#1a94bc', // blue
+  '#40a070', // green
+  '#fc6315', // orange
+  '#f9a633', // mustard
+  '#8b2671', // purple
+  '#2f2f35', // near-black
+];
+
 interface FileUploadProps {
   label: string;
   accept?: string;
@@ -29,6 +52,11 @@ interface FileUploadProps {
   demoUrl?: string;
   /** Filename to give the fetched demo file. */
   demoFilename?: string;
+  /** Multi-example chip row. When provided, replaces the single
+   *  "Use example" button with a row of coloured chips — click any chip
+   *  to load that file into the upload slot. Useful when a slot has
+   *  several equally-valid example sources (e.g. multiple motif DBs). */
+  examples?: ExampleItem[];
   /** Optional inline format preview. Renders a "查看示例" trigger next to
    *  "使用示例"; clicking opens a side drawer showing `previewContent`.
    *  All three props must be set together; if any is missing, no preview
@@ -91,12 +119,23 @@ export default function FileUpload({
   required = false,
   demoUrl,
   demoFilename,
+  examples,
   previewTitle,
   previewContent,
   previewNote,
 }: FileUploadProps) {
   const { t } = useTranslation();
   const [loadingDemo, setLoadingDemo] = useState(false);
+  // Tracks which chip in the multi-example row is mid-fetch so we can
+  // show a per-chip spinner without disabling the rest more than
+  // necessary. null = nothing in flight.
+  const [loadingExampleUrl, setLoadingExampleUrl] = useState<string | null>(null);
+  // Multi-example picker visibility. Stays false until the user clicks
+  // "Use example" so the dropzone keeps the same height as its grid
+  // siblings until they actually want to pick. Auto-resets when an
+  // upload starts or completes (currentFile / uploading take over the
+  // visual region).
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadingFilename, setUploadingFilename] = useState<string>('');
@@ -178,16 +217,23 @@ export default function FileUpload({
     validator: acceptedExtensions.length > 0 ? validateFileType : undefined,
   });
 
+  const fetchAndUpload = useCallback(
+    async (url: string, filename: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+      await runUpload(file);
+    },
+    [runUpload]
+  );
+
   const useExample = useCallback(async () => {
     if (!demoUrl) return;
     setLoadingDemo(true);
     try {
-      const res = await fetch(demoUrl);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
       const filename = demoFilename || demoUrl.split('/').pop() || 'example';
-      const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
-      await runUpload(file);
+      await fetchAndUpload(demoUrl, filename);
       toast.success(`${t('fileupload.toast.example_loaded')} ${filename}`);
     } catch (e) {
       toast.error(t('fileupload.toast.example_failed'));
@@ -195,7 +241,24 @@ export default function FileUpload({
     } finally {
       setLoadingDemo(false);
     }
-  }, [demoUrl, demoFilename, runUpload, t]);
+  }, [demoUrl, demoFilename, fetchAndUpload, t]);
+
+  const useExampleChip = useCallback(
+    async (item: ExampleItem) => {
+      setLoadingExampleUrl(item.url);
+      try {
+        await fetchAndUpload(item.url, item.filename);
+        toast.success(`${t('fileupload.toast.example_loaded')} ${item.filename}`);
+        setPickerOpen(false);
+      } catch (e) {
+        toast.error(t('fileupload.toast.example_failed'));
+        console.error(e);
+      } finally {
+        setLoadingExampleUrl(null);
+      }
+    },
+    [fetchAndUpload, t]
+  );
 
   const handleRemove = useCallback(
     async (e: React.MouseEvent) => {
@@ -232,18 +295,30 @@ export default function FileUpload({
               closeLabel={t('viz.modal.close')}
             />
           )}
-          {demoUrl && !currentFile && !uploading && (
+          {/* Single-demoUrl flow: clicking immediately fetches + uploads.
+              Multi-example flow: clicking toggles the in-box chip picker
+              (default hidden so the box height stays aligned with the
+              siblings). */}
+          {(demoUrl || (examples && examples.length > 0)) && !currentFile && !uploading && (
             <button
               type="button"
-              onClick={useExample}
-              disabled={loadingDemo}
+              onClick={
+                examples && examples.length > 0
+                  ? () => setPickerOpen((v) => !v)
+                  : useExample
+              }
+              disabled={loadingDemo || loadingExampleUrl !== null}
               className="text-xs font-medium text-primary-700 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="13 2 13 9 20 9" />
                 <path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7" />
               </svg>
-              {loadingDemo ? t('fileupload.loading') : t('fileupload.use_example')}
+              {loadingDemo
+                ? t('fileupload.loading')
+                : examples && pickerOpen
+                  ? t('fileupload.hide_examples')
+                  : t('fileupload.use_example')}
             </button>
           )}
         </div>
@@ -308,6 +383,40 @@ export default function FileUpload({
             <>
               <div className="flex justify-center"><UploadIcon /></div>
               <p className="text-primary-600">{t('fileupload.drop_active')}</p>
+            </>
+          ) : pickerOpen && examples && examples.length > 0 ? (
+            // In-box chip picker: same vertical footprint as the idle
+            // prompt, so the box height matches sibling upload slots in
+            // the grid. stopPropagation on each chip prevents the
+            // dropzone's click-to-open-file-dialog from firing.
+            <>
+              <p className="text-xs text-slate-500">{t('fileupload.examples_label')}</p>
+              <div
+                className="flex flex-wrap items-center justify-center gap-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {examples.map((item, i) => {
+                  const color = EXAMPLE_PALETTE[i % EXAMPLE_PALETTE.length];
+                  const isLoading = loadingExampleUrl === item.url;
+                  const anyLoading = loadingExampleUrl !== null;
+                  return (
+                    <button
+                      key={item.url}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        useExampleChip(item);
+                      }}
+                      disabled={anyLoading}
+                      title={item.filename}
+                      className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{ backgroundColor: `${color}33` }}
+                    >
+                      {isLoading ? `${item.label}…` : item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </>
           ) : (
             <>

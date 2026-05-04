@@ -219,6 +219,8 @@ const en = {
 
   // FileUpload
   'fileupload.use_example': 'Use example',
+  'fileupload.hide_examples': 'Hide',
+  'fileupload.examples_label': 'Pick an example:',
   'fileupload.preview_example': 'Preview example',
   'fileupload.loading': 'Loading…',
   'fileupload.uploading': 'Uploading',
@@ -702,6 +704,8 @@ const zh: Record<keyof typeof en, string> = {
 
   // FileUpload
   'fileupload.use_example': '使用示例',
+  'fileupload.hide_examples': '收起',
+  'fileupload.examples_label': '选择示例：',
   'fileupload.preview_example': '查看示例',
   'fileupload.loading': '加载中…',
   'fileupload.uploading': '上传中',

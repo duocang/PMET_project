@@ -21,6 +21,7 @@ import {
   IndexingEntry,
   IndexingSpeciesDetail,
   IndexingMotifDbDetail,
+  MotifDbCatalogEntry,
 } from '@/lib/api';
 import { useSettingsStore, useTaskStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
@@ -69,6 +70,10 @@ function SubmitPageContent() {
 
   const [submitting, setSubmitting] = useState(false);
   const [indexingEntries, setIndexingEntries] = useState<IndexingEntry[]>([]);
+  // Motif DB catalog (data/motifs/*.meme) — used for the multi-example
+  // chip row on the meme upload slot in promoters mode. Empty until the
+  // /api/indexing/motif-databases response lands.
+  const [motifCatalog, setMotifCatalog] = useState<MotifDbCatalogEntry[]>([]);
 
   // Cluster-filter selection. `null` means no filter step needed —
   // either the gene list has no cluster column, or every detected
@@ -123,6 +128,17 @@ function SubmitPageContent() {
       .then((res) => setIndexingEntries(res.entries))
       .catch((err) => console.error('Failed to load indexing list', err));
   }, [mode]);
+
+  // Pull the motif-DB catalog once for promoters mode so the meme upload
+  // slot can render its multi-example chip row instead of a single
+  // "Use example" link.
+  useEffect(() => {
+    if (mode !== 'promoters') return;
+    if (motifCatalog.length > 0) return;
+    indexingApi.motifDatabases()
+      .then((res) => setMotifCatalog(res.databases))
+      .catch((err) => console.error('Failed to load motif-DB catalog', err));
+  }, [mode, motifCatalog.length]);
 
   // Recompute the runtime estimate (debounced 400 ms) whenever any input
   // that affects duration changes — uploaded paths, premade index pick,
@@ -737,8 +753,19 @@ function SubmitPageContent() {
               currentFile={files.meme?.name}
               currentFileSize={files.meme?.size}
               required
-              demoUrl={`/api/demo/${mode}/meme`}
-              demoFilename={mode === 'intervals' ? 'motif.meme' : 'Franco-Zorrilla_et_al_2014.meme'}
+              demoUrl={mode === 'promoters' ? undefined : `/api/demo/${mode}/meme`}
+              demoFilename={mode === 'intervals' ? 'motif.meme' : undefined}
+              examples={
+                mode === 'promoters'
+                  ? motifCatalog
+                      .filter((db) => db.local_file)
+                      .map((db) => ({
+                        label: db.humanized,
+                        url: `/api/indexing/motif-databases/${encodeURIComponent(db.name)}/file`,
+                        filename: db.local_file!.filename,
+                      }))
+                  : undefined
+              }
               previewTitle={t('submit.preview.meme_title')}
               previewNote={t('submit.preview.meme_note')}
               previewContent={EXAMPLE_MEME}
