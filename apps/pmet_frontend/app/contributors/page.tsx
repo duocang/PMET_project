@@ -27,7 +27,7 @@ interface Contributor {
 const CONTRIBUTORS: Contributor[] = [
   {
     nameEn: 'Dr. Wang, Xuesong',
-    nameZh: '王雪松',
+    nameZh: '王雪松 博士',
     roleKeys: [
       'contributors.role.developer',
       'contributors.role.researcher',
