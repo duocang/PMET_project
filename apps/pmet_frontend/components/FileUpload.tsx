@@ -64,6 +64,10 @@ interface FileUploadProps {
   previewTitle?: string;
   previewContent?: string;
   previewNote?: string;
+  /** Optional URL the preview drawer fetches on first open to fill itself
+   *  with real-file content. previewContent stays as the synchronous
+   *  fallback shown until the fetch resolves (and on error). */
+  previewSourceUrl?: string;
 }
 
 function UploadIcon() {
@@ -123,6 +127,7 @@ export default function FileUpload({
   previewTitle,
   previewContent,
   previewNote,
+  previewSourceUrl,
 }: FileUploadProps) {
   const { t } = useTranslation();
   const [loadingDemo, setLoadingDemo] = useState(false);
@@ -290,6 +295,7 @@ export default function FileUpload({
             <FilePreview
               title={previewTitle}
               content={previewContent}
+              sourceUrl={previewSourceUrl}
               note={previewNote}
               triggerLabel={t('fileupload.preview_example')}
               closeLabel={t('viz.modal.close')}

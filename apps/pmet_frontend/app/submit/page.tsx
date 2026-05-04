@@ -724,6 +724,7 @@ function SubmitPageContent() {
               previewTitle={t('submit.preview.fasta_title')}
               previewNote={t('submit.preview.fasta_note')}
               previewContent={EXAMPLE_FASTA}
+              previewSourceUrl={`/api/demo/${mode}/fasta/preview?lines=80`}
             />
           )}
 
@@ -741,6 +742,7 @@ function SubmitPageContent() {
               previewTitle={t('submit.preview.gff3_title')}
               previewNote={t('submit.preview.gff3_note')}
               previewContent={EXAMPLE_GFF3}
+              previewSourceUrl="/api/demo/promoters/gff3/preview?lines=80"
             />
           )}
 
@@ -769,6 +771,15 @@ function SubmitPageContent() {
               previewTitle={t('submit.preview.meme_title')}
               previewNote={t('submit.preview.meme_note')}
               previewContent={EXAMPLE_MEME}
+              previewSourceUrl={
+                mode === 'promoters'
+                  ? // Promoters mode has no demoUrl (chips replace it), so
+                    // pull a representative real motif file straight from
+                    // the catalog. Franco-Zorrilla is the smallest at
+                    // ~90 KB; only fetched when the user opens the drawer.
+                    '/api/indexing/motif-databases/Franco-Zorrilla_et_al_2014/file'
+                  : `/api/demo/${mode}/meme/preview?lines=80`
+              }
             />
           )}
 
@@ -787,6 +798,7 @@ function SubmitPageContent() {
               previewTitle={t(mode === 'intervals' ? 'submit.preview.peaks_title' : 'submit.preview.gene_list_title')}
               previewNote={t(mode === 'intervals' ? 'submit.preview.peaks_note' : 'submit.preview.gene_list_note')}
               previewContent={mode === 'intervals' ? EXAMPLE_PEAK_LIST : EXAMPLE_GENE_LIST}
+              previewSourceUrl={`/api/demo/${mode}/genes/preview?lines=80`}
             />
             {/* Cluster filter renders only when the uploaded gene list
                 has a 2-column <cluster>\t<gene> shape. The component
