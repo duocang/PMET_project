@@ -100,6 +100,19 @@ export default function DataPage() {
       .finally(() => setLoading(false));
   }, [t]);
 
+  // Re-scroll to the URL hash once content has settled. The browser's
+  // initial anchor jump happens before species/databases finish loading,
+  // so it lands at the wrong y-offset. Re-issue the scroll after the
+  // first paint that includes the data.
+  useEffect(() => {
+    if (loading) return;
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ block: 'start' });
+    });
+  }, [loading]);
+
   return (
     <div className="max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">{t('data.title')}</h1>

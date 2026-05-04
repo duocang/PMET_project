@@ -129,16 +129,14 @@ function SubmitPageContent() {
       .catch((err) => console.error('Failed to load indexing list', err));
   }, [mode]);
 
-  // Pull the motif-DB catalog once for promoters mode so the meme upload
-  // slot can render its multi-example chip row instead of a single
-  // "Use example" link.
+  // Pull the motif-DB catalog once at mount. ~600-byte JSON, fine to
+  // fetch even if the user never enters promoters mode; saves the
+  // mode-toggle dance and the early-return guard.
   useEffect(() => {
-    if (mode !== 'promoters') return;
-    if (motifCatalog.length > 0) return;
     indexingApi.motifDatabases()
       .then((res) => setMotifCatalog(res.databases))
       .catch((err) => console.error('Failed to load motif-DB catalog', err));
-  }, [mode, motifCatalog.length]);
+  }, []);
 
   // Recompute the runtime estimate (debounced 400 ms) whenever any input
   // that affects duration changes — uploaded paths, premade index pick,
@@ -746,42 +744,42 @@ function SubmitPageContent() {
             />
           )}
 
-          {(mode === 'promoters' || mode === 'intervals') && (
-            <FileUpload
-              label={t('submit.upload.label.motif')}
-              accept=".meme"
-              onUpload={(file, p) => handleFileUpload(file, 'meme', p)}
-              onClear={() => handleFileClear('meme')}
-              currentFile={files.meme?.name}
-              currentFileSize={files.meme?.size}
-              required
-              demoUrl={mode === 'promoters' ? undefined : `/api/demo/${mode}/meme`}
-              demoFilename={mode === 'intervals' ? 'motif.meme' : undefined}
-              examples={
-                mode === 'promoters'
-                  ? motifCatalog
-                      .filter((db) => db.local_file)
-                      .map((db) => ({
-                        label: db.humanized,
-                        url: `/api/indexing/motif-databases/${encodeURIComponent(db.name)}/file`,
-                        filename: db.local_file!.filename,
-                      }))
-                  : undefined
-              }
-              previewTitle={t('submit.preview.meme_title')}
-              previewNote={t('submit.preview.meme_note')}
-              previewContent={EXAMPLE_MEME}
-              previewSourceUrl={
-                mode === 'promoters'
-                  ? // Promoters mode has no demoUrl (chips replace it), so
-                    // pull a representative real motif file straight from
-                    // the catalog. Franco-Zorrilla is the smallest at
-                    // ~90 KB; only fetched when the user opens the drawer.
-                    '/api/indexing/motif-databases/Franco-Zorrilla_et_al_2014/file'
-                  : `/api/demo/${mode}/meme/preview?lines=80`
-              }
-            />
-          )}
+          {(mode === 'promoters' || mode === 'intervals') && (() => {
+            // Source-of-truth for which motif sources this slot offers.
+            // Promoters mode shows the multi-DB chip row (catalog files);
+            // intervals mode keeps the single demo motif. Both share the
+            // same preview endpoint shape.
+            const memeSource = mode === 'promoters'
+              ? {
+                  examples: motifCatalog
+                    .filter((db) => db.local_file)
+                    .map((db) => ({
+                      label: db.humanized,
+                      url: `/api/indexing/motif-databases/${encodeURIComponent(db.name)}/file`,
+                      filename: db.local_file!.filename,
+                    })),
+                }
+              : {
+                  demoUrl: `/api/demo/${mode}/meme`,
+                  demoFilename: 'motif.meme',
+                };
+            return (
+              <FileUpload
+                label={t('submit.upload.label.motif')}
+                accept=".meme"
+                onUpload={(file, p) => handleFileUpload(file, 'meme', p)}
+                onClear={() => handleFileClear('meme')}
+                currentFile={files.meme?.name}
+                currentFileSize={files.meme?.size}
+                required
+                {...memeSource}
+                previewTitle={t('submit.preview.meme_title')}
+                previewNote={t('submit.preview.meme_note')}
+                previewContent={EXAMPLE_MEME}
+                previewSourceUrl={`/api/demo/${mode}/meme/preview?lines=80`}
+              />
+            );
+          })()}
 
           <div className={mode === 'promoters_pre' ? 'md:col-span-2' : ''}>
             <FileUpload

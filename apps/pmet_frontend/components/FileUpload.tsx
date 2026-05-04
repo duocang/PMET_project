@@ -130,11 +130,11 @@ export default function FileUpload({
   previewSourceUrl,
 }: FileUploadProps) {
   const { t } = useTranslation();
-  const [loadingDemo, setLoadingDemo] = useState(false);
-  // Tracks which chip in the multi-example row is mid-fetch so we can
-  // show a per-chip spinner without disabling the rest more than
-  // necessary. null = nothing in flight.
-  const [loadingExampleUrl, setLoadingExampleUrl] = useState<string | null>(null);
+  // Single source of truth for "an example fetch is in flight". The URL
+  // value is used by the chip row to mark exactly which chip is mid-fetch
+  // (so all the other chips can stay enabled-looking but disabled), and
+  // by the toggle button to gate against double-clicks.
+  const [loadingUrl, setLoadingUrl] = useState<string | null>(null);
   // Multi-example picker visibility. Stays false until the user clicks
   // "Use example" so the dropzone keeps the same height as its grid
   // siblings until they actually want to pick. Auto-resets when an
@@ -233,37 +233,31 @@ export default function FileUpload({
     [runUpload]
   );
 
-  const useExample = useCallback(async () => {
-    if (!demoUrl) return;
-    setLoadingDemo(true);
-    try {
-      const filename = demoFilename || demoUrl.split('/').pop() || 'example';
-      await fetchAndUpload(demoUrl, filename);
-      toast.success(`${t('fileupload.toast.example_loaded')} ${filename}`);
-    } catch (e) {
-      toast.error(t('fileupload.toast.example_failed'));
-      console.error(e);
-    } finally {
-      setLoadingDemo(false);
-    }
-  }, [demoUrl, demoFilename, fetchAndUpload, t]);
-
-  const useExampleChip = useCallback(
-    async (item: ExampleItem) => {
-      setLoadingExampleUrl(item.url);
+  // Single fetch path used by both the single-demoUrl button and the
+  // multi-example chip row. Caller passes whether to auto-collapse the
+  // picker on success (chips do; the single button has no picker).
+  const loadExample = useCallback(
+    async (url: string, filename: string, closePickerOnSuccess: boolean) => {
+      setLoadingUrl(url);
       try {
-        await fetchAndUpload(item.url, item.filename);
-        toast.success(`${t('fileupload.toast.example_loaded')} ${item.filename}`);
-        setPickerOpen(false);
+        await fetchAndUpload(url, filename);
+        toast.success(`${t('fileupload.toast.example_loaded')} ${filename}`);
+        if (closePickerOnSuccess) setPickerOpen(false);
       } catch (e) {
         toast.error(t('fileupload.toast.example_failed'));
         console.error(e);
       } finally {
-        setLoadingExampleUrl(null);
+        setLoadingUrl(null);
       }
     },
     [fetchAndUpload, t]
   );
+
+  const useExample = useCallback(() => {
+    if (!demoUrl) return;
+    const filename = demoFilename || demoUrl.split('/').pop() || 'example';
+    return loadExample(demoUrl, filename, false);
+  }, [demoUrl, demoFilename, loadExample]);
 
   const handleRemove = useCallback(
     async (e: React.MouseEvent) => {
@@ -313,14 +307,14 @@ export default function FileUpload({
                   ? () => setPickerOpen((v) => !v)
                   : useExample
               }
-              disabled={loadingDemo || loadingExampleUrl !== null}
+              disabled={loadingUrl !== null}
               className="text-xs font-medium text-primary-700 hover:text-primary-800 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="13 2 13 9 20 9" />
                 <path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7" />
               </svg>
-              {loadingDemo
+              {loadingUrl !== null && !examples
                 ? t('fileupload.loading')
                 : examples && pickerOpen
                   ? t('fileupload.hide_examples')
@@ -403,15 +397,15 @@ export default function FileUpload({
               >
                 {examples.map((item, i) => {
                   const color = EXAMPLE_PALETTE[i % EXAMPLE_PALETTE.length];
-                  const isLoading = loadingExampleUrl === item.url;
-                  const anyLoading = loadingExampleUrl !== null;
+                  const isLoading = loadingUrl === item.url;
+                  const anyLoading = loadingUrl !== null;
                   return (
                     <button
                       key={item.url}
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        useExampleChip(item);
+                        loadExample(item.url, item.filename, true);
                       }}
                       disabled={anyLoading}
                       title={item.filename}

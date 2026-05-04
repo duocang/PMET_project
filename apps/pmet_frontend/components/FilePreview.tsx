@@ -29,12 +29,6 @@ interface FilePreviewProps {
   closeLabel?: string;
 }
 
-// Layout constants must match the JSX below.
-//   - <pre> uses font-size 12px + leading-relaxed (1.625) → 19.5 px/line
-//   - <pre> has py-2 = 8px top + 8px bottom = 16 px vertical padding
-//   - parent <div> has p-5 = 20px top + 20px bottom = 40 px vertical padding
-const LINE_HEIGHT_PX = 19.5;
-const VERTICAL_CHROME_PX = 40 /* parent p-5 */ + 16 /* pre py-2 */;
 // Last line was getting half-clipped on a few odd viewport heights;
 // lopping one more line off keeps the bottom edge clean.
 const SAFETY_LINES = 1;
@@ -57,6 +51,7 @@ export default function FilePreview({ title, content, sourceUrl, note, triggerLa
   const [fetched, setFetched] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const preRef = useRef<HTMLPreElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -78,16 +73,23 @@ export default function FilePreview({ title, content, sourceUrl, note, triggerLa
     let cancelled = false;
 
     const run = () => {
-      const el = containerRef.current;
-      if (!el) {
+      const container = containerRef.current;
+      const pre = preRef.current;
+      if (!container || !pre) {
         // Drawer not yet in the DOM — try again next frame.
         requestAnimationFrame(run);
         return;
       }
-      const fitting = Math.max(
-        MIN_LINES,
-        Math.floor((el.clientHeight - VERTICAL_CHROME_PX) / LINE_HEIGHT_PX) - SAFETY_LINES,
-      );
+      // Read live styles so the math stays in sync with whatever Tailwind
+      // utilities are on the JSX (font-size, leading-*, p-*, py-*).
+      const preStyle = getComputedStyle(pre);
+      const containerStyle = getComputedStyle(container);
+      const lineH = parseFloat(preStyle.lineHeight);
+      const prePadding = parseFloat(preStyle.paddingTop) + parseFloat(preStyle.paddingBottom);
+      const containerPadding =
+        parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
+      const usable = container.clientHeight - containerPadding - prePadding;
+      const fitting = Math.max(MIN_LINES, Math.floor(usable / lineH) - SAFETY_LINES);
 
       const url = new URL(sourceUrl, window.location.origin);
       if (url.searchParams.has('lines')) {
@@ -121,7 +123,8 @@ export default function FilePreview({ title, content, sourceUrl, note, triggerLa
     };
   }, [open, sourceUrl, fetched, content]);
 
-  const display = sourceUrl ? (fetched ?? content) : content;
+  // When no sourceUrl, fetched stays null and ?? falls through to content.
+  const display = fetched ?? content;
 
   return (
     <>
@@ -165,7 +168,10 @@ export default function FilePreview({ title, content, sourceUrl, note, triggerLa
                 appear is if our line-fit math is one row off, in which
                 case clipping is the desired behaviour, not a scrollbar. */}
             <div ref={containerRef} className="flex-1 overflow-hidden p-5">
-              <pre className="whitespace-pre overflow-x-auto rounded bg-slate-900 px-3 py-2 font-mono text-[12px] leading-relaxed text-slate-100">
+              <pre
+                ref={preRef}
+                className="whitespace-pre overflow-x-auto rounded bg-slate-900 px-3 py-2 font-mono text-[12px] leading-relaxed text-slate-100"
+              >
                 {display}
                 {loading && sourceUrl && fetched === null && '\n\n…'}
               </pre>
