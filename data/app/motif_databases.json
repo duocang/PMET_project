@@ -1,0 +1,8 @@
+{
+  "_note": "Global catalog of motif databases shown on the submit form's expandable detail panel. Keys are the directory names that appear under data/precomputed_indexes/<species>/<motif_db>/; values are the source URL rendered as the 'Source ↗' link. Read by apps/pmet_backend/api/routes/indexing.py::get_motif_db_detail.",
+  "CIS-BP2": "http://cisbp.ccbr.utoronto.ca/bulk.php",
+  "Plant_TF_DB": "http://planttfdb.gao-lab.org/download.php",
+  "Plant_Cistrome_DB": "http://neomorph.salk.edu/dap_web/pages/index.php",
+  "Jaspar_plants_non_redundant_2022": "https://jaspar.elixir.no",
+  "Franco-Zorrilla_et_al_2014": "https://pubmed.ncbi.nlm.nih.gov/24477691"
+}

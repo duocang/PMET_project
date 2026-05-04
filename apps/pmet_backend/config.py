@@ -70,6 +70,14 @@ class Config:
     PRECOMPUTED_INDEXING_DIR: Path = PROJECT_ROOT / "data" / "precomputed_indexes"
     PRECOMPUTED_INDEXING_METADATA: Path = PROJECT_ROOT / "data" / "app" / "indexing_metadata.json"
     GENOME_METADATA: Path = PROJECT_ROOT / "data" / "app" / "genome_n_annotation.json"
+    # Global motif-database catalog (name -> source URL). Lifted out of
+    # GENOME_METADATA because the URLs are species-agnostic and were being
+    # duplicated across every species block.
+    MOTIF_DATABASES_METADATA: Path = PROJECT_ROOT / "data" / "app" / "motif_databases.json"
+    # Local copies of the motif databases (raw MEME files), served by the
+    # Data page as a download. Filenames must match the catalog keys in
+    # MOTIF_DATABASES_METADATA + ".meme".
+    MOTIFS_DIR: Path = PROJECT_ROOT / "data" / "motifs"
     # TASKS_DIR is derived from RESULT_DIR in __post_init__ so the env override
     # propagates without each call site re-reading the env.
     TASKS_DIR: Path = field(init=False)

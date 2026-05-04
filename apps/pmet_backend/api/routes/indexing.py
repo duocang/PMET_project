@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 from ...config import config
 
@@ -53,6 +54,22 @@ def _load_genome_metadata() -> dict:
     except (json.JSONDecodeError, OSError):
         return {}
     return raw if isinstance(raw, dict) else {}
+
+
+def _load_motif_databases() -> dict:
+    """Load data/app/motif_databases.json — global motif_db -> source URL
+    catalog, species-agnostic. Underscore-prefixed keys (e.g. ``_note``)
+    are skipped so the file can carry inline documentation."""
+    path = config.MOTIF_DATABASES_METADATA
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    return {k: v for k, v in raw.items() if isinstance(v, str) and not k.startswith("_")}
 
 
 def _fixed_params_for(metadata: dict, species: str, motif_db: str) -> dict:
@@ -139,6 +156,92 @@ async def list_indexing():
     return {"entries": entries}
 
 
+@router.get("/genomes")
+async def list_genomes():
+    """Catalog of all documented genomes from genome_n_annotation.json.
+
+    Independent of which species are actually installed under
+    data/precomputed_indexes/ — this is the *catalog* the Data page
+    advertises (species, genome FASTA, annotation GFF3, description).
+    Path-literal route, must be declared before "/{species}" so FastAPI
+    matches it before treating "genomes" as a species name.
+    """
+    genome_meta = _load_genome_metadata()
+    species_list = []
+    for name, meta in genome_meta.items():
+        if not isinstance(meta, dict):
+            continue
+        species_list.append({
+            "name": name,
+            "humanized": _humanize(name),
+            "description": meta.get("description") or None,
+            "genome_name": meta.get("genome_name") or None,
+            "genome_link": meta.get("genome_link") or None,
+            "annotation_name": meta.get("annotation_name") or None,
+            "annotation_link": meta.get("annotation_link") or None,
+        })
+    return {"species": species_list}
+
+
+def _local_meme_for(name: str) -> Optional[Path]:
+    """Return path to data/motifs/<name>.meme if it exists and is safely
+    contained under MOTIFS_DIR; else None. Caller is expected to have
+    already passed `name` through _safe_component when it came from the
+    URL, but we re-anchor with resolve() as defense in depth."""
+    root = config.MOTIFS_DIR
+    candidate = root / f"{name}.meme"
+    if not candidate.is_file():
+        return None
+    try:
+        candidate.resolve().relative_to(root.resolve())
+    except ValueError:
+        return None
+    return candidate
+
+
+@router.get("/motif-databases")
+async def list_motif_databases():
+    """Catalog of motif databases (name -> source URL) from
+    motif_databases.json. Same path-literal-before-capture caveat as
+    list_genomes. Surfaces ``local_file`` so the Data page can offer a
+    direct download when ``data/motifs/<name>.meme`` is present."""
+    catalog = _load_motif_databases()
+    out = []
+    for name, url in catalog.items():
+        local = _local_meme_for(name)
+        out.append({
+            "name": name,
+            "humanized": _humanize(name),
+            "source_link": url,
+            "local_file": (
+                {"filename": local.name, "size_bytes": local.stat().st_size}
+                if local is not None
+                else None
+            ),
+        })
+    return {"databases": out}
+
+
+@router.get("/motif-databases/{name}/file")
+async def download_motif_database(name: str):
+    """Stream the local data/motifs/<name>.meme file as a download.
+
+    No conflict with /{species}/{motif_db} since that route is two
+    segments; this is three. Still, _safe_component blocks traversal in
+    `name`, and _local_meme_for re-anchors the resolved path under
+    MOTIFS_DIR.
+    """
+    name = _safe_component(name)
+    path = _local_meme_for(name)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Motif database file not found")
+    return FileResponse(
+        path=str(path),
+        media_type="text/plain",
+        filename=path.name,
+    )
+
+
 def _species_block(species: str, species_meta: dict, species_dir: Path) -> dict:
     gene_count, gene_sample = _read_universe(species_dir)
     return {
@@ -187,11 +290,7 @@ async def get_motif_db_detail(species: str, motif_db: str):
     if not species_dir.is_dir() or not db_dir.is_dir():
         raise HTTPException(status_code=404, detail="Species or motif_db not found")
 
-    genome_meta = _load_genome_metadata()
-    species_meta_raw = genome_meta.get(species)
-    species_meta: dict = species_meta_raw if isinstance(species_meta_raw, dict) else {}
-    motif_db_links_raw = species_meta.get("motif_db")
-    motif_db_links: dict = motif_db_links_raw if isinstance(motif_db_links_raw, dict) else {}
+    motif_db_links = _load_motif_databases()
 
     motif_count, motif_sample = _read_fimohits(db_dir)
 

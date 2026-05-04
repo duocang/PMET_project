@@ -126,14 +126,20 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
-            <div className="w-40 rounded-lg border border-white/15 bg-white/10 px-5 py-3 text-white backdrop-blur">
-              <div className="text-2xl font-bold leading-none">21</div>
+            <Link
+              href="/data#species"
+              className="w-40 rounded-lg border border-white/15 bg-white/10 px-5 py-3 text-white backdrop-blur transition hover:bg-white/20 hover:border-white/30"
+            >
+              <div className="text-2xl font-bold leading-none">23</div>
               <div className="mt-1.5 text-xs text-teal-50">{t('home.hero.stat_species')}</div>
-            </div>
-            <div className="w-40 rounded-lg border border-white/15 bg-white/10 px-5 py-3 text-white backdrop-blur">
+            </Link>
+            <Link
+              href="/data#motif-databases"
+              className="w-40 rounded-lg border border-white/15 bg-white/10 px-5 py-3 text-white backdrop-blur transition hover:bg-white/20 hover:border-white/30"
+            >
               <div className="text-2xl font-bold leading-none">6</div>
               <div className="mt-1.5 text-xs text-teal-50">{t('home.hero.stat_dbs')}</div>
-            </div>
+            </Link>
           </div>
         </div>
       </section>

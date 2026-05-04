@@ -178,6 +178,23 @@ export interface IndexingMotifDbDetail {
   motif_sample: string[];
 }
 
+export interface GenomeCatalogEntry {
+  name: string;
+  humanized: string;
+  description: string | null;
+  genome_name: string | null;
+  genome_link: string | null;
+  annotation_name: string | null;
+  annotation_link: string | null;
+}
+
+export interface MotifDbCatalogEntry {
+  name: string;
+  humanized: string;
+  source_link: string | null;
+  local_file: { filename: string; size_bytes: number } | null;
+}
+
 export const indexingApi = {
   list: async (): Promise<{ entries: IndexingEntry[] }> => {
     const response = await api.get('/api/indexing');
@@ -193,6 +210,16 @@ export const indexingApi = {
     const response = await api.get(
       `/api/indexing/${encodeURIComponent(species)}/${encodeURIComponent(motifDb)}`,
     );
+    return response.data;
+  },
+
+  genomes: async (): Promise<{ species: GenomeCatalogEntry[] }> => {
+    const response = await api.get('/api/indexing/genomes');
+    return response.data;
+  },
+
+  motifDatabases: async (): Promise<{ databases: MotifDbCatalogEntry[] }> => {
+    const response = await api.get('/api/indexing/motif-databases');
     return response.data;
   },
 };
