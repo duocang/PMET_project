@@ -28,8 +28,10 @@
 | [15](#issue-15) | ~~`use-example` symlink + writable `/app/data` 可被同名上传写穿覆盖原始数据~~ | 🔴 critical | ✅ **已修** — 不再创建 symlink/copy；compose `data` mount 改 `:ro` |
 | [16](#issue-16) | ~~`POST /api/tasks` 未绑定 session_token，可伪造 task_id / 跨 session 路径~~ | 🔴 critical | ✅ **已修** — create-task 校验 token + path ownership + duplicate 409 + token 不落盘 |
 | [17](#issue-17) | ~~`/upload` 无 token 鉴权 + 无 size cap + gzip 解压无上限~~ | 🔴 critical | ✅ **已修** — 三层闸：raw 200 MB / decompressed 500 MB / X-PMET-Session-Token 必须 |
+| [18](#issue-18) | ~~rate limit 在 app 进程内 + 用 `request.client.host` 取 IP~~ | 🟡 公网 DoS | ✅ **已修** — 搬到 nginx `limit_req_zone`，用 `$binary_remote_addr` 真实 IP；多 worker 自然一致 |
+| [19](#issue-19) | session token store (`_SESSIONS`) 是 module-level dict，多 worker 不共享 | 🟡 多 worker 部署阻塞 | ⏳ **未修** — 当前 `--reload` 单进程 OK；上 `--workers N` 前需搬 redis 或换 stateless 签名 |
 
-12 修 + 1 决策不修 + 1 hardening backlog（#13）。下方各问题段落附"复现 / 修法 / 验证"详情。
+13 修 + 1 决策不修 + 2 hardening backlog（#13 + #19）。下方各问题段落附"复现 / 修法 / 验证"详情。
 
 ---
 
@@ -239,6 +241,16 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 [results.py:80-134](apps/pmet_backend/api/routes/results.py#L80-L134) 修 #7 时改成"先 filter+collect 后 sort+slice"。一个 39047 row 的 task 大概 ~10 MB Python 对象——OK；100 万 row → ~250 MB。`p_adj_max=1` + `sort=true` 默认的请求会把整个文件 + 所有行加载到内存。
 **修法**：换成 `heapq.nsmallest(limit, generator, key=lambda r: r.p_adj_bh)`——内存恒定 `O(limit)`，I/O 仍是单次扫描。同时保留 `sort=false` 走原 streaming-pagination 路径供大数据全量分页用。
 
+<a id="issue-19"></a>
+
+#### 问题 19：session token store 在 module-level dict，多 worker 不共享 🟡 多 worker 部署阻塞
+
+[upload_sessions.py:_SESSIONS](apps/pmet_backend/api/upload_sessions.py) 是 module-level dict + Lock。当前 docker-compose 跑 `uvicorn --reload` 单进程，没问题。一旦改 `--workers N`（#11b 决策提了"上公网时手动改"），每个 worker 一份独立 dict——issue-session 命中 worker A 拿到 token，下次 use-example 路由到 worker B 立刻 401。
+**修法（多 worker 上线前必修）**：
+- 选项 A — **redis 共享**：stack 已经有 redis（celery broker），加 `redis-py` client，token + ttl 用 `SET ... EX ttl NX`；`consume_upload_session` 用 `GETDEL`（atomic validate-then-pop）。fakeredis 替单测的 in-mem 行为。~130 LOC。
+- 选项 B — **stateless HMAC token**：`token = HMAC(SERVER_SECRET, session_id || expires_at)`，无 server-side state。`SERVER_SECRET` 从 deploy/configure 读。~40 LOC，但 `consume`（防重放）需要黑名单——又退回到 redis。
+- A 更全面，B 更轻——方向看同期是否打算其他模块也用 redis（admin session、estimate cache 等）。
+
 <a id="issue-14"></a>
 
 #### ~~问题 14：DELETE /upload 仍依赖 `<session_id>` secrecy~~ ✓ 已修
@@ -288,6 +300,30 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 - 旧 fixtures 全部更新通过 token gate；23/23 单测全 pass
 
 **MCP browser**：peaks.txt（339 B）走 client fetch+upload 路径，`X-PMET-Session-Token` header 正确发出，POST 200。
+
+<a id="issue-18"></a>
+
+#### ~~问题 18：rate limit 在 app 进程内 + 用 `request.client.host` 取 IP~~ ✓ 已修
+
+**两条问题叠加**（2026-05-05 review）：
+1. `_RATE_BUCKETS` 是 module-level dict——单进程 OK，但 `--workers N` 后每个 worker 一份，rate limit 实际放大 N 倍。
+2. `request.client.host` 在 nginx 反代后是 nginx 容器内网 IP——所有用户共享一个 rate-limit 桶。**这是 in-prod active bug**：一个用户做 10 次 issue-session 把所有人锁 1 分钟。
+
+**修法**：搬到 nginx 解决两个问题——
+- [deploy/nginx/nginx.conf](deploy/nginx/nginx.conf) 加 `limit_req_zone $binary_remote_addr zone=issue_session:10m rate=10r/m;` 用真实 client TCP 源 IP（不靠 XFF），10 MiB zone 跟 ~160k IP，速率跟旧 in-app 一致。
+- 新 `location = /api/files/issue-session` 块带 `limit_req zone=issue_session burst=2 nodelay;`——burst 2 吸收"页面 mount 双触"等合法 burst，nodelay 即时拒绝而不是 queue。
+- 用 `limit_req_status 429`（默认 503 是 server fault，429 表"你太快"，跟旧 in-app 一致）。
+- 后端 [files.py](apps/pmet_backend/api/routes/files.py) 删 `check_issue_rate_limit` / `_RATE_BUCKETS` / `_RATE_LOCK` / `_ISSUE_RATE_LIMIT` / `_ISSUE_RATE_WINDOW_SECONDS`，`issue_session()` 不再读 `request.client.host`。
+- 测试 `setUp` 删 `_RATE_BUCKETS.clear()`（TestClient 不过 nginx，不会撞 limit）。
+
+**curl 验证**（2026-05-05）：
+- 13 次 issue-session burst：第 1-3 次 200（rate=10r/m + burst=2 = 即时 3 个），4-13 次 **429** ✓
+- 60 秒后 counter 自动恢复 ✓
+- 同一时间窗内 `/use-example` × 5 全部 200（不同 location，不受影响）✓
+
+**MCP browser**：`/submit` 页 mount 时 issue-session 1 次 200，**不会撞 limit**——burst 2 给真实用户的双触、StrictMode 等留足缓冲。
+
+**多 worker 一致性**：rate limit 现在跟 worker 数无关——nginx 是单点决策。如果未来上 multi-worker，token store（`_SESSIONS`）仍是 in-process，那条留作 #19 backlog（搬 redis 或 stateless 签名 token）。
 
 ---
 

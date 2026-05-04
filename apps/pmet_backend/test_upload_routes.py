@@ -20,11 +20,11 @@ class UploadRouteTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.created_dirs: set[str] = set()
-        # Reset module-level session/rate-limit state between tests so
-        # the suite of 18+ tests doesn't tip the per-IP issue-session
-        # rate limit (10/min) and start getting 429s on _issue_session.
+        # Reset session state between tests for isolation. Rate
+        # limiting now lives in nginx, not in the app, so there's no
+        # in-process bucket to clear; TestClient bypasses nginx so the
+        # tests don't trip the 10/min cap regardless.
         _sessions._SESSIONS.clear()
-        _sessions._RATE_BUCKETS.clear()
 
     def tearDown(self):
         self.client.close()

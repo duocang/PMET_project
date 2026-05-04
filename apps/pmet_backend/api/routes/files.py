@@ -5,12 +5,11 @@ import re
 import time
 from pathlib import Path
 from typing import Optional
-from fastapi import APIRouter, UploadFile, File, Form, Header, HTTPException, Request
+from fastapi import APIRouter, UploadFile, File, Form, Header, HTTPException
 
 from ...config import config
 from ..upload_sessions import (
     UPLOAD_SESSION_RE,
-    check_issue_rate_limit,
     issue_upload_session,
     validate_upload_session,
 )
@@ -220,24 +219,22 @@ def _save_uploaded_file(file: UploadFile, task_id: Optional[str], file_type: str
 
 
 @router.post("/issue-session")
-async def issue_session(request: Request):
+async def issue_session():
     """Hand the caller a fresh ``(session_id, session_token)`` pair.
 
     The frontend calls this once on /submit page mount and uses the pair
     for every subsequent use-example / delete-upload during the same
     form session. Server keeps the token in a rolling in-memory map for
-    ``_SESSION_TTL_SECONDS``; calls without a valid token are rejected
+    ``SESSION_TTL_SECONDS``; calls without a valid token are rejected
     on use-example and DELETE.
 
-    IP-rate-limited so a hostile client can't farm upload/delete tokens
-    cheaply.
+    Per-IP rate limiting moved to nginx (``limit_req_zone`` against
+    ``$binary_remote_addr`` in deploy/nginx/nginx.conf). nginx sees the
+    real client IP at the connection level, which is more reliable than
+    making the FastAPI process trust X-Forwarded-For; it also keeps the
+    cap correct under multi-worker deployments where a per-process dict
+    would inflate the effective rate by N.
     """
-    ip = request.client.host if request.client else "unknown"
-    if not check_issue_rate_limit(ip):
-        raise HTTPException(
-            status_code=429,
-            detail=f"Too many session requests from {ip}; try again in a minute",
-        )
     try:
         return issue_upload_session()
     except RuntimeError:

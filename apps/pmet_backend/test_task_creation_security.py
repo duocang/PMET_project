@@ -15,10 +15,9 @@ class TaskCreationSecurityTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.task_ids: set[str] = set()
-        # Reset session/rate-limit state so cross-suite ordering doesn't
-        # tip the per-IP issue-session rate limit.
+        # Reset session state for cross-suite isolation. Rate limiting
+        # is in nginx now; nothing in the app to clear.
         _sessions._SESSIONS.clear()
-        _sessions._RATE_BUCKETS.clear()
 
     def tearDown(self):
         self.client.close()

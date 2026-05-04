@@ -17,11 +17,6 @@ SESSION_TTL_SECONDS = 60 * 60
 _SESSIONS: dict[str, dict] = {}
 _SESSIONS_LOCK = Lock()
 
-_ISSUE_RATE_LIMIT = 10
-_ISSUE_RATE_WINDOW_SECONDS = 60
-_RATE_BUCKETS: dict[str, list[float]] = {}
-_RATE_LOCK = Lock()
-
 
 def purge_expired_sessions() -> None:
     now = time.time()
@@ -59,18 +54,6 @@ def consume_upload_session(session_id: Optional[str], token: Optional[str]) -> b
         if not hmac.compare_digest(record["token"], token):
             return False
         _SESSIONS.pop(session_id, None)
-        return True
-
-
-def check_issue_rate_limit(ip: str) -> bool:
-    now = time.time()
-    cutoff = now - _ISSUE_RATE_WINDOW_SECONDS
-    with _RATE_LOCK:
-        bucket = _RATE_BUCKETS.setdefault(ip, [])
-        bucket[:] = [t for t in bucket if t >= cutoff]
-        if len(bucket) >= _ISSUE_RATE_LIMIT:
-            return False
-        bucket.append(now)
         return True
 
 
