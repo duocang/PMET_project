@@ -135,6 +135,7 @@ const en = {
   'contributors.role.pi': 'Principal Investigator',
   'contributors.role.researcher': 'Research',
   'contributors.role.developer': 'Development',
+  'contributors.role.maintainer': 'Maintainer',
 
   // ParameterPanel
   'params.heading': 'Parameters',
@@ -631,6 +632,7 @@ const zh: Record<keyof typeof en, string> = {
   'contributors.role.pi': '负责人',
   'contributors.role.researcher': '研究人员',
   'contributors.role.developer': '开发者',
+  'contributors.role.maintainer': '维护者',
 
   // ParameterPanel
   'params.heading': '参数',

@@ -16,8 +16,9 @@ import type { TranslationKey } from '@/lib/translations';
 interface Contributor {
   nameEn: string;
   nameZh?: string;
-  /** Translation key for the role line; localised through t(). */
-  roleKey: TranslationKey;
+  /** Translation keys for this person's role(s). Multiple roles render
+   *  joined by " · " on the card. */
+  roleKeys: TranslationKey[];
   affiliation?: string;
   email?: string;
   homepage?: string;
@@ -27,31 +28,35 @@ const CONTRIBUTORS: Contributor[] = [
   {
     nameEn: 'Dr. Wang, Xuesong',
     nameZh: '王雪松',
-    roleKey: 'contributors.role.developer',
+    roleKeys: [
+      'contributors.role.developer',
+      'contributors.role.researcher',
+      'contributors.role.maintainer',
+    ],
     email: 'wang23@uni-muesnter.de',
     homepage: 'https://www.uni-giessen.de/de/fbz/fb09/institute/phyto/mitarbeiter/phd/wang',
   },
   {
     nameEn: 'Dr. Brown, Paul',
-    roleKey: 'contributors.role.researcher',
+    roleKeys: ['contributors.role.developer', 'contributors.role.researcher'],
     email: 'p.e.brown@warwick.ac.uk',
     homepage: 'https://warwick.ac.uk/fac/cross_fac/zeeman_institute/staffv2/paulbrown/',
   },
   {
     nameEn: 'Prof. Dr. Ott, Sascha',
-    roleKey: 'contributors.role.pi',
+    roleKeys: ['contributors.role.pi'],
     email: 's.ott@warwick.ac.uk',
     homepage: 'https://warwick.ac.uk/fac/cross_fac/zeeman_institute/staffv2/sascha_ott/',
   },
   {
     nameEn: 'Prof. Dr. Schäfer, Patrick',
-    roleKey: 'contributors.role.pi',
+    roleKeys: ['contributors.role.pi'],
     email: 'Patrick.Schaefer@agrar.uni-giessen.de',
     homepage: 'https://www.uni-giessen.de/de/fbz/fb09/institute/phyto/mitarbeiter/leitung/schaefer-p',
   },
   {
     nameEn: 'Dr. Woolley-Allen, Kate',
-    roleKey: 'contributors.role.researcher',
+    roleKeys: ['contributors.role.researcher'],
     email: 'k.woolley-allen@warwick.ac.uk',
     homepage: 'https://warwick.ac.uk/fac/sci/sbdtc/people/students/2012/kate_allen/',
   },
@@ -89,7 +94,9 @@ export default function ContributorsPage() {
           return (
             <div key={c.nameEn} className="card">
               <h3 className="font-semibold text-slate-900">{displayName}</h3>
-              <p className="text-sm text-primary-700">{t(c.roleKey)}</p>
+              <p className="text-sm text-primary-700">
+                {c.roleKeys.map((k) => t(k)).join(' · ')}
+              </p>
               {c.affiliation && (
                 <p className="mt-1 text-sm text-slate-600">{c.affiliation}</p>
               )}
