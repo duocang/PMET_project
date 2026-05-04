@@ -140,6 +140,13 @@ export const useSettingsStore = create<SettingsStore>()(
         })),
       resetSubmitForm: () =>
         set({
+          // Top-level email lives outside the per-mode maps but is still
+          // part of the submit form — clearing it here keeps the
+          // "fresh form after submit" promise honest. Earlier revisions
+          // skipped it and survived only because the test happened to
+          // do a full page navigation, which threw all in-memory state
+          // away independently.
+          email: '',
           filesByMode: {
             promoters_pre: { ...emptyFiles },
             promoters: { ...emptyFiles },

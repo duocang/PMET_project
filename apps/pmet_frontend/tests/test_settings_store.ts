@@ -113,15 +113,16 @@ test('updateParamsForMode applies multi-key patches in one call', () => {
   assert.strictEqual(m.ic_threshold, 24);
 });
 
-test('resetSubmitForm wipes files / paths / species / params back to defaults', () => {
+test('resetSubmitForm wipes files / paths / species / params / email back to defaults', () => {
   reset();
   const { updateFilesForMode, updatePathsForMode, setSpeciesForMode,
-          updateParamsForMode, resetSubmitForm } = useSettingsStore.getState();
-  // Dirty all three modes.
+          updateParamsForMode, setEmail, resetSubmitForm } = useSettingsStore.getState();
+  // Dirty all three modes plus top-level email.
   updateFilesForMode('promoters', { fasta: new File(['x'], 'a.fa') });
   updatePathsForMode('intervals', { meme: '/tmp/m.meme' });
   setSpeciesForMode('promoters_pre', 'Zea_mays');
   updateParamsForMode('promoters', { ic_threshold: 32 });
+  setEmail('previous@user.com');
 
   resetSubmitForm();
 
@@ -130,6 +131,7 @@ test('resetSubmitForm wipes files / paths / species / params back to defaults', 
   assert.strictEqual(s.pathsByMode.intervals.meme, '');
   assert.strictEqual(s.speciesByMode.promoters_pre, '');
   assert.strictEqual(s.paramsByMode.promoters.ic_threshold, 24);
+  assert.strictEqual(s.email, '');
 });
 
 test('mode + email use plain setters (sanity)', () => {

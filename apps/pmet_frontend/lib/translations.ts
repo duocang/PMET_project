@@ -227,6 +227,7 @@ const en = {
   'submit.toast.no_cluster_active': 'No clusters selected — at least one cluster must stay active for the submission to have any genes.',
   'submit.toast.success': 'Task submitted successfully! You will receive an email when results are ready.',
   'submit.toast.failed': 'Failed to submit task',
+  'submit.toast.session_pending': 'Upload session is still being established — please retry in a moment.',
 
   // FileUpload
   'fileupload.use_example': 'Use example',
@@ -723,6 +724,7 @@ const zh: Record<keyof typeof en, string> = {
   'submit.toast.no_cluster_active': '没有激活的聚类——至少要保留一个聚类，提交才有基因可分析。',
   'submit.toast.success': '任务提交成功！结果就绪后会发邮件通知。',
   'submit.toast.failed': '任务提交失败',
+  'submit.toast.session_pending': '上传会话还在建立中——请稍后重试。',
 
   // FileUpload
   'fileupload.use_example': '使用示例',

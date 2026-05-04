@@ -89,19 +89,26 @@ function SubmitPageContent() {
   const [estimate, setEstimate] = useState<EstimateResponse | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
 
-  // Single per-page-mount upload session id. Every file upload from this
-  // page reuses this id so all four files for one submission land in the
-  // same temp dir under results/app/uploads/<id>/, instead of each upload
-  // racing for its own timestamped temp_<...> dir.
-  // 12 hex chars (~48 bits) is plenty for collision-free task IDs at this
-  // scale and keeps URLs short. Total length: pmet_ (5) + 12 = 17.
-  const [uploadSessionId] = useState(() => {
-    const rand =
-      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-        : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-    return `pmet_${rand}`;
-  });
+  // Server-issued session_id + session_token pair. Replaces the
+  // earlier client-side `pmet_<random>` generator. Required for
+  // /use-example (otherwise the server is a 116 MB-per-request disk
+  // amplifier) and DELETE /upload (otherwise anyone who guesses or
+  // observes a session_id can wipe its uploads). The token stays in
+  // memory only — never localStorage — so closing the tab invalidates
+  // it on the next visit.
+  const [uploadSession, setUploadSession] = useState<{ id: string; token: string } | null>(null);
+  const uploadSessionId = uploadSession?.id ?? '';
+  const uploadSessionToken = uploadSession?.token ?? '';
+
+  useEffect(() => {
+    let alive = true;
+    fileApi.issueSession()
+      .then((res) => {
+        if (alive) setUploadSession({ id: res.session_id, token: res.session_token });
+      })
+      .catch((err) => console.error('Failed to issue upload session', err));
+    return () => { alive = false; };
+  }, []);
 
   // Detail panel state — only used in promoters_pre. Species and motif-DB
   // details are fetched independently so the species block can render as
@@ -236,13 +243,30 @@ function SubmitPageContent() {
     }
   };
 
+  const handleUseExample = async (fileType: FileFieldType) => {
+    // Server-side fast path: backend copies the demo file straight into
+    // the user's upload dir, avoiding the 100+ MB browser ferry the
+    // legacy fetch-then-reupload flow used to do for FASTA / GFF3.
+    // We construct a stub File for the UI (correct .name + .size) and
+    // mark uploadedPaths so handleSubmit later sees the file is already
+    // on the server and skips the re-upload branch.
+    if (!uploadSession) {
+      throw new Error('Upload session not ready yet — please retry in a moment.');
+    }
+    const result = await fileApi.useExample(uploadSessionId, mode, fileType, uploadSessionToken);
+    const stub = new File([], result.filename);
+    Object.defineProperty(stub, 'size', { value: result.size, configurable: true });
+    updatePaths({ [fileType]: result.path });
+    updateFiles({ [fileType]: stub });
+  };
+
   const handleFileClear = async (fileType: FileFieldType) => {
     const path = uploadedPaths[fileType];
     if (path) {
       // Best-effort: even if server delete fails, clear the local state so
       // the user can re-pick. The toast inside FileUpload surfaces any
       // server-side failure.
-      try { await fileApi.deleteUpload(path); }
+      try { await fileApi.deleteUpload(path, uploadSessionToken || undefined); }
       finally {
         updatePaths({ [fileType]: '' });
         updateFiles({ [fileType]: null });
@@ -332,6 +356,14 @@ function SubmitPageContent() {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
+    // The form can technically be submitted before /issue-session
+    // resolves (rare on a fast LAN, plausible on a slow link). Block
+    // submission rather than silently fall back to a temp dir, which
+    // would orphan the uploads from any session-bound delete/cleanup.
+    if (!uploadSession) {
+      toast.error(t('submit.toast.session_pending'));
+      return;
+    }
 
     setSubmitting(true);
     setLoading(true);
@@ -422,6 +454,13 @@ function SubmitPageContent() {
 
       const task = await taskApi.create(taskData);
       addTask(task);
+
+      // Wipe form state for the next submission. Without this the
+      // zustand store keeps the just-submitted files / species /
+      // params in memory, so navigating back to /submit shows a
+      // pre-populated form that no longer matches what the user
+      // expects to be a fresh start.
+      useSettingsStore.getState().resetSubmitForm();
 
       toast.success(t('submit.toast.success'));
       router.push(`/tasks/${task.task_id}`);
@@ -717,8 +756,7 @@ function SubmitPageContent() {
               currentFile={files.fasta?.name}
               currentFileSize={files.fasta?.size}
               required
-              demoUrl={`/api/demo/${mode}/fasta`}
-              demoFilename={mode === 'intervals' ? 'intervals.fa' : 'TAIR10.fasta'}
+              onUseExample={() => handleUseExample('fasta')}
               previewTitle={t('submit.preview.fasta_title')}
               previewNote={t('submit.preview.fasta_note')}
               previewContent={EXAMPLE_FASTA}
@@ -735,8 +773,7 @@ function SubmitPageContent() {
               currentFile={files.gff3?.name}
               currentFileSize={files.gff3?.size}
               required
-              demoUrl="/api/demo/promoters/gff3"
-              demoFilename="TAIR10.gff3"
+              onUseExample={() => handleUseExample('gff3')}
               previewTitle={t('submit.preview.gff3_title')}
               previewNote={t('submit.preview.gff3_note')}
               previewContent={EXAMPLE_GFF3}
@@ -760,8 +797,7 @@ function SubmitPageContent() {
                     })),
                 }
               : {
-                  demoUrl: `/api/demo/${mode}/meme`,
-                  demoFilename: 'motif.meme',
+                  onUseExample: () => handleUseExample('meme'),
                 };
             return (
               <FileUpload

@@ -57,6 +57,13 @@ interface FileUploadProps {
    *  to load that file into the upload slot. Useful when a slot has
    *  several equally-valid example sources (e.g. multiple motif DBs). */
   examples?: ExampleItem[];
+  /** Server-side fast-path for "Use example". When set, clicking the
+   *  Use Example button calls this callback instead of fetching the
+   *  demo file via demoUrl and re-uploading it. Used for the big FASTA
+   *  / GFF3 demos so the browser doesn't ferry 100+ MB twice. The
+   *  parent is expected to update its files / paths state inside the
+   *  callback; FileUpload only shows a loading state until it resolves. */
+  onUseExample?: () => Promise<void>;
   /** Optional inline format preview. Renders a "查看示例" trigger next to
    *  "使用示例"; clicking opens a side drawer showing `previewContent`.
    *  All three props must be set together; if any is missing, no preview
@@ -124,6 +131,7 @@ export default function FileUpload({
   demoUrl,
   demoFilename,
   examples,
+  onUseExample,
   previewTitle,
   previewContent,
   previewNote,
@@ -253,11 +261,29 @@ export default function FileUpload({
     [fetchAndUpload, t]
   );
 
-  const useExample = useCallback(() => {
+  const useExample = useCallback(async () => {
+    // Server-side fast path: parent has wired up an endpoint that
+    // copies the demo file in place, so we just await its callback
+    // and let it update the surrounding state. Only the loading
+    // spinner needs to fire.
+    if (onUseExample) {
+      const sentinelKey = '__use_example__';
+      setLoadingUrl(sentinelKey);
+      try {
+        await onUseExample();
+        toast.success(t('fileupload.toast.example_loaded'));
+      } catch (e) {
+        toast.error(t('fileupload.toast.example_failed'));
+        console.error(e);
+      } finally {
+        setLoadingUrl(null);
+      }
+      return;
+    }
     if (!demoUrl) return;
     const filename = demoFilename || demoUrl.split('/').pop() || 'example';
     return loadExample(demoUrl, filename, false);
-  }, [demoUrl, demoFilename, loadExample]);
+  }, [demoUrl, demoFilename, loadExample, onUseExample, t]);
 
   const handleRemove = useCallback(
     async (e: React.MouseEvent) => {
@@ -299,7 +325,7 @@ export default function FileUpload({
               Multi-example flow: clicking toggles the in-box chip picker
               (default hidden so the box height stays aligned with the
               siblings). */}
-          {(demoUrl || (examples && examples.length > 0)) && !currentFile && !uploading && (
+          {(demoUrl || onUseExample || (examples && examples.length > 0)) && !currentFile && !uploading && (
             <button
               type="button"
               onClick={

@@ -224,7 +224,23 @@ export const indexingApi = {
   },
 };
 
+export interface IssueSessionResponse {
+  session_id: string;
+  session_token: string;
+  expires_in: number;
+}
+
 export const fileApi = {
+  // Hand the caller a fresh session_id + session_token pair. Required
+  // by /use-example and DELETE /upload now that PMET is on a public
+  // domain (without it, anyone could make the server `cp` 116 MB demo
+  // FASTA per request, or delete another session's uploads by guessing
+  // the path). Frontend calls this once on submit-page mount.
+  issueSession: async (): Promise<IssueSessionResponse> => {
+    const response = await api.post('/api/files/issue-session');
+    return response.data;
+  },
+
   upload: async (
     file: File,
     fileType: string,
@@ -245,6 +261,27 @@ export const fileApi = {
     return response.data;
   },
 
+  // Server-side copy of a demo file into the user's upload dir.
+  // Replaces the wasteful "fetch 116 MB demo, repackage as Blob, repost
+  // 116 MB" round-trip the legacy `Use Example` flow had to do for the
+  // big FASTA / GFF3 inputs.
+  useExample: async (
+    taskId: string,
+    mode: string,
+    slot: string,
+    sessionToken: string,
+  ): Promise<UploadResponse & { deduplicated?: boolean }> => {
+    const formData = new FormData();
+    formData.append('task_id', taskId);
+    formData.append('mode', mode);
+    formData.append('slot', slot);
+    formData.append('session_token', sessionToken);
+    const response = await api.post('/api/files/use-example', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   uploadMultiple: async (files: File[], taskId?: string): Promise<{ files: UploadResponse[] }> => {
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
@@ -256,8 +293,12 @@ export const fileApi = {
     return response.data;
   },
 
-  deleteUpload: async (path: string): Promise<void> => {
-    await api.delete('/api/files/upload', { params: { path } });
+  deleteUpload: async (path: string, sessionToken?: string): Promise<void> => {
+    // session_token is optional in the type for legacy/test callers,
+    // but the backend now 401s without it on a session-bound path.
+    await api.delete('/api/files/upload', {
+      params: sessionToken ? { path, session_token: sessionToken } : { path },
+    });
   },
 
   // Size-capped text preview of a user-uploaded file (genes / fasta /
