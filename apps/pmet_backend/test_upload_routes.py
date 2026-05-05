@@ -4,14 +4,11 @@ import gzip
 import os
 import shutil
 import unittest
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from pmet_backend.api.main import app
-from pmet_backend.api.routes.files import (
-    _DECOMPRESSED_MAX_BYTES,
-    _UPLOAD_MAX_BYTES,
-)
 from pmet_backend.api import upload_sessions as _sessions
 from pmet_backend.config import config
 
@@ -41,20 +38,20 @@ class UploadRouteTests(unittest.TestCase):
         filename: str,
         content: bytes,
         file_type: str,
-        task_id: str | None = None,
+        session_id: str | None = None,
         session_token: str | None = None,
     ):
-        """Upload helper. If task_id is None, a fresh session is issued and
+        """Upload helper. If session_id is None, a fresh session is issued and
         used; tests that want to drive the negative-auth paths can set
-        task_id explicitly and override session_token (or pass an empty
+        session_id explicitly and override session_token (or pass an empty
         string to omit the header)."""
-        if task_id is None:
+        if session_id is None:
             session = self._issue_session()
-            task_id = session["session_id"]
+            session_id = session["session_id"]
             if session_token is None:
                 session_token = session["session_token"]
-        data = {"file_type": file_type, "task_id": task_id}
-        headers = {}
+        data = {"file_type": file_type}
+        headers = {"X-PMET-Session-Id": session_id}
         if session_token:
             headers["X-PMET-Session-Token"] = session_token
         response = self.client.post(
@@ -118,9 +115,9 @@ class UploadRouteTests(unittest.TestCase):
         session = self._issue_session()
         sid = session["session_id"]
         token = session["session_token"]
-        r1 = self._upload("genes.txt", b"AT1G01010\n", "genes", task_id=sid, session_token=token)
-        r2 = self._upload("genome.fa", b">c1\nACGT\n", "fasta", task_id=sid, session_token=token)
-        r3 = self._upload("motifs.meme", b"MEME version 4\n", "meme", task_id=sid, session_token=token)
+        r1 = self._upload("genes.txt", b"AT1G01010\n", "genes", session_id=sid, session_token=token)
+        r2 = self._upload("genome.fa", b">c1\nACGT\n", "fasta", session_id=sid, session_token=token)
+        r3 = self._upload("motifs.meme", b"MEME version 4\n", "meme", session_id=sid, session_token=token)
 
         for r in (r1, r2, r3):
             self.assertEqual(r.status_code, 200)
@@ -150,7 +147,7 @@ class UploadRouteTests(unittest.TestCase):
         except (OSError, NotImplementedError) as exc:
             self.skipTest(f"symlink unsupported: {exc}")
 
-        response = self._upload("genes.txt", b"new upload\n", "genes", task_id=sid, session_token=session["session_token"])
+        response = self._upload("genes.txt", b"new upload\n", "genes", session_id=sid, session_token=session["session_token"])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(target.read_text(), "original\n")
         self.assertFalse(stale_link.is_symlink())
@@ -162,67 +159,123 @@ class UploadRouteTests(unittest.TestCase):
         session = self._issue_session()
         sid = session["session_id"]
 
-        # No header at all → 401.
+        # Session id but no token → 401.
         no_header = self._upload(
-            "genes.txt", b"x\n", "genes", task_id=sid, session_token=""
+            "genes.txt", b"x\n", "genes", session_id=sid, session_token=""
         )
         self.assertEqual(no_header.status_code, 401)
 
         # Wrong token → 401.
         wrong = self._upload(
-            "genes.txt", b"x\n", "genes", task_id=sid, session_token="not-the-token"
+            "genes.txt", b"x\n", "genes", session_id=sid, session_token="not-the-token"
         )
         self.assertEqual(wrong.status_code, 401)
 
         # Cross-session token (issued for sid_b) → 401 against sid_a.
         sid_b = self._issue_session()
         cross = self._upload(
-            "genes.txt", b"x\n", "genes", task_id=sid, session_token=sid_b["session_token"]
+            "genes.txt", b"x\n", "genes", session_id=sid, session_token=sid_b["session_token"]
         )
         self.assertEqual(cross.status_code, 401)
 
         # Correct token → 200.
         ok = self._upload(
-            "genes.txt", b"x\n", "genes", task_id=sid, session_token=session["session_token"]
+            "genes.txt", b"x\n", "genes", session_id=sid, session_token=session["session_token"]
         )
         self.assertEqual(ok.status_code, 200)
 
+    def test_upload_requires_session_id_header(self):
+        session = self._issue_session()
+        with patch(
+            "pmet_backend.api.routes.files._parse_upload_form",
+            side_effect=AssertionError("body was parsed before session-id validation"),
+        ):
+            response = self.client.post(
+                "/api/files/upload",
+                files={"file": ("genes.txt", b"x\n", "application/octet-stream")},
+                data={"file_type": "genes"},
+                headers={"X-PMET-Session-Token": session["session_token"]},
+            )
+        self.assertEqual(response.status_code, 400)
+
+    def test_upload_rejects_missing_token_before_form_parse(self):
+        session = self._issue_session()
+        with patch(
+            "pmet_backend.api.routes.files._parse_upload_form",
+            side_effect=AssertionError("body was parsed before token validation"),
+        ):
+            response = self.client.post(
+                "/api/files/upload",
+                files={"file": ("genes.txt", b"x\n", "application/octet-stream")},
+                data={"file_type": "genes"},
+                headers={"X-PMET-Session-Id": session["session_id"]},
+            )
+        self.assertEqual(response.status_code, 401)
+
     def test_session_id_rejects_unsafe_value(self):
-        # An unsafe task_id like "../etc/passwd" is rejected because no
-        # such session was ever issued, so validate_upload_session
-        # short-circuits to false → 401. (Earlier revisions had a 400
-        # "Invalid upload session id" path; the token gate now subsumes
-        # it because nothing matching "../etc/passwd" can be in the
-        # in-memory _SESSIONS dict.)
         response = self._upload(
             "genes.txt", b"x\n", "genes",
-            task_id="../etc/passwd",
+            session_id="../etc/passwd",
             session_token="anything",
         )
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 400)
 
     # ---------- size + bomb caps (#17) ----------
 
     def test_upload_rejects_oversize_raw(self):
-        # _UPLOAD_MAX_BYTES is 200 MB; sending 1 MB over the cap is enough
-        # to trigger the abort. Use mostly-zero bytes; gzip wouldn't help
-        # because the slot is plain .fasta (no decompression path).
-        oversize = b"\0" * (_UPLOAD_MAX_BYTES + 1024 * 1024)
-        response = self._upload("huge.fa", oversize, "fasta")
+        with patch("pmet_backend.api.routes.files._UPLOAD_MAX_BYTES", 1024):
+            response = self._upload("huge.fa", b"\0" * 2048, "fasta")
+        self.assertEqual(response.status_code, 413)
+        self.assertIn("size cap", response.json()["detail"].lower())
+
+    def test_upload_rejects_oversize_gzip_raw(self):
+        payload = bytes(i % 251 for i in range(2048))
+        gzipped = gzip.compress(payload, compresslevel=0)
+        self.assertGreater(len(gzipped), 1024)
+
+        with patch("pmet_backend.api.routes.files._UPLOAD_MAX_BYTES", 1024):
+            response = self._upload("huge.fasta.gz", gzipped, "fasta")
+
         self.assertEqual(response.status_code, 413)
         self.assertIn("size cap", response.json()["detail"].lower())
 
     def test_upload_rejects_gzip_bomb(self):
-        # 1 KB gzip → ~ _DECOMPRESSED_MAX_BYTES + 1 MB plaintext. The cap
-        # must abort mid-decompression and unlink the partial dest;
-        # otherwise a tiny request would scribble half a GB of zeros.
-        plaintext_size = _DECOMPRESSED_MAX_BYTES + 1024 * 1024
-        bomb = gzip.compress(b"\0" * plaintext_size, compresslevel=9)
-        # Sanity: gzip body is small but expands past the cap.
-        self.assertLess(len(bomb), 5 * 1024 * 1024)
-        response = self._upload("bomb.fasta.gz", bomb, "fasta")
+        bomb = gzip.compress(b"\0" * 2048, compresslevel=9)
+        with patch("pmet_backend.api.routes.files._DECOMPRESSED_MAX_BYTES", 1024):
+            response = self._upload("bomb.fasta.gz", bomb, "fasta")
         self.assertEqual(response.status_code, 413)
         self.assertIn("decompressed-size", response.json()["detail"].lower())
+
+    def test_upload_rejects_session_file_quota(self):
+        session = self._issue_session()
+        with patch("pmet_backend.api.upload_sessions.SESSION_UPLOAD_MAX_FILES", 1):
+            first = self._upload(
+                "genes.txt", b"x\n", "genes",
+                session_id=session["session_id"],
+                session_token=session["session_token"],
+            )
+            second = self._upload(
+                "genes2.txt", b"y\n", "genes",
+                session_id=session["session_id"],
+                session_token=session["session_token"],
+            )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 413)
+        self.assertIn("quota", second.json()["detail"].lower())
+
+    def test_upload_rejects_session_byte_quota_and_unlinks_file(self):
+        session = self._issue_session()
+        with patch("pmet_backend.api.upload_sessions.SESSION_UPLOAD_MAX_BYTES", 4):
+            response = self._upload(
+                "genes.txt", b"12345", "genes",
+                session_id=session["session_id"],
+                session_token=session["session_token"],
+            )
+
+        self.assertEqual(response.status_code, 413)
+        upload_dir = config.RESULT_DIR / session["session_id"] / "upload"
+        self.assertFalse((upload_dir / "genes.txt").exists())
 
     # ---------- format gating ----------
 
@@ -243,7 +296,7 @@ class UploadRouteTests(unittest.TestCase):
         session = self._issue_session()
         upload = self._upload(
             "genes.txt", b"AT1G01010\n", "genes",
-            task_id=session["session_id"],
+            session_id=session["session_id"],
             session_token=session["session_token"],
         )
         path = upload.json()["path"]

@@ -181,7 +181,11 @@ export default function FileUpload({
         }
         toast.success(`${file.name} — ${t('fileupload.toast.uploaded')}`);
       } catch (error) {
-        toast.error(`${t('fileupload.toast.failed')}: ${file.name}`);
+        const userFacing = error instanceof Error && (error as { userFacing?: boolean }).userFacing;
+        const message = userFacing
+          ? error.message
+          : `${t('fileupload.toast.failed')}: ${file.name}`;
+        toast.error(message);
         console.error(error);
       } finally {
         setUploading(false);

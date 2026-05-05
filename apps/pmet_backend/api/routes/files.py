@@ -2,15 +2,17 @@ import gzip
 import json
 import os
 import re
-import time
 from pathlib import Path
 from typing import Optional
-from fastapi import APIRouter, UploadFile, File, Form, Header, HTTPException
+from fastapi import APIRouter, Form, Header, HTTPException, Request
+from starlette.datastructures import UploadFile
 
 from ...config import config
 from ..upload_sessions import (
     UPLOAD_SESSION_RE,
     issue_upload_session,
+    record_session_upload,
+    release_session_upload,
     validate_upload_session,
 )
 
@@ -39,13 +41,13 @@ _LINE_COUNT_MAX_BYTES = 5 * 1024 * 1024  # 5 MiB
 
 # Hard caps on what /upload accepts. Anything exceeding either bound is
 # aborted mid-stream and the partial dest file is unlinked. nginx caps
-# the request body at 500 MB before we even see it; these app-level caps
-# are tighter and additionally guard the gzip decompression path against
-# a "10 KB gzip → 10 GB plaintext" zip-bomb. Sized to comfortably cover
-# the largest legitimate inputs (TAIR10 FASTA 116 MB, GFF3 105 MB) plus
-# headroom for slightly bigger non-Arabidopsis genomes.
-_UPLOAD_MAX_BYTES = 200 * 1024 * 1024            # raw / on-the-wire bytes
-_DECOMPRESSED_MAX_BYTES = 500 * 1024 * 1024      # gzip output bytes
+# the request body at 1 GB before we even see it; these app-level caps
+# additionally guard the gzip decompression path against a "10 KB gzip →
+# 10 GB plaintext" zip-bomb. Sized to cover medium-large plant genomes
+# (rice ~370 MB plain, maize ~2.5 GB plain via gzip) — wheat / human
+# genome scale should not be analysed via the web upload path.
+_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024           # 1 GB raw / on-the-wire
+_DECOMPRESSED_MAX_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB gzip output
 _UPLOAD_CHUNK_BYTES = 1 * 1024 * 1024            # 1 MiB per loop iteration
 
 ALLOWED_EXTENSIONS: dict[str, tuple[str, ...]] = {
@@ -72,20 +74,15 @@ def _validate_session_id(task_id: str) -> str:
     return task_id
 
 
-def _resolve_upload_dir(task_id: Optional[str]) -> Path:
+def _resolve_upload_dir(task_id: str) -> Path:
     """Pick the destination directory for an upload.
 
     With a task_id (the frontend generates a UUID on submit-page mount and
     reuses it for every upload + the eventual POST /tasks), all files for
     that task land in results/app/<task_id>/upload/, alongside indexing/ and
-    pairing/ that the run will populate. Without a task_id we fall back to
-    a per-call temp dir for legacy clients.
+    pairing/ that the run will populate.
     """
-    if task_id:
-        return config.RESULT_DIR / _validate_session_id(task_id) / "upload"
-
-    temp_id = f"temp_{int(time.time() * 1000)}"
-    return config.RESULT_DIR / temp_id
+    return config.RESULT_DIR / _validate_session_id(task_id) / "upload"
 
 
 def _sanitize_filename(filename: str, fallback: str = "upload") -> str:
@@ -140,6 +137,42 @@ def _copy_capped(src, dest, cap: int, kind: str) -> int:
         dest.write(chunk)
 
 
+def _upload_too_large_detail(kind: str, limit: int) -> str:
+    if limit >= 1024 * 1024 * 1024 and limit % (1024 * 1024 * 1024) == 0:
+        size = f"{limit // (1024 * 1024 * 1024)} GB"
+    else:
+        size = f"{limit // (1024 * 1024)} MB"
+    return (
+        f"Uploaded gzip expands beyond the {size} decompressed-size cap"
+        if kind == "decompressed"
+        else f"Uploaded file exceeds the {size} size cap"
+    )
+
+
+def _spooled_upload_size(file: UploadFile) -> Optional[int]:
+    """Return the multipart part size without reading it into memory."""
+    size = getattr(file, "size", None)
+    if isinstance(size, int) and size >= 0:
+        return size
+    try:
+        current = file.file.tell()
+        file.file.seek(0, os.SEEK_END)
+        end = file.file.tell()
+        file.file.seek(current)
+        return end
+    except (OSError, AttributeError):
+        return None
+
+
+def _enforce_raw_upload_cap(file: UploadFile) -> None:
+    raw_size = _spooled_upload_size(file)
+    if raw_size is not None and raw_size > _UPLOAD_MAX_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=_upload_too_large_detail("raw", _UPLOAD_MAX_BYTES),
+        )
+
+
 def _store_upload(file: UploadFile, destination: Path, decompress_gzip: bool) -> None:
     try:
         with _open_upload_destination(destination) as buffer:
@@ -151,13 +184,10 @@ def _store_upload(file: UploadFile, destination: Path, decompress_gzip: bool) ->
                 _copy_capped(file.file, buffer, _UPLOAD_MAX_BYTES, "raw")
     except _UploadTooLarge as exc:
         destination.unlink(missing_ok=True)
-        mb = exc.limit // (1024 * 1024)
-        detail = (
-            f"Uploaded gzip expands beyond the {mb} MB decompressed-size cap"
-            if exc.kind == "decompressed"
-            else f"Uploaded file exceeds the {mb} MB size cap"
-        )
-        raise HTTPException(status_code=413, detail=detail) from exc
+        raise HTTPException(
+            status_code=413,
+            detail=_upload_too_large_detail(exc.kind, exc.limit),
+        ) from exc
     except (OSError, EOFError, gzip.BadGzipFile) as exc:
         destination.unlink(missing_ok=True)
         detail = (
@@ -168,19 +198,8 @@ def _store_upload(file: UploadFile, destination: Path, decompress_gzip: bool) ->
         raise HTTPException(status_code=400, detail=detail) from exc
 
 
-def _save_uploaded_file(file: UploadFile, task_id: Optional[str], file_type: str) -> dict:
-    if file_type == "auto":
-        upload_dir = _resolve_upload_dir(task_id)
-        upload_dir.mkdir(parents=True, exist_ok=True)
-
-        dest_name = _sanitize_filename(file.filename or "")
-        dest_path = upload_dir / dest_name
-        _store_upload(file, dest_path, decompress_gzip=False)
-        return {
-            "filename": file.filename,
-            "path": str(dest_path.relative_to(config.PROJECT_ROOT)),
-            "size": dest_path.stat().st_size,
-        }
+def _save_uploaded_file(file: UploadFile, task_id: str, file_type: str) -> dict:
+    _enforce_raw_upload_cap(file)
 
     allowed_extensions = ALLOWED_EXTENSIONS.get(file_type)
     if not allowed_extensions:
@@ -218,6 +237,34 @@ def _save_uploaded_file(file: UploadFile, task_id: Optional[str], file_type: str
     }
 
 
+def _require_upload_session(session_id: Optional[str], session_token: Optional[str]) -> str:
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Missing upload session id")
+    task_id = _validate_session_id(session_id)
+    if not validate_upload_session(task_id, session_token):
+        raise HTTPException(status_code=401, detail="Invalid or expired session token")
+    return task_id
+
+
+async def _parse_upload_form(request: Request) -> tuple[UploadFile, str]:
+    form = await request.form()
+    file = form.get("file")
+    file_type = form.get("file_type")
+    if not isinstance(file, UploadFile):
+        raise HTTPException(status_code=400, detail="Missing uploaded file")
+    if not isinstance(file_type, str) or not file_type:
+        raise HTTPException(status_code=400, detail="Missing file_type")
+    return file, file_type
+
+
+def _record_upload_or_reject(task_id: str, session_token: Optional[str], result: dict) -> None:
+    if record_session_upload(task_id, session_token, int(result.get("size") or 0)):
+        return
+    target = config.PROJECT_ROOT / result["path"]
+    target.unlink(missing_ok=True)
+    raise HTTPException(status_code=413, detail="Upload session quota exceeded")
+
+
 @router.post("/issue-session")
 async def issue_session():
     """Hand the caller a fresh ``(session_id, session_token)`` pair.
@@ -243,26 +290,24 @@ async def issue_session():
 
 @router.post("/upload")
 async def upload_file(
-    file: UploadFile = File(...),
-    task_id: str = Form(...),
-    file_type: str = Form(...),  # genes, fasta, gff3, meme
+    request: Request,
+    session_id: Optional[str] = Header(default=None, alias="X-PMET-Session-Id"),
     session_token: Optional[str] = Header(default=None, alias="X-PMET-Session-Token"),
 ):
     """Upload a file for PMET analysis.
 
     Public-facing post-pmet.online: gated by the same session_token that
-    /use-example and DELETE /upload require. Earlier "attackers pay their
-    own bandwidth" reasoning was an understatement — gzip uploads expand
-    server-side (a small request → large disk write) and 100 anon POSTs
-    can fill the disk before nginx body limits fire. issue-session is
-    IP-rate-limited (10/min), so the token gate also caps the upload
-    arrival rate per IP indirectly. Combined with the raw + decompressed
-    byte caps in _store_upload, this leaves only token-armed clients in
-    the path and bounds disk per request.
+    /use-example and DELETE /upload require. The session id is a header
+    instead of a form field so we can validate it before asking Starlette
+    to parse the multipart body; invalid callers are rejected before large
+    uploads get spooled to /tmp. Per-request raw/decompressed caps bound a
+    single file, and per-session quota bounds repeated use of one token.
     """
-    if not validate_upload_session(task_id, session_token):
-        raise HTTPException(status_code=401, detail="Invalid or expired session token")
-    return _save_uploaded_file(file, task_id, file_type)
+    task_id = _require_upload_session(session_id, session_token)
+    file, file_type = await _parse_upload_form(request)
+    result = _save_uploaded_file(file, task_id, file_type)
+    _record_upload_or_reject(task_id, session_token, result)
+    return result
 
 
 @router.post("/use-example")
@@ -310,22 +355,6 @@ async def use_example_file(
         "path": str(src.relative_to(config.PROJECT_ROOT)),
         "size": src.stat().st_size,
     }
-
-
-@router.post("/upload-multiple")
-async def upload_multiple_files(
-    files: list[UploadFile] = File(...),
-    task_id: str = Form(...),
-    session_token: Optional[str] = Header(default=None, alias="X-PMET-Session-Token"),
-):
-    """Upload multiple files at once. Same session-token gate as /upload."""
-    if not validate_upload_session(task_id, session_token):
-        raise HTTPException(status_code=401, detail="Invalid or expired session token")
-    results = []
-    for file in files:
-        result = _save_uploaded_file(file, task_id, "auto")
-        results.append(result)
-    return {"files": results}
 
 
 @router.get("/preview/{task_id}/{slot}")
@@ -444,6 +473,7 @@ async def delete_upload(
     if not validate_upload_session(parts[0], session_token):
         raise HTTPException(status_code=401, detail="Invalid or expired session token")
     try:
+        deleted_size = target.lstat().st_size
         target.unlink()
     except FileNotFoundError:
         # Idempotent: race between TOCTOU exists() check and the unlink
@@ -452,4 +482,5 @@ async def delete_upload(
         return {"deleted": path, "noop": True}
     except IsADirectoryError as exc:
         raise HTTPException(status_code=400, detail="Target is a directory, not a file") from exc
+    release_session_upload(parts[0], session_token, deleted_size)
     return {"deleted": path}

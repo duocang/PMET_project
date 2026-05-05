@@ -248,17 +248,16 @@ export const fileApi = {
     sessionToken: string,
     onProgress?: (pct: number) => void
   ): Promise<UploadResponse> => {
-    // task_id + session_token both required since the public-facing
-    // hardening — the backend 401s without a valid pair to keep
-    // anonymous gzip-bomb / disk-fill attacks off the endpoint.
+    // Session id + token live in headers so the backend can reject
+    // invalid callers before parsing a potentially large multipart body.
     const formData = new FormData();
     formData.append('file', file);
     formData.append('file_type', fileType);
-    formData.append('task_id', taskId);
 
     const response = await api.post('/api/files/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+        'X-PMET-Session-Id': taskId,
         'X-PMET-Session-Token': sessionToken,
       },
       onUploadProgress: onProgress
@@ -284,17 +283,6 @@ export const fileApi = {
     formData.append('slot', slot);
     formData.append('session_token', sessionToken);
     const response = await api.post('/api/files/use-example', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
-  },
-
-  uploadMultiple: async (files: File[], taskId?: string): Promise<{ files: UploadResponse[] }> => {
-    const formData = new FormData();
-    files.forEach(file => formData.append('files', file));
-    if (taskId) formData.append('task_id', taskId);
-
-    const response = await api.post('/api/files/upload-multiple', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;

@@ -36,8 +36,11 @@ class TaskCreationSecurityTests(unittest.TestCase):
         response = self.client.post(
             "/api/files/upload",
             files={"file": (filename, body, "application/octet-stream")},
-            data={"task_id": session["session_id"], "file_type": file_type},
-            headers={"X-PMET-Session-Token": session["session_token"]},
+            data={"file_type": file_type},
+            headers={
+                "X-PMET-Session-Id": session["session_id"],
+                "X-PMET-Session-Token": session["session_token"],
+            },
         )
         self.assertEqual(response.status_code, 200)
         return response.json()["path"]

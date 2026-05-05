@@ -234,6 +234,11 @@ function SubmitPageContent() {
     fileType: FileFieldType,
     onProgress?: (pct: number) => void
   ) => {
+    if (!uploadSession) {
+      const err = new Error(t('submit.toast.session_pending')) as Error & { userFacing?: boolean };
+      err.userFacing = true;
+      throw err;
+    }
     try {
       const result = await fileApi.upload(file, fileType, uploadSessionId, uploadSessionToken, onProgress);
       updatePaths({ [fileType]: result.path });
@@ -759,7 +764,7 @@ function SubmitPageContent() {
 
       {/* File Uploads */}
       <div className="card mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold">{t('submit.upload.heading')}</h3>
           <span className="text-xs text-slate-500">
             {t('submit.upload.example_hint_pre')}{' '}
@@ -767,6 +772,7 @@ function SubmitPageContent() {
             {t('submit.upload.example_hint_post')}
           </span>
         </div>
+        <p className="text-xs text-slate-500 mb-4">{t('submit.upload.size_hint')}</p>
 
         {/* [&>*]:mb-0 cancels FileUpload's own bottom margin so grid gap stays uniform. */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*]:mb-0">

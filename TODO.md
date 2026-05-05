@@ -27,7 +27,7 @@
 | [14](#issue-14) | ~~DELETE /upload 仍依赖 session_id secrecy（修 #5 后残留）~~ | 🟡 公网严格化 | ✅ **已修** — `X-PMET-Session-Token` header |
 | [15](#issue-15) | ~~`use-example` symlink + writable `/app/data` 可被同名上传写穿覆盖原始数据~~ | 🔴 critical | ✅ **已修** — 不再创建 symlink/copy；compose `data` mount 改 `:ro` |
 | [16](#issue-16) | ~~`POST /api/tasks` 未绑定 session_token，可伪造 task_id / 跨 session 路径~~ | 🔴 critical | ✅ **已修** — create-task 校验 token + path ownership + duplicate 409 + token 不落盘 |
-| [17](#issue-17) | ~~`/upload` 无 token 鉴权 + 无 size cap + gzip 解压无上限~~ | 🔴 critical | ✅ **已修** — 三层闸：raw 200 MB / decompressed 500 MB / X-PMET-Session-Token 必须 |
+| [17](#issue-17) | ~~`/upload` 无 token 鉴权 + 无 size cap + gzip 解压无上限~~ | 🔴 critical | ✅ **已重修** — pre-body header token gate + raw/gzip caps + per-session quota（cap 后续放宽到 1 GB raw / 5 GB 解压 / 5 GB session，覆盖玉米级基因组） |
 | [18](#issue-18) | ~~rate limit 在 app 进程内 + 用 `request.client.host` 取 IP~~ | 🟡 公网 DoS | ✅ **已修** — 搬到 nginx `limit_req_zone`，用 `$binary_remote_addr` 真实 IP；多 worker 自然一致 |
 | [19](#issue-19) | session token store (`_SESSIONS`) 是 module-level dict，多 worker 不共享 | 🟡 多 worker 部署阻塞 | ⏳ **未修** — 当前 `--reload` 单进程 OK；上 `--workers N` 前需搬 redis 或换 stateless 签名 |
 
@@ -200,7 +200,7 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 
 ### Hardening backlog（已修批次的延伸）
 
-#12 / #13 / #14 是修问题 5 / 7 / 8 时的收紧项。**pmet.online 上线后 #12 + #14 已落地**（共享同一个 session_token 机制），#13 仍是 backlog（39 k 行实战 OK，等真碰到百万行任务再做）。#15 / #16 是 2026-05-05 安全复查新增的问题，分别修掉 symlink 写穿和 create-task 所有权断点。
+#12 / #13 / #14 是修问题 5 / 7 / 8 时的收紧项。**pmet.online 上线后 #12 + #14 已落地**（共享同一个 session_token 机制），#13 仍是 backlog（39 k 行实战 OK，等真碰到百万行任务再做）。#15 / #16 / #17 / #18 / #19 是 2026-05-05 安全复查新增的问题；#15-#18 已修，#19 留作多 worker 部署前必修项。
 
 <a id="issue-12"></a>
 
@@ -328,26 +328,37 @@ GET /api/results/<task>?limit=10&p_adj_max=0.05
 - 匿名 anon gzip bomb 100 KB → 100+ MB 解压；1 个 fd 耗资源不对等
 - 100 个并发匿名请求 → 50 GB / 几分钟内打满磁盘
 
-**修法**：三层闸门——
-1. [files.py:42-49](apps/pmet_backend/api/routes/files.py#L42-L49) 加常量：`_UPLOAD_MAX_BYTES = 200 MB`（覆盖最大合法输入 TAIR 116 MB + 余量）和 `_DECOMPRESSED_MAX_BYTES = 500 MB`，1 MiB chunk 流式 copy。
-2. [files.py:_copy_capped](apps/pmet_backend/api/routes/files.py) 新 helper：流式 read + 累计字节计数，超 cap 立刻 raise `_UploadTooLarge` 中止；caller catch 后 `unlink(missing_ok=True)` partial dest。替代 `shutil.copyfileobj`（后者无 cap）。
-3. [files.py:upload_file](apps/pmet_backend/api/routes/files.py) 端点签名加 `task_id: str = Form(...)` 必需 + `session_token: Header(alias="X-PMET-Session-Token")`，`validate_upload_session` 失败 401。`/upload-multiple` 同样 gate。
-4. 前端 [lib/api.ts:fileApi.upload](apps/pmet_frontend/lib/api.ts) 接收 `sessionToken` 必传参数，发到 `X-PMET-Session-Token` header；[submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) 6 处 `fileApi.upload` 调用全部传入 `uploadSessionToken`。
+**第一次 #17 修复的漏项**（2026-05-05 复审承认）：
+- token 校验写在 FastAPI handler 体内，但 `UploadFile = File(...)` 会让 Starlette 先 parse multipart；无 token 大包在 401 前已经 spooled 到 `/tmp`。
+- `/upload` 只 `validate_upload_session` 不 consume / quota；1 个合法 token 在 1 小时 TTL 内可无限次上传。
+- gzip 路径只 cap 解压后大小，没有兑现 raw 200 MB cap。
 
-**curl 攻击验证**（2026-05-05）：
-- 匿名 `POST /upload`（无 token）→ **401 Invalid or expired session token** ✓
-- 597 KB gzip → 期望解压 600 MB → **413 "decompressed-size cap"** + partial dest unlinked ✓
-- 200 MB+1 raw bytes → **413 "size cap"** ✓
+**重修法**：
+1. [files.py:upload_file](apps/pmet_backend/api/routes/files.py) 改成 `Request` + `X-PMET-Session-Id` / `X-PMET-Session-Token` 双 header。服务端先校验 session id + token，成功后才 `await request.form()` 解析 multipart；表单里不再承载 `task_id`。
+2. [files.py:_enforce_raw_upload_cap](apps/pmet_backend/api/routes/files.py) 在保存前读取 `UploadFile.size` / spooled file seek 大小；gzip 和非 gzip 都先过 `_UPLOAD_MAX_BYTES = 200 MB` raw cap。
+3. [files.py:_copy_capped](apps/pmet_backend/api/routes/files.py) 继续替代 `shutil.copyfileobj`，对 gzip 解压输出执行 `_DECOMPRESSED_MAX_BYTES = 500 MB` cap，超限删除 partial dest。
+4. [upload_sessions.py](apps/pmet_backend/api/upload_sessions.py) 给每个 session 加 `uploaded_files` / `uploaded_bytes`，默认 `8 files / 1 GiB`。每次成功落盘后原子扣 quota，超限立刻删除刚写入文件并 413；用户清除上传文件时 best-effort 退回 quota。
+5. 前端 [lib/api.ts:fileApi.upload](apps/pmet_frontend/lib/api.ts) 发 `X-PMET-Session-Id` + `X-PMET-Session-Token` header，不再把 task id 放 multipart form；未使用的 `uploadMultiple` client 和后端 `/upload-multiple` endpoint 删除，避免契约漂移和多余攻击面。
+6. [submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) 普通拖拽上传也 guard `uploadSession`，慢网下给 `session_pending` 明确提示，而不是空 token 401。
 
-**单测**：
-- `test_upload_requires_session_token_header`（无 header / 错 token / 跨 session token / 真 token 四态）
-- `test_upload_rejects_oversize_raw`（>200 MB → 413）
-- `test_upload_rejects_gzip_bomb`（1 KB gzip → 600 MB 期望 → 413）
-- 旧 fixtures 全部更新通过 token gate；23/23 单测全 pass
-
-**MCP browser**：peaks.txt（339 B）走 client fetch+upload 路径，`X-PMET-Session-Token` header 正确发出，POST 200。
+**验证**：
+- 无 `X-PMET-Session-Id` / 无 token / 错 token / 跨 session token → **400/401**；单测 patch `_parse_upload_form` 断言缺 session header / token 时不会解析 multipart。
+- gzip raw body > cap → **413 size cap**；gzip 解压输出 > cap → **413 decompressed-size cap**。
+- 单 session 超过文件数 / 字节 quota → **413 quota**，刚写入的文件被 unlink。
+- 单测不再真实分配 200/500 MB；用 patch 小 cap 测同一逻辑，避免 CI OOM。后端目标单测 28/28 pass。
 
 </del>
+
+**Size policy revision**（2026-05-05 二次调整）：原 cap（200 MB raw / 500 MB 解压 / 1 GB session）实测对中型植物基因组（拟南芥、水稻）够用，但拦住玉米级（fasta.gz ~700 MB / 解压 ~2.5 GB）。考虑到 PMET 公网定位是面向植物 community 而非小麦/人类规模数据，cap 同步上调：
+
+- [files.py](apps/pmet_backend/api/routes/files.py)：`_UPLOAD_MAX_BYTES = 1 GB`、`_DECOMPRESSED_MAX_BYTES = 5 GB`
+- [upload_sessions.py](apps/pmet_backend/api/upload_sessions.py)：`SESSION_UPLOAD_MAX_BYTES = 5 GB`（文件数 cap 仍 8）
+- [deploy/nginx/nginx.conf](deploy/nginx/nginx.conf)：`client_max_body_size 1G`，与 backend raw cap 对齐——超过的请求在 edge 直接 413，不浪费 spool I/O
+- [submit/page.tsx](apps/pmet_frontend/app/submit/page.tsx) + [translations.ts](apps/pmet_frontend/lib/translations.ts)：上传卡片下加一行限额说明（zh/en），明示"小麦/人类等更大基因组用预计算物种或线下 CLI"
+
+curl 验证（2026-05-05）：800 MB raw → 200，1.1 GB raw → nginx 413（不到 app），5.2 GB 解压 gzip 炸弹 → app 413 with "5 GB decompressed-size cap"。MCP browser 真实流程在 zh/en 都看到限额提示。后端单测 23/23 pass（cap-agnostic via `patch()`）。
+
+DoS 表面没有显著扩大：单 session 仍封顶 5 GB / 8 文件，nginx 真实 IP 限速保持 10r/m。最坏情况 1 个合法 session 占 5 GB 磁盘 + 8 个 fd——和原来 1 GB 相比，只是 5× 而非数量级变化。
 
 <a id="issue-18"></a>
 
