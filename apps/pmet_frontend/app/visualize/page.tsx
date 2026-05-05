@@ -476,6 +476,18 @@ function VisualizePageContent() {
   // are now byte-for-byte equivalent.
   const searchParams = useSearchParams();
   const taskParam = searchParams?.get('task') ?? null;
+  // Hydration gate. The page is statically prerendered, so the SSR HTML
+  // and the first client paint don't have access to useSearchParams()
+  // — /visualize?task=<id> visitors briefly saw the prerendered upload
+  // view before the loading branch could take over. We render the
+  // loading shell unconditionally until mount finishes; only then do
+  // we branch on taskParam vs upload. One frame of loading on
+  // task-less first visits is a fair price for never flashing the
+  // upload view to deeplinked viewers.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   useEffect(() => {
     if (!taskParam) return;
     let cancelled = false;
@@ -1104,15 +1116,18 @@ function VisualizePageContent() {
     URL.revokeObjectURL(url);
   }, [tableData, selectedCluster]);
 
-  // Loading view: opened via `/visualize?task=<id>` from the task detail
-  // page's "Open in Viewer" CTA. Without this branch the user briefly
-  // saw the upload zone while the raw motif_output.txt was being
-  // fetched — confusing on large tasks where the fetch takes seconds.
-  // Hold a loading state until parsePmetFile populates allResults or
-  // an error is recorded; only then fall through to the upload or
-  // result views. The trailing `null` checks are unreachable but keep
-  // TS narrowing tidy.
-  if (taskParam && allResults.length === 0 && !error) {
+  // Loading shell. Covers two cases:
+  //   1. SSR + the first client paint (mounted = false). The upload
+  //      view would otherwise be the prerendered HTML, flashing for
+  //      anyone arriving via /visualize?task=<id>.
+  //   2. Steady-state fetch of a task result.
+  // After mount, taskParam from useSearchParams is reliable, so the
+  // copy can show the specific task id. Pre-mount we render a generic
+  // shell with no id (the SSR snapshot has no access to query params).
+  const stillLoadingTask = !!taskParam && allResults.length === 0 && !error;
+  if (!mounted || stillLoadingTask) {
+    const subtitle = t('viz.loading.subtitle');
+    const [subPrefix, subSuffix] = mounted && taskParam ? subtitle.split('{id}') : ['', ''];
     return (
       <div className="max-w-5xl mx-auto py-8">
         <h1 className="text-2xl font-bold mb-2">{t('viz.title')}</h1>
@@ -1135,11 +1150,13 @@ function VisualizePageContent() {
           </svg>
           <div>
             <p className="font-semibold text-slate-900">{t('viz.loading.title')}</p>
-            <p className="mt-0.5 text-sm text-slate-600">
-              {t('viz.loading.subtitle').split('{id}')[0]}
-              <span className="mono font-medium text-slate-800">{taskParam}</span>
-              {t('viz.loading.subtitle').split('{id}')[1]}
-            </p>
+            {mounted && taskParam ? (
+              <p className="mt-0.5 text-sm text-slate-600">
+                {subPrefix}
+                <span className="mono font-medium text-slate-800">{taskParam}</span>
+                {subSuffix}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -2107,11 +2124,29 @@ function VisualizePageContent() {
 // Suspense wrapper required because VisualizePageContent calls
 // useSearchParams() to read the optional ?task=<id> source. Without the
 // boundary Next.js refuses to prerender the page statically.
+//
+// The fallback shape mirrors the in-component loading shell so the
+// transition between SSR HTML and the post-hydration loading view is
+// visually continuous — no copy or layout shift at the seam, which
+// is what users perceive as "page flashing the wrong content".
 function VisualizeFallback() {
   const { t } = useTranslation();
   return (
-    <div className="max-w-5xl mx-auto py-8 text-slate-500">
-      {t('quicklook.loading')}
+    <div className="max-w-5xl mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-2">{t('viz.title')}</h1>
+      <p className="text-slate-600 mb-8">{t('viz.intro')}</p>
+      <div className="card flex items-center gap-4">
+        <svg
+          className="h-6 w-6 shrink-0 animate-spin text-primary-700"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
+          <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+        <p className="font-semibold text-slate-900">{t('viz.loading.title')}</p>
+      </div>
     </div>
   );
 }
