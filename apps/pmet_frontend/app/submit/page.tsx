@@ -698,15 +698,6 @@ function SubmitPageContent() {
                 </pre>
               </div>
               <div>
-                <p className="font-medium">{t('submit.upload.cli_pair_only_label')}</p>
-                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100">
-                  <code>{`bash scripts/workflows/pair_only.sh \\
-    -d results/cli/myrun/01_homotypic \\
-    -g my_clusters.txt \\
-    -o results/cli/myrun/02_pairing`}</code>
-                </pre>
-              </div>
-              <div>
                 <p className="font-medium">{t('submit.upload.cli_intervals_label')}</p>
                 <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100">
                   <code>{`bash scripts/workflows/intervals.sh \\
