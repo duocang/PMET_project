@@ -772,7 +772,37 @@ function SubmitPageContent() {
             {t('submit.upload.example_hint_post')}
           </span>
         </div>
-        <p className="text-xs text-slate-500 mb-4">{t('submit.upload.size_hint')}</p>
+        <div className="mb-4 text-xs text-slate-500">
+          <p>{t('submit.upload.size_hint')}</p>
+          <details className="mt-1 group">
+            <summary className="cursor-pointer select-none text-xs font-medium text-slate-500 hover:text-slate-700">
+              <span className="group-open:hidden">{t('submit.upload.cli_show')}</span>
+              <span className="hidden group-open:inline">{t('submit.upload.cli_hide')}</span>
+            </summary>
+            <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-700 space-y-2">
+              <p>{t('submit.upload.cli_intro')}</p>
+              <div>
+                <p className="font-medium">{t('submit.upload.cli_promoter_label')}</p>
+                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100"><code>{`bash scripts/workflows/promoter.sh \\
+    -s my_genome.fa \\
+    -a my_annot.gff3 \\
+    -m my_motifs.meme \\
+    -g my_clusters.txt \\
+    -o results/cli/myrun/01_homotypic \\
+    -x results/cli/myrun/02_heterotypic`}</code></pre>
+              </div>
+              <div>
+                <p className="font-medium">{t('submit.upload.cli_intervals_label')}</p>
+                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100"><code>{`bash scripts/workflows/intervals.sh \\
+    -s my_intervals.fa \\
+    -m my_motifs.meme \\
+    -g my_peaks.txt \\
+    -o results/cli/myrun/01_indexing \\
+    -x results/cli/myrun/02_pairing`}</code></pre>
+              </div>
+            </div>
+          </details>
+        </div>
 
         {/* [&>*]:mb-0 cancels FileUpload's own bottom margin so grid gap stays uniform. */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*]:mb-0">
