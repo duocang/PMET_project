@@ -6,23 +6,9 @@ import toast from 'react-hot-toast';
 import FileUpload from '@/components/FileUpload';
 import GeneClusterFilter from '@/components/GeneClusterFilter';
 import ParameterPanel from '@/components/ParameterPanel';
-import {
-  EXAMPLE_FASTA,
-  EXAMPLE_GFF3,
-  EXAMPLE_MEME,
-  EXAMPLE_GENE_LIST,
-  EXAMPLE_PEAK_LIST,
-} from '@/lib/fileExamples';
+import { EXAMPLE_FASTA, EXAMPLE_GFF3, EXAMPLE_MEME, EXAMPLE_GENE_LIST, EXAMPLE_PEAK_LIST } from '@/lib/fileExamples';
 import { AnalysisMode, EstimateResponse } from '@/lib/types';
-import {
-  taskApi,
-  fileApi,
-  indexingApi,
-  IndexingEntry,
-  IndexingSpeciesDetail,
-  IndexingMotifDbDetail,
-  MotifDbCatalogEntry,
-} from '@/lib/api';
+import { taskApi, fileApi, indexingApi, IndexingEntry, IndexingSpeciesDetail, IndexingMotifDbDetail, MotifDbCatalogEntry } from '@/lib/api';
 import { useSettingsStore, useTaskStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/translations';
@@ -39,11 +25,8 @@ function SubmitPageContent() {
   // species / motif-DB / file picks because the page-level useState
   // unmounted with the route. Only `mode` reaches localStorage; the
   // rest stays in-memory.
-  const {
-    mode, setMode, email, setEmail,
-    filesByMode, pathsByMode, speciesByMode, paramsByMode,
-    updateFilesForMode, updatePathsForMode, setSpeciesForMode, updateParamsForMode,
-  } = useSettingsStore();
+  const { mode, setMode, email, setEmail, filesByMode, pathsByMode, speciesByMode, paramsByMode, updateFilesForMode, updatePathsForMode, setSpeciesForMode, updateParamsForMode } =
+    useSettingsStore();
   const { setLoading, addTask } = useTaskStore();
 
   // params live in the store so the user's per-mode tweaks (IC,
@@ -102,12 +85,15 @@ function SubmitPageContent() {
 
   useEffect(() => {
     let alive = true;
-    fileApi.issueSession()
+    fileApi
+      .issueSession()
       .then((res) => {
         if (alive) setUploadSession({ id: res.session_id, token: res.session_token });
       })
       .catch((err) => console.error('Failed to issue upload session', err));
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // Detail panel state — only used in promoters_pre. Species and motif-DB
@@ -131,7 +117,8 @@ function SubmitPageContent() {
   // installed under data/precomputed_indexes/ on the server.
   useEffect(() => {
     if (mode !== 'promoters_pre') return;
-    indexingApi.list()
+    indexingApi
+      .list()
       .then((res) => setIndexingEntries(res.entries))
       .catch((err) => console.error('Failed to load indexing list', err));
   }, [mode]);
@@ -140,7 +127,8 @@ function SubmitPageContent() {
   // fetch even if the user never enters promoters mode; saves the
   // mode-toggle dance and the early-return guard.
   useEffect(() => {
-    indexingApi.motifDatabases()
+    indexingApi
+      .motifDatabases()
       .then((res) => setMotifCatalog(res.databases))
       .catch((err) => console.error('Failed to load motif-DB catalog', err));
   }, []);
@@ -174,7 +162,7 @@ function SubmitPageContent() {
             meme_file: uploadedPaths.meme || undefined,
             premade_index: files.premade_index || undefined,
           },
-          controller.signal,
+          controller.signal
         )
         .then((r) => setEstimate(r))
         .catch((err) => {
@@ -195,13 +183,7 @@ function SubmitPageContent() {
       controller.abort();
       setEstimateLoading(false);
     };
-  }, [
-    mode,
-    uploadedPaths.genes,
-    uploadedPaths.fasta,
-    uploadedPaths.meme,
-    files.premade_index,
-  ]);
+  }, [mode, uploadedPaths.genes, uploadedPaths.fasta, uploadedPaths.meme, files.premade_index]);
 
   // Lazy-fetch species and motif-db detail independently when the user
   // opens the panel. Each has its own cache so species info appears the
@@ -214,7 +196,8 @@ function SubmitPageContent() {
   useEffect(() => {
     if (!detailOpen || !selectedSpecies || currentSpecies) return;
     setSpeciesLoading(true);
-    indexingApi.speciesDetail(selectedSpecies)
+    indexingApi
+      .speciesDetail(selectedSpecies)
       .then((d) => setSpeciesCache((prev) => ({ ...prev, [selectedSpecies]: d.species })))
       .catch((err) => console.error('Failed to load species detail', err))
       .finally(() => setSpeciesLoading(false));
@@ -223,17 +206,14 @@ function SubmitPageContent() {
   useEffect(() => {
     if (!detailOpen || !selectedEntry || currentMotifDb) return;
     setMotifDbLoading(true);
-    indexingApi.motifDbDetail(selectedEntry.species, selectedEntry.motif_db)
+    indexingApi
+      .motifDbDetail(selectedEntry.species, selectedEntry.motif_db)
       .then((d) => setMotifDbCache((prev) => ({ ...prev, [motifDbKey]: d.motif_db })))
       .catch((err) => console.error('Failed to load motif_db detail', err))
       .finally(() => setMotifDbLoading(false));
   }, [detailOpen, motifDbKey, selectedEntry, currentMotifDb]);
 
-  const handleFileUpload = async (
-    file: File,
-    fileType: FileFieldType,
-    onProgress?: (pct: number) => void
-  ) => {
+  const handleFileUpload = async (file: File, fileType: FileFieldType, onProgress?: (pct: number) => void) => {
     if (!uploadSession) {
       const err = new Error(t('submit.toast.session_pending')) as Error & { userFacing?: boolean };
       err.userFacing = true;
@@ -252,15 +232,8 @@ function SubmitPageContent() {
     if (!uploadSessionId) return false;
     const parts = path.split('/').filter(Boolean);
     return (
-      (parts.length >= 4 &&
-        parts[0] === 'results' &&
-        parts[1] === uploadSessionId &&
-        parts[2] === 'upload') ||
-      (parts.length >= 5 &&
-        parts[0] === 'results' &&
-        parts[1] === 'app' &&
-        parts[2] === uploadSessionId &&
-        parts[3] === 'upload')
+      (parts.length >= 4 && parts[0] === 'results' && parts[1] === uploadSessionId && parts[2] === 'upload') ||
+      (parts.length >= 5 && parts[0] === 'results' && parts[1] === 'app' && parts[2] === uploadSessionId && parts[3] === 'upload')
     );
   };
 
@@ -293,8 +266,7 @@ function SubmitPageContent() {
         if (isSessionUploadPath(path)) {
           await fileApi.deleteUpload(path, uploadSessionToken || undefined);
         }
-      }
-      finally {
+      } finally {
         updatePaths({ [fileType]: '' });
         updateFiles({ [fileType]: null });
       }
@@ -361,12 +333,9 @@ function SubmitPageContent() {
       gff3: 'task.file.gff3',
       meme: 'task.file.meme',
     } as const;
-    const emptySlot = (Object.keys(slotLabelKeys) as Array<keyof typeof slotLabelKeys>)
-      .find((s) => files[s] && files[s]!.size === 0);
+    const emptySlot = (Object.keys(slotLabelKeys) as Array<keyof typeof slotLabelKeys>).find((s) => files[s] && files[s]!.size === 0);
     if (emptySlot) {
-      toast.error(
-        t('submit.toast.empty_file').replace('{slot}', t(slotLabelKeys[emptySlot]))
-      );
+      toast.error(t('submit.toast.empty_file').replace('{slot}', t(slotLabelKeys[emptySlot])));
       return false;
     }
 
@@ -417,7 +386,7 @@ function SubmitPageContent() {
           .split('\n')
           .filter((rawLine) => {
             const line = rawLine.replace(/\r$/, '');
-            if (!line) return true;  // preserve blank lines verbatim
+            if (!line) return true; // preserve blank lines verbatim
             const parts = line.split(/\s+/).filter(Boolean);
             // Single-column rows wouldn't normally show up here (the
             // filter component reports null in that case), but if they
@@ -428,9 +397,7 @@ function SubmitPageContent() {
           .join('\n');
         const origName = files.genes.name;
         const dot = origName.lastIndexOf('.');
-        const filteredName = dot > 0
-          ? `${origName.slice(0, dot)}.filtered${origName.slice(dot)}`
-          : `${origName}.filtered`;
+        const filteredName = dot > 0 ? `${origName.slice(0, dot)}.filtered${origName.slice(dot)}` : `${origName}.filtered`;
         const filteredFile = new File([filteredText], filteredName, {
           type: files.genes.type || 'text/plain',
         });
@@ -461,9 +428,7 @@ function SubmitPageContent() {
       // with — override any stale values carried over from other modes so
       // the backend gets the real build-time settings.
       const selectedFixed = indexingEntries.find((e) => e.value === files.premade_index)?.fixed_params;
-      const effectiveParams = mode === 'promoters_pre' && selectedFixed
-        ? { ...params, ...selectedFixed }
-        : params;
+      const effectiveParams = mode === 'promoters_pre' && selectedFixed ? { ...params, ...selectedFixed } : params;
 
       // Create task. Reuse the upload session id so the run inherits the
       // same results/app/<id>/ root that already holds upload/.
@@ -521,40 +486,26 @@ function SubmitPageContent() {
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`px-4 py-2 rounded-lg ${
-                mode === m
-                  ? 'bg-primary-700 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+              className={`px-4 py-2 rounded-lg ${mode === m ? 'bg-primary-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
             >
               {modeLabels[m]}
             </button>
           ))}
         </div>
-        <p className="mt-3 text-sm text-slate-600">
-          {t(`submit.mode.${mode}.subtitle` as TranslationKey)}
-        </p>
+        <p className="mt-3 text-sm text-slate-600">{t(`submit.mode.${mode}.subtitle` as TranslationKey)}</p>
         <details className="mt-2 group">
           <summary className="cursor-pointer select-none text-xs font-medium text-slate-500 hover:text-slate-700">
             <span className="group-open:hidden">{t('submit.mode.show_details')}</span>
             <span className="hidden group-open:inline">{t('submit.mode.hide_details')}</span>
           </summary>
-          <p className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
-            {t(`submit.mode.${mode}.details` as TranslationKey)}
-          </p>
+          <p className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">{t(`submit.mode.${mode}.details` as TranslationKey)}</p>
         </details>
       </div>
 
       {/* Email */}
       <div className="card mb-6">
         <label className="label">{t('submit.email.label')}</label>
-        <input
-          type="email"
-          className="input-field"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('submit.email.placeholder')}
-        />
+        <input type="email" className="input-field" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('submit.email.placeholder')} />
         <p className="mt-1 text-sm text-slate-500">{t('submit.email.help')}</p>
       </div>
 
@@ -575,21 +526,16 @@ function SubmitPageContent() {
               >
                 <option value="">{t('submit.db.species.placeholder')}</option>
                 {speciesList.map((sp) => (
-                  <option key={sp} value={sp}>{humanize(sp)}</option>
+                  <option key={sp} value={sp}>
+                    {humanize(sp)}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
               <label className="label">{t('submit.db.motif')}</label>
-              <select
-                className="select-field"
-                value={files.premade_index}
-                onChange={(e) => updateFiles({ premade_index: e.target.value })}
-                disabled={!selectedSpecies}
-              >
-                <option value="">
-                  {selectedSpecies ? t('submit.db.motif.placeholder') : t('submit.db.motif.placeholder_pick_species')}
-                </option>
+              <select className="select-field" value={files.premade_index} onChange={(e) => updateFiles({ premade_index: e.target.value })} disabled={!selectedSpecies}>
+                <option value="">{selectedSpecies ? t('submit.db.motif.placeholder') : t('submit.db.motif.placeholder_pick_species')}</option>
                 {motifDbOptions.map((entry) => (
                   <option key={entry.value} value={entry.value}>
                     {humanize(entry.motif_db)}
@@ -610,35 +556,18 @@ function SubmitPageContent() {
           {/* Expandable detail panel — appears after a species is picked. */}
           {selectedSpecies && (
             <>
-              <div
-                className={`overflow-hidden transition-[max-height] duration-300 ease-out ${
-                  detailOpen ? 'max-h-[1200px]' : 'max-h-0'
-                }`}
-              >
+              <div className={`overflow-hidden transition-[max-height] duration-300 ease-out ${detailOpen ? 'max-h-[1200px]' : 'max-h-0'}`}>
                 <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Species block */}
                   <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                    <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase mb-2">
-                      {t('submit.db.detail.species')}
-                    </h4>
-                    <div className="text-primary-700 font-medium mb-3">
-                      {currentSpecies?.humanized ?? humanize(selectedSpecies)}
-                    </div>
-                    {currentSpecies?.description && (
-                      <p className="text-sm text-slate-600 mb-3 leading-relaxed">
-                        {currentSpecies.description}
-                      </p>
-                    )}
+                    <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase mb-2">{t('submit.db.detail.species')}</h4>
+                    <div className="text-primary-700 font-medium mb-3">{currentSpecies?.humanized ?? humanize(selectedSpecies)}</div>
+                    {currentSpecies?.description && <p className="text-sm text-slate-600 mb-3 leading-relaxed">{currentSpecies.description}</p>}
                     {currentSpecies?.genome_name && (
                       <div className="text-sm mb-1">
                         <span className="text-slate-500">{t('submit.db.detail.genome')} </span>
                         {currentSpecies.genome_link ? (
-                          <a
-                            href={currentSpecies.genome_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-700 hover:underline break-all"
-                          >
+                          <a href={currentSpecies.genome_link} target="_blank" rel="noopener noreferrer" className="text-primary-700 hover:underline break-all">
                             {currentSpecies.genome_name}
                           </a>
                         ) : (
@@ -650,12 +579,7 @@ function SubmitPageContent() {
                       <div className="text-sm mb-3">
                         <span className="text-slate-500">{t('submit.db.detail.annotation')} </span>
                         {currentSpecies.annotation_link ? (
-                          <a
-                            href={currentSpecies.annotation_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-700 hover:underline break-all"
-                          >
+                          <a href={currentSpecies.annotation_link} target="_blank" rel="noopener noreferrer" className="text-primary-700 hover:underline break-all">
                             {currentSpecies.annotation_name}
                           </a>
                         ) : (
@@ -670,45 +594,30 @@ function SubmitPageContent() {
                           {currentSpecies.gene_sample.map((g) => (
                             <li key={g}>{g}</li>
                           ))}
-                          {currentSpecies.gene_count > currentSpecies.gene_sample.length && (
-                            <li className="list-none text-slate-400">…</li>
-                          )}
+                          {currentSpecies.gene_count > currentSpecies.gene_sample.length && <li className="list-none text-slate-400">…</li>}
                         </ul>
                         <div className="text-emerald-700 font-medium">
                           {t('submit.db.detail.total')} {currentSpecies.gene_count.toLocaleString()}
                         </div>
                       </div>
                     )}
-                    {!currentSpecies && speciesLoading && (
-                      <div className="text-sm text-slate-500">{t('submit.db.detail.loading')}</div>
-                    )}
+                    {!currentSpecies && speciesLoading && <div className="text-sm text-slate-500">{t('submit.db.detail.loading')}</div>}
                   </div>
 
                   {/* Motif DB block */}
                   <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                    <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase mb-2">
-                      {t('submit.db.detail.motif')}
-                    </h4>
+                    <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase mb-2">{t('submit.db.detail.motif')}</h4>
                     {!files.premade_index ? (
-                      <p className="text-sm text-slate-500 italic">
-                        {t('submit.db.detail.pick_motif')}
-                      </p>
+                      <p className="text-sm text-slate-500 italic">{t('submit.db.detail.pick_motif')}</p>
                     ) : (
                       <>
                         <div className="mb-3">
                           {currentMotifDb?.source_link ? (
-                            <a
-                              href={currentMotifDb.source_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary-700 font-medium hover:underline"
-                            >
+                            <a href={currentMotifDb.source_link} target="_blank" rel="noopener noreferrer" className="text-primary-700 font-medium hover:underline">
                               {currentMotifDb.humanized}
                             </a>
                           ) : (
-                            <span className="text-primary-700 font-medium">
-                              {currentMotifDb?.humanized ?? humanize(selectedEntry?.motif_db ?? '')}
-                            </span>
+                            <span className="text-primary-700 font-medium">{currentMotifDb?.humanized ?? humanize(selectedEntry?.motif_db ?? '')}</span>
                           )}
                         </div>
                         {currentMotifDb && (
@@ -718,18 +627,14 @@ function SubmitPageContent() {
                               {currentMotifDb.motif_sample.map((m) => (
                                 <li key={m}>{m}</li>
                               ))}
-                              {currentMotifDb.motif_count > currentMotifDb.motif_sample.length && (
-                                <li className="list-none text-slate-400">…</li>
-                              )}
+                              {currentMotifDb.motif_count > currentMotifDb.motif_sample.length && <li className="list-none text-slate-400">…</li>}
                             </ul>
                             <div className="text-emerald-700 font-medium">
                               {t('submit.db.detail.total')} {currentMotifDb.motif_count.toLocaleString()}
                             </div>
                           </div>
                         )}
-                        {!currentMotifDb && motifDbLoading && (
-                          <div className="text-sm text-slate-500">{t('submit.db.detail.loading')}</div>
-                        )}
+                        {!currentMotifDb && motifDbLoading && <div className="text-sm text-slate-500">{t('submit.db.detail.loading')}</div>}
                       </>
                     )}
                   </div>
@@ -767,8 +672,7 @@ function SubmitPageContent() {
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold">{t('submit.upload.heading')}</h3>
           <span className="text-xs text-slate-500">
-            {t('submit.upload.example_hint_pre')}{' '}
-            <span className="font-medium text-primary-700">{t('submit.upload.example_hint_link')}</span>{' '}
+            {t('submit.upload.example_hint_pre')} <span className="font-medium text-primary-700">{t('submit.upload.example_hint_link')}</span>{' '}
             {t('submit.upload.example_hint_post')}
           </span>
         </div>
@@ -783,22 +687,35 @@ function SubmitPageContent() {
               <p>{t('submit.upload.cli_intro')}</p>
               <div>
                 <p className="font-medium">{t('submit.upload.cli_promoter_label')}</p>
-                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100"><code>{`bash scripts/workflows/promoter.sh \\
+                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100">
+                  <code>{`bash scripts/workflows/promoter.sh \\
     -s my_genome.fa \\
     -a my_annot.gff3 \\
     -m my_motifs.meme \\
     -g my_clusters.txt \\
     -o results/cli/myrun/01_homotypic \\
-    -x results/cli/myrun/02_heterotypic`}</code></pre>
+    -x results/cli/myrun/02_heterotypic`}</code>
+                </pre>
+              </div>
+              <div>
+                <p className="font-medium">{t('submit.upload.cli_pair_only_label')}</p>
+                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100">
+                  <code>{`bash scripts/workflows/pair_only.sh \\
+    -d results/cli/myrun/01_homotypic \\
+    -g my_clusters.txt \\
+    -o results/cli/myrun/02_pairing`}</code>
+                </pre>
               </div>
               <div>
                 <p className="font-medium">{t('submit.upload.cli_intervals_label')}</p>
-                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100"><code>{`bash scripts/workflows/intervals.sh \\
+                <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-3 text-xs leading-snug text-slate-100">
+                  <code>{`bash scripts/workflows/intervals.sh \\
     -s my_intervals.fa \\
     -m my_motifs.meme \\
     -g my_peaks.txt \\
     -o results/cli/myrun/01_indexing \\
-    -x results/cli/myrun/02_pairing`}</code></pre>
+    -x results/cli/myrun/02_pairing`}</code>
+                </pre>
               </div>
             </div>
           </details>
@@ -842,42 +759,44 @@ function SubmitPageContent() {
             />
           )}
 
-          {(mode === 'promoters' || mode === 'intervals') && (() => {
-            // Source-of-truth for which motif sources this slot offers.
-            // Promoters mode shows the multi-DB chip row (catalog files);
-            // intervals mode keeps the single demo motif. Both share the
-            // same preview endpoint shape.
-            const memeSource = mode === 'promoters'
-              ? {
-                  examples: motifCatalog
-                    .filter((db) => db.local_file)
-                    .map((db) => ({
-                      label: db.humanized,
-                      url: `/api/indexing/motif-databases/${encodeURIComponent(db.name)}/file`,
-                      filename: db.local_file!.filename,
-                    })),
-                }
-              : {
-                  onUseExample: () => handleUseExample('meme'),
-                };
-            return (
-              <FileUpload
-                label={t('submit.upload.label.motif')}
-                accept=".meme"
-                onUpload={(file, p) => handleFileUpload(file, 'meme', p)}
-                onClear={() => handleFileClear('meme')}
-                currentFile={files.meme?.name}
-                currentFileSize={files.meme?.size}
-                required
-                {...memeSource}
-                previewTitle={t('submit.preview.meme_title')}
-                previewNote={t('submit.preview.meme_note')}
-                previewContent={EXAMPLE_MEME}
-                previewSourceUrl={`/api/demo/${mode}/meme/preview?lines=80`}
-                sizeLimitText={t('submit.upload.limit.small')}
-              />
-            );
-          })()}
+          {(mode === 'promoters' || mode === 'intervals') &&
+            (() => {
+              // Source-of-truth for which motif sources this slot offers.
+              // Promoters mode shows the multi-DB chip row (catalog files);
+              // intervals mode keeps the single demo motif. Both share the
+              // same preview endpoint shape.
+              const memeSource =
+                mode === 'promoters'
+                  ? {
+                      examples: motifCatalog
+                        .filter((db) => db.local_file)
+                        .map((db) => ({
+                          label: db.humanized,
+                          url: `/api/indexing/motif-databases/${encodeURIComponent(db.name)}/file`,
+                          filename: db.local_file!.filename,
+                        })),
+                    }
+                  : {
+                      onUseExample: () => handleUseExample('meme'),
+                    };
+              return (
+                <FileUpload
+                  label={t('submit.upload.label.motif')}
+                  accept=".meme"
+                  onUpload={(file, p) => handleFileUpload(file, 'meme', p)}
+                  onClear={() => handleFileClear('meme')}
+                  currentFile={files.meme?.name}
+                  currentFileSize={files.meme?.size}
+                  required
+                  {...memeSource}
+                  previewTitle={t('submit.preview.meme_title')}
+                  previewNote={t('submit.preview.meme_note')}
+                  previewContent={EXAMPLE_MEME}
+                  previewSourceUrl={`/api/demo/${mode}/meme/preview?lines=80`}
+                  sizeLimitText={t('submit.upload.limit.small')}
+                />
+              );
+            })()}
 
           <div className={mode === 'promoters_pre' ? 'md:col-span-2' : ''}>
             <FileUpload
@@ -903,21 +822,13 @@ function SubmitPageContent() {
                 the resolved active-set. Intervals mode also flows
                 through here — peaks files use the same shape so the
                 filter applies uniformly. */}
-            <GeneClusterFilter
-              file={files.genes ?? null}
-              onSelectionChange={setActiveClusters}
-            />
+            <GeneClusterFilter file={files.genes ?? null} onSelectionChange={setActiveClusters} />
           </div>
         </div>
       </div>
 
       {/* Parameters */}
-      <ParameterPanel
-        mode={mode}
-        params={params}
-        onChange={handleParamChange}
-        fixedParams={indexingEntries.find((e) => e.value === files.premade_index)?.fixed_params}
-      />
+      <ParameterPanel mode={mode} params={params} onChange={handleParamChange} fixedParams={indexingEntries.find((e) => e.value === files.premade_index)?.fixed_params} />
 
       {/* Submit + estimate */}
       <div className="mt-6 flex flex-col items-end gap-2">
@@ -928,21 +839,13 @@ function SubmitPageContent() {
             ) : estimate ? (
               <>
                 <span className="text-slate-500">{t('submit.estimate.label')}: </span>
-                <span className="text-base font-bold text-red-600">
-                  {formatRuntimeRange(estimate.lower_seconds, estimate.upper_seconds, t)}
-                </span>
-                <span className="ml-2 text-xs text-slate-400">
-                  {t('submit.estimate.note')}
-                </span>
+                <span className="text-base font-bold text-red-600">{formatRuntimeRange(estimate.lower_seconds, estimate.upper_seconds, t)}</span>
+                <span className="ml-2 text-xs text-slate-400">{t('submit.estimate.note')}</span>
               </>
             ) : null}
           </div>
         )}
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <button onClick={handleSubmit} disabled={submitting} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
           {submitting ? t('submit.button.submitting') : t('submit.button.submit')}
         </button>
       </div>
