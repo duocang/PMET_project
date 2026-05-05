@@ -23,14 +23,17 @@ interface TaskStatusBadgeProps {
   status: ExtendedStatus | string;
 }
 
-const statusConfig: Record<ExtendedStatus, { labelKey: TranslationKey; className: string }> = {
-  pending:                 { labelKey: 'status.pending',                 className: 'bg-yellow-100 text-yellow-800' },
-  running:                 { labelKey: 'status.running',                 className: 'bg-blue-100 text-blue-800' },
-  completed:               { labelKey: 'status.completed',               className: 'bg-green-100 text-green-800' },
-  completed_with_warnings: { labelKey: 'status.completed_with_warnings', className: 'bg-emerald-100 text-emerald-800 ring-1 ring-amber-300' },
-  partial_success:         { labelKey: 'status.partial_success',         className: 'bg-amber-100 text-amber-800' },
-  failed:                  { labelKey: 'status.failed',                  className: 'bg-red-100 text-red-800' },
-  cancelled:               { labelKey: 'status.cancelled',               className: 'bg-slate-200 text-slate-700' },
+// Hairline-on-soft-fill chips, mirroring the SVG card vocabulary
+// (single 1px stroke + low-saturation interior fill). Saturated brand
+// 100s are kept only for "alarm" semantics (failed / partial).
+const statusConfig: Record<ExtendedStatus, { labelKey: TranslationKey; className: string; dot: string }> = {
+  pending:                 { labelKey: 'status.pending',                 className: 'bg-amber-50 text-amber-800 border-amber-200',           dot: 'bg-amber-500' },
+  running:                 { labelKey: 'status.running',                 className: 'bg-sky-50 text-sky-800 border-sky-200',                 dot: 'bg-sky-500' },
+  completed:               { labelKey: 'status.completed',               className: 'bg-primary-50 text-primary-800 border-primary-100',    dot: 'bg-primary-700' },
+  completed_with_warnings: { labelKey: 'status.completed_with_warnings', className: 'bg-primary-50 text-primary-800 border-amber-300',      dot: 'bg-amber-500' },
+  partial_success:         { labelKey: 'status.partial_success',         className: 'bg-amber-50 text-amber-800 border-amber-200',          dot: 'bg-amber-500' },
+  failed:                  { labelKey: 'status.failed',                  className: 'bg-red-50 text-red-800 border-red-200',                dot: 'bg-red-500' },
+  cancelled:               { labelKey: 'status.cancelled',               className: 'bg-slate-50 text-slate-700 border-hairline',           dot: 'bg-slate-400' },
 };
 
 const fallback = statusConfig.pending;
@@ -39,7 +42,8 @@ export default function TaskStatusBadge({ status }: TaskStatusBadgeProps) {
   const { t } = useTranslation();
   const config = (statusConfig as Record<string, typeof fallback>)[status] ?? fallback;
   return (
-    <span className={`px-2 py-1 rounded-full text-sm font-medium ${config.className}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${config.className}`}>
+      <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
       {t(config.labelKey)}
     </span>
   );

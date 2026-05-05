@@ -39,7 +39,7 @@ export function NavBar() {
   const linkClass = (href: string) =>
     `${NAV_LINK_BASE} ${isActive(pathname, href) ? NAV_LINK_ACTIVE : NAV_LINK_IDLE}`;
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur">
+    <nav className="sticky top-0 z-50 border-b border-hairline bg-white/85 backdrop-blur">
       <div className="page-shell">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex min-w-0 items-center group" aria-label="PMET home">

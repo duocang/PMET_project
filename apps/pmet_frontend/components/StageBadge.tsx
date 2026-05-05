@@ -12,12 +12,12 @@ export const STAGE_STYLES: Record<
   TaskStage['state'],
   { icon: string; cls: string }
 > = {
-  pending: { icon: '○', cls: 'bg-slate-50 text-slate-500 border-slate-200' },
-  running: { icon: '◔', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  completed: { icon: '✓', cls: 'bg-green-50 text-green-700 border-green-200' },
-  failed: { icon: '✕', cls: 'bg-red-50 text-red-700 border-red-200' },
-  skipped: { icon: '⊘', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  precomputed: { icon: '↻', cls: 'bg-slate-50 text-slate-600 border-slate-200' },
+  pending:     { icon: '○', cls: 'bg-slate-50 text-slate-500 border-hairline' },
+  running:     { icon: '◔', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  completed:   { icon: '✓', cls: 'bg-primary-50 text-primary-800 border-primary-100' },
+  failed:      { icon: '✕', cls: 'bg-red-50 text-red-700 border-red-200' },
+  skipped:     { icon: '⊘', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  precomputed: { icon: '↻', cls: 'bg-slate-50 text-slate-600 border-hairline' },
 };
 
 interface StageBadgeProps {

@@ -52,10 +52,10 @@ export default function TaskCard({ task, onSelect }: TaskCardProps) {
 
   return (
     <div className="card group hover:shadow-md transition-shadow cursor-pointer" onClick={onSelect}>
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="font-medium text-slate-900">{task.task_id}</h3>
-          <p className="text-sm text-slate-500">{t(MODE_KEYS[task.mode])}</p>
+      <div className="flex justify-between items-start mb-3 gap-3">
+        <div className="min-w-0">
+          <h3 className="mono truncate text-sm font-semibold text-slate-900">{task.task_id}</h3>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-500">{t(MODE_KEYS[task.mode])}</p>
         </div>
         <TaskStatusBadge status={displayStatus} />
       </div>
@@ -81,7 +81,7 @@ export default function TaskCard({ task, onSelect }: TaskCardProps) {
           >
             {t('taskcard.download')}
             {task.result_size_bytes != null && (
-              <span className="ml-1 font-normal opacity-80">
+              <span className="mono ml-1 font-normal opacity-80">
                 ({formatBytes(task.result_size_bytes)})
               </span>
             )}
@@ -106,7 +106,7 @@ export default function TaskCard({ task, onSelect }: TaskCardProps) {
           >
             {t('task.download_partial')}
             {task.partial_result_size_bytes != null && (
-              <span className="ml-1 font-normal text-amber-700">
+              <span className="mono ml-1 font-normal text-amber-700">
                 ({formatBytes(task.partial_result_size_bytes)})
               </span>
             )}

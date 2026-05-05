@@ -194,7 +194,7 @@ export default function TaskDetailPage({ params }: PageProps) {
             >
               {t('task.download_partial')}
               {task.partial_result_size_bytes != null && (
-                <span className="ml-1 font-normal text-amber-700">
+                <span className="ml-1 font-mono font-normal text-amber-700">
                   ({formatBytes(task.partial_result_size_bytes)})
                 </span>
               )}
@@ -231,7 +231,7 @@ export default function TaskDetailPage({ params }: PageProps) {
               <a href={taskApi.downloadResult(task.task_id)} className="btn-primary">
                 {t('task.download')}
                 {task.result_size_bytes != null && (
-                  <span className="ml-1 font-normal opacity-80">
+                  <span className="ml-1 font-mono font-normal opacity-80">
                     ({formatBytes(task.result_size_bytes)})
                   </span>
                 )}

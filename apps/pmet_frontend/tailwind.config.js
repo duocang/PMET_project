@@ -7,9 +7,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Aligned with concept SVGs in /public/figures/.
+        // 50/100 are pulled directly from the figures' soft teal washes
+        // (#eef8f6 / #bdded8) so figure surfaces and UI chips read as
+        // one palette. 200+ keep the original tailwind teal scale.
         primary: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
+          50: '#eef8f6',
+          100: '#bdded8',
           200: '#99f6e4',
           300: '#5eead4',
           400: '#2dd4bf',
@@ -19,6 +23,46 @@ module.exports = {
           800: '#115e59',
           900: '#134e4a',
         },
+        // Single hairline that matches every <rect stroke> in the SVGs.
+        hairline: '#dbe5e8',
+        surface: {
+          DEFAULT: '#ffffff',
+          soft: '#f7faf9',
+          wash: '#eef8f6',
+        },
+        ink: {
+          DEFAULT: '#0f172a',
+          body: '#334155',
+          muted: '#64748b',
+          faint: '#94a3b8',
+        },
+        accent: {
+          DEFAULT: '#b7791f',
+          soft: '#fdf6e7',
+        },
+      },
+      fontFamily: {
+        mono: [
+          'ui-monospace',
+          'SF Mono',
+          'SFMono-Regular',
+          'Menlo',
+          'Consolas',
+          'JetBrains Mono',
+          'monospace',
+        ],
+      },
+      borderRadius: {
+        DEFAULT: '8px',
+      },
+      boxShadow: {
+        // Single soft drop matching the SVG cardShadow filter
+        // (dy=8, stdDeviation=13, #0f172a @ 7%).
+        card: '0 8px 26px -8px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04)',
+        'card-hover': '0 14px 38px -10px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.05)',
+      },
+      transitionTimingFunction: {
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
     },
   },

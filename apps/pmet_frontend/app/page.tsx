@@ -98,11 +98,14 @@ interface StepDef {
   descKey: TranslationKey;
 }
 
+// Circled-numeral glyphs match the ① ② ③ used inside the concept SVGs,
+// so the "How it works" steps speak the same visual vocabulary as the
+// figures embedded further down the page.
 const steps: StepDef[] = [
-  { n: '01', titleKey: 'home.how.step1.title', descKey: 'home.how.step1.desc' },
-  { n: '02', titleKey: 'home.how.step2.title', descKey: 'home.how.step2.desc' },
-  { n: '03', titleKey: 'home.how.step3.title', descKey: 'home.how.step3.desc' },
-  { n: '04', titleKey: 'home.how.step4.title', descKey: 'home.how.step4.desc' },
+  { n: '①', titleKey: 'home.how.step1.title', descKey: 'home.how.step1.desc' },
+  { n: '②', titleKey: 'home.how.step2.title', descKey: 'home.how.step2.desc' },
+  { n: '③', titleKey: 'home.how.step3.title', descKey: 'home.how.step3.desc' },
+  { n: '④', titleKey: 'home.how.step4.title', descKey: 'home.how.step4.desc' },
 ];
 
 export default function HomePage() {
@@ -181,8 +184,11 @@ export default function HomePage() {
 
           <div className="grid gap-4 md:grid-cols-4">
             {steps.map((step) => (
-              <div key={step.n} className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
-                <div className="mb-4 inline-flex rounded-md bg-white px-2.5 py-1 text-xs font-bold text-primary-700 shadow-sm">{step.n}</div>
+              <div key={step.n} className="rounded-lg border border-hairline bg-surface-soft p-4 transition-colors duration-200 ease-out-expo hover:border-primary-100">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="step-numeral text-base">{step.n}</span>
+                  <span className="data-bar data-bar--faint flex-1" aria-hidden />
+                </div>
                 <h3 className="font-semibold text-slate-950">{t(step.titleKey)}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{t(step.descKey)}</p>
               </div>
