@@ -43,11 +43,25 @@ _LINE_COUNT_MAX_BYTES = 5 * 1024 * 1024  # 5 MiB
 # aborted mid-stream and the partial dest file is unlinked. nginx caps
 # the request body at 1 GB before we even see it; these app-level caps
 # additionally guard the gzip decompression path against a "10 KB gzip →
-# 10 GB plaintext" zip-bomb. Sized to cover medium-large plant genomes
-# (rice ~370 MB plain, maize ~2.5 GB plain via gzip) — wheat / human
-# genome scale should not be analysed via the web upload path.
-_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024           # 1 GB raw / on-the-wire
-_DECOMPRESSED_MAX_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB gzip output
+# 10 GB plaintext" zip-bomb.
+#
+# Per file_type so a gene list can't be 1 GB by accident: cluster→ID
+# tab files and MEME motif DBs are inherently small (KB–MB range), so
+# 2 MB is a generous ceiling that still rejects obvious abuse. Sequence
+# / annotation files cover medium-large plant genomes (rice ~370 MB,
+# maize ~2.5 GB via gzip); wheat / human scale should use a pre-computed
+# species or the offline CLI.
+_GENOME_RAW_MAX_BYTES = 1024 * 1024 * 1024          # 1 GB
+_GENOME_DECOMPRESSED_MAX_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB
+_SMALL_RAW_MAX_BYTES = 2 * 1024 * 1024              # 2 MB
+
+_RAW_MAX_BYTES_BY_TYPE: dict[str, int] = {
+    "genes": _SMALL_RAW_MAX_BYTES,
+    "meme": _SMALL_RAW_MAX_BYTES,
+    "fasta": _GENOME_RAW_MAX_BYTES,
+    "gff3": _GENOME_RAW_MAX_BYTES,
+}
+
 _UPLOAD_CHUNK_BYTES = 1 * 1024 * 1024            # 1 MiB per loop iteration
 
 ALLOWED_EXTENSIONS: dict[str, tuple[str, ...]] = {
@@ -164,24 +178,30 @@ def _spooled_upload_size(file: UploadFile) -> Optional[int]:
         return None
 
 
-def _enforce_raw_upload_cap(file: UploadFile) -> None:
+def _raw_cap_for(file_type: str) -> int:
+    return _RAW_MAX_BYTES_BY_TYPE.get(file_type, _SMALL_RAW_MAX_BYTES)
+
+
+def _enforce_raw_upload_cap(file: UploadFile, file_type: str) -> None:
+    cap = _raw_cap_for(file_type)
     raw_size = _spooled_upload_size(file)
-    if raw_size is not None and raw_size > _UPLOAD_MAX_BYTES:
+    if raw_size is not None and raw_size > cap:
         raise HTTPException(
             status_code=413,
-            detail=_upload_too_large_detail("raw", _UPLOAD_MAX_BYTES),
+            detail=_upload_too_large_detail("raw", cap),
         )
 
 
-def _store_upload(file: UploadFile, destination: Path, decompress_gzip: bool) -> None:
+def _store_upload(file: UploadFile, destination: Path, file_type: str, decompress_gzip: bool) -> None:
+    raw_cap = _raw_cap_for(file_type)
     try:
         with _open_upload_destination(destination) as buffer:
             file.file.seek(0)
             if decompress_gzip:
                 with gzip.GzipFile(fileobj=file.file, mode="rb") as gzipped:
-                    _copy_capped(gzipped, buffer, _DECOMPRESSED_MAX_BYTES, "decompressed")
+                    _copy_capped(gzipped, buffer, _GENOME_DECOMPRESSED_MAX_BYTES, "decompressed")
             else:
-                _copy_capped(file.file, buffer, _UPLOAD_MAX_BYTES, "raw")
+                _copy_capped(file.file, buffer, raw_cap, "raw")
     except _UploadTooLarge as exc:
         destination.unlink(missing_ok=True)
         raise HTTPException(
@@ -199,7 +219,7 @@ def _store_upload(file: UploadFile, destination: Path, decompress_gzip: bool) ->
 
 
 def _save_uploaded_file(file: UploadFile, task_id: str, file_type: str) -> dict:
-    _enforce_raw_upload_cap(file)
+    _enforce_raw_upload_cap(file, file_type)
 
     allowed_extensions = ALLOWED_EXTENSIONS.get(file_type)
     if not allowed_extensions:
@@ -228,7 +248,7 @@ def _save_uploaded_file(file: UploadFile, task_id: str, file_type: str) -> dict:
         dest_name = dest_name[:-3]
 
     dest_path = upload_dir / dest_name
-    _store_upload(file, dest_path, decompress_gzip=decompress_gzip)
+    _store_upload(file, dest_path, file_type, decompress_gzip=decompress_gzip)
 
     return {
         "filename": file.filename,

@@ -223,7 +223,10 @@ class UploadRouteTests(unittest.TestCase):
     # ---------- size + bomb caps (#17) ----------
 
     def test_upload_rejects_oversize_raw(self):
-        with patch("pmet_backend.api.routes.files._UPLOAD_MAX_BYTES", 1024):
+        with patch.dict(
+            "pmet_backend.api.routes.files._RAW_MAX_BYTES_BY_TYPE",
+            {"fasta": 1024},
+        ):
             response = self._upload("huge.fa", b"\0" * 2048, "fasta")
         self.assertEqual(response.status_code, 413)
         self.assertIn("size cap", response.json()["detail"].lower())
@@ -233,7 +236,10 @@ class UploadRouteTests(unittest.TestCase):
         gzipped = gzip.compress(payload, compresslevel=0)
         self.assertGreater(len(gzipped), 1024)
 
-        with patch("pmet_backend.api.routes.files._UPLOAD_MAX_BYTES", 1024):
+        with patch.dict(
+            "pmet_backend.api.routes.files._RAW_MAX_BYTES_BY_TYPE",
+            {"fasta": 1024},
+        ):
             response = self._upload("huge.fasta.gz", gzipped, "fasta")
 
         self.assertEqual(response.status_code, 413)
@@ -241,10 +247,35 @@ class UploadRouteTests(unittest.TestCase):
 
     def test_upload_rejects_gzip_bomb(self):
         bomb = gzip.compress(b"\0" * 2048, compresslevel=9)
-        with patch("pmet_backend.api.routes.files._DECOMPRESSED_MAX_BYTES", 1024):
+        with patch("pmet_backend.api.routes.files._GENOME_DECOMPRESSED_MAX_BYTES", 1024):
             response = self._upload("bomb.fasta.gz", bomb, "fasta")
         self.assertEqual(response.status_code, 413)
         self.assertIn("decompressed-size", response.json()["detail"].lower())
+
+    def test_upload_rejects_oversize_genes_small_cap(self):
+        # genes / meme have a much tighter 2 MB raw cap than fasta / gff3,
+        # because cluster→gene tab files are inherently small. Verify
+        # that the per-type lookup is wired up by patching just the genes
+        # entry and confirming a fasta upload of the same size still
+        # passes (uses its own 1 GB cap).
+        with patch.dict(
+            "pmet_backend.api.routes.files._RAW_MAX_BYTES_BY_TYPE",
+            {"genes": 16},
+        ):
+            small_gene = self._upload("g.txt", b"a\nb\nc\n", "genes")
+            self.assertEqual(small_gene.status_code, 200)
+            big_gene = self._upload("g.txt", b"x" * 64, "genes")
+        self.assertEqual(big_gene.status_code, 413)
+        self.assertIn("size cap", big_gene.json()["detail"].lower())
+
+    def test_upload_rejects_oversize_meme_small_cap(self):
+        with patch.dict(
+            "pmet_backend.api.routes.files._RAW_MAX_BYTES_BY_TYPE",
+            {"meme": 16},
+        ):
+            response = self._upload("m.meme", b"x" * 64, "meme")
+        self.assertEqual(response.status_code, 413)
+        self.assertIn("size cap", response.json()["detail"].lower())
 
     def test_upload_rejects_session_file_quota(self):
         session = self._issue_session()

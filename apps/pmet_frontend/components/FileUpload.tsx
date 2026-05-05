@@ -75,6 +75,12 @@ interface FileUploadProps {
    *  with real-file content. previewContent stays as the synchronous
    *  fallback shown until the fetch resolves (and on error). */
   previewSourceUrl?: string;
+  /** Optional per-slot size hint shown below the accepted-extensions line.
+   *  Caller is responsible for the wording (e.g. "≤ 2 MB" or "≤ 1 GB raw /
+   *  5 GB after gzip"). Purely cosmetic — the actual cap lives in the
+   *  backend; this just communicates it to the user before they pick
+   *  a 700 MB file and watch it 413 at the end. */
+  sizeLimitText?: string;
 }
 
 function UploadIcon() {
@@ -136,6 +142,7 @@ export default function FileUpload({
   previewContent,
   previewNote,
   previewSourceUrl,
+  sizeLimitText,
 }: FileUploadProps) {
   const { t } = useTranslation();
   // Single source of truth for "an example fetch is in flight". The URL
@@ -456,6 +463,9 @@ export default function FileUpload({
                 <p className="text-xs text-slate-400">
                   {t('fileupload.drop_idle_hint')} <span className="font-mono">{acceptedExtensions.join(' · ')}</span>
                 </p>
+              )}
+              {sizeLimitText && (
+                <p className="text-xs text-slate-400">{sizeLimitText}</p>
               )}
             </>
           )}

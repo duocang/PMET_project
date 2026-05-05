@@ -790,6 +790,7 @@ function SubmitPageContent() {
               previewNote={t('submit.preview.fasta_note')}
               previewContent={EXAMPLE_FASTA}
               previewSourceUrl={`/api/demo/${mode}/fasta/preview?lines=80`}
+              sizeLimitText={t('submit.upload.limit.genome')}
             />
           )}
 
@@ -807,6 +808,7 @@ function SubmitPageContent() {
               previewNote={t('submit.preview.gff3_note')}
               previewContent={EXAMPLE_GFF3}
               previewSourceUrl="/api/demo/promoters/gff3/preview?lines=80"
+              sizeLimitText={t('submit.upload.limit.genome')}
             />
           )}
 
@@ -842,6 +844,7 @@ function SubmitPageContent() {
                 previewNote={t('submit.preview.meme_note')}
                 previewContent={EXAMPLE_MEME}
                 previewSourceUrl={`/api/demo/${mode}/meme/preview?lines=80`}
+                sizeLimitText={t('submit.upload.limit.small')}
               />
             );
           })()}
@@ -862,6 +865,7 @@ function SubmitPageContent() {
               previewNote={t(mode === 'intervals' ? 'submit.preview.peaks_note' : 'submit.preview.gene_list_note')}
               previewContent={mode === 'intervals' ? EXAMPLE_PEAK_LIST : EXAMPLE_GENE_LIST}
               previewSourceUrl={`/api/demo/${mode}/genes/preview?lines=80`}
+              sizeLimitText={t('submit.upload.limit.small')}
             />
             {/* Cluster filter renders only when the uploaded gene list
                 has a 2-column <cluster>\t<gene> shape. The component
