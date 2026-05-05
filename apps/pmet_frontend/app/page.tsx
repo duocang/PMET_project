@@ -171,29 +171,27 @@ export default function HomePage() {
       </section>
 
       <section id="how-it-works" className="scroll-mt-24">
-        <div className="card">
-          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="eyebrow mb-2">{t('home.how.eyebrow')}</p>
-              <h2 className="section-heading">{t('home.how.heading')}</h2>
-            </div>
-            <Link href="/tasks" className="font-semibold text-primary-700 hover:text-primary-900">
-              {t('home.how.viewtasks')}
-            </Link>
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="eyebrow mb-2">{t('home.how.eyebrow')}</p>
+            <h2 className="section-heading">{t('home.how.heading')}</h2>
           </div>
+          <Link href="/tasks" className="font-semibold text-primary-700 hover:text-primary-900">
+            {t('home.how.viewtasks')}
+          </Link>
+        </div>
 
-          <div className="grid gap-4 md:grid-cols-4">
-            {steps.map((step) => (
-              <div key={step.n} className="rounded-lg border border-hairline bg-surface-soft p-4 transition-colors duration-200 ease-out-expo hover:border-primary-100">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="step-numeral text-base">{step.n}</span>
-                  <span className="data-bar data-bar--faint flex-1" aria-hidden />
-                </div>
-                <h3 className="font-semibold text-slate-950">{t(step.titleKey)}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{t(step.descKey)}</p>
+        <div className="grid gap-4 md:grid-cols-4">
+          {steps.map((step) => (
+            <div key={step.n} className="card transition-colors duration-200 ease-out-expo hover:border-primary-100">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="step-numeral text-base">{step.n}</span>
+                <span className="data-bar data-bar--faint flex-1" aria-hidden />
               </div>
-            ))}
-          </div>
+              <h3 className="font-semibold text-slate-950">{t(step.titleKey)}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{t(step.descKey)}</p>
+            </div>
+          ))}
         </div>
       </section>
 
