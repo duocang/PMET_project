@@ -1104,6 +1104,48 @@ function VisualizePageContent() {
     URL.revokeObjectURL(url);
   }, [tableData, selectedCluster]);
 
+  // Loading view: opened via `/visualize?task=<id>` from the task detail
+  // page's "Open in Viewer" CTA. Without this branch the user briefly
+  // saw the upload zone while the raw motif_output.txt was being
+  // fetched — confusing on large tasks where the fetch takes seconds.
+  // Hold a loading state until parsePmetFile populates allResults or
+  // an error is recorded; only then fall through to the upload or
+  // result views. The trailing `null` checks are unreachable but keep
+  // TS narrowing tidy.
+  if (taskParam && allResults.length === 0 && !error) {
+    return (
+      <div className="max-w-5xl mx-auto py-8">
+        <h1 className="text-2xl font-bold mb-2">{t('viz.title')}</h1>
+        <p className="text-slate-600 mb-8">{t('viz.intro')}</p>
+
+        <div className="card flex items-center gap-4">
+          <svg
+            className="h-6 w-6 shrink-0 animate-spin text-primary-700"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
+            <path
+              d="M22 12a10 10 0 0 1-10 10"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+          <div>
+            <p className="font-semibold text-slate-900">{t('viz.loading.title')}</p>
+            <p className="mt-0.5 text-sm text-slate-600">
+              {t('viz.loading.subtitle').split('{id}')[0]}
+              <span className="mono font-medium text-slate-800">{taskParam}</span>
+              {t('viz.loading.subtitle').split('{id}')[1]}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Upload view
   if (allResults.length === 0) {
     return (

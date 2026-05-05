@@ -509,6 +509,8 @@ const en = {
 
   // visualize: task source
   'viz.err.task_load': 'Failed to load task results.',
+  'viz.loading.title': 'Loading task results…',
+  'viz.loading.subtitle': 'Reading motif_output.txt for task {id}. Large tasks may take a few seconds.',
 } as const;
 
 const zh: Record<keyof typeof en, string> = {
@@ -1009,6 +1011,8 @@ const zh: Record<keyof typeof en, string> = {
   'quicklook.top.empty': '没有 pair 达到 p < 0.05。',
 
   'viz.err.task_load': '加载任务结果失败。',
+  'viz.loading.title': '正在加载任务结果…',
+  'viz.loading.subtitle': '正在读取任务 {id} 的 motif_output.txt，大任务可能需要数秒。',
 };
 
 export type TranslationKey = keyof typeof en;
