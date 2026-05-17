@@ -24,7 +24,7 @@ export default function DatenschutzPage() {
         <p>
           Wang Xuesong (王雪松)<br />
           Lynarstraße 26, 13353 Berlin, Deutschland<br />
-          E-Mail: <a href="mailto:wangxuesong29@gmail.com">wangxuesong29@gmail.com</a>
+          E-Mail: <a href="mailto:questions@pmet.online">questions@pmet.online</a>
         </p>
         <p>
           Für Anfragen zum Datenschutz wenden Sie sich bitte an dieselbe E-Mail-Adresse.
@@ -173,7 +173,7 @@ export default function DatenschutzPage() {
             <p>
               Wang Xuesong (王雪松)<br />
               Lynarstraße 26, 13353 Berlin, Germany<br />
-              E-mail: <a href="mailto:wangxuesong29@gmail.com">wangxuesong29@gmail.com</a>
+              E-mail: <a href="mailto:questions@pmet.online">questions@pmet.online</a>
             </p>
             <p>
               For data-protection enquiries please use the same address. We respond within
@@ -317,7 +317,7 @@ export default function DatenschutzPage() {
             <p>
               王雪松 (Wang Xuesong)<br />
               Lynarstraße 26, 13353 柏林, 德国<br />
-              电子邮件：<a href="mailto:wangxuesong29@gmail.com">wangxuesong29@gmail.com</a>
+              电子邮件：<a href="mailto:questions@pmet.online">questions@pmet.online</a>
             </p>
             <p>
               数据保护相关咨询请发上述邮箱。我们将在一个月内回复。

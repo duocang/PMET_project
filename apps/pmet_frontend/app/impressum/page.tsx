@@ -29,7 +29,7 @@ export default function ImpressumPage() {
 
         <h2>Kontakt</h2>
         <p>
-          E-Mail: <a href="mailto:wangxuesong29@gmail.com">wangxuesong29@gmail.com</a>
+          E-Mail: <a href="mailto:questions@pmet.online">questions@pmet.online</a>
         </p>
 
         <h2>Inhaltlich verantwortlich gemäß § 18 Abs. 2 MStV</h2>
@@ -73,7 +73,7 @@ export default function ImpressumPage() {
           </p>
           <h3>Contact</h3>
           <p>
-            E-mail: <a href="mailto:wangxuesong29@gmail.com">wangxuesong29@gmail.com</a>
+            E-mail: <a href="mailto:questions@pmet.online">questions@pmet.online</a>
           </p>
           <h3>Responsible for content under § 18(2) MStV</h3>
           <p>Wang Xuesong (王雪松), address as above.</p>
@@ -111,7 +111,7 @@ export default function ImpressumPage() {
           </p>
           <h3>联系方式</h3>
           <p>
-            电子邮件：<a href="mailto:wangxuesong29@gmail.com">wangxuesong29@gmail.com</a>
+            电子邮件：<a href="mailto:questions@pmet.online">questions@pmet.online</a>
           </p>
           <h3>内容责任人（依《国家州际媒体协议》§18 第 2 款）</h3>
           <p>王雪松 (Wang Xuesong)，地址同上。</p>
