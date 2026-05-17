@@ -19,7 +19,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'en' || stored === 'zh') setLocaleState(stored);
+    if (stored === 'en' || stored === 'zh') {
+      setLocaleState(stored);
+      return;
+    }
+    const nav = window.navigator.language || '';
+    if (nav.toLowerCase().startsWith('zh')) setLocaleState('zh');
   }, []);
 
   const setLocale = (l: Locale) => {
