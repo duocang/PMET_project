@@ -46,6 +46,7 @@ If you came with a question, jump straight to the right doc:
 docs/
 ├── README.md                   you are here
 ├── deployment.md               docker-compose stack: nginx + api + worker + frontend + redis
+├── email-setup.md               Brevo SMTP + ImprovMX inbound mail (bilingual, operational)
 ├── methods/                    scientific method explanations
 │   ├── pmet.md                    what PMET does and why (English)
 │   ├── promoter-extraction.md     how promoters are derived (bilingual + head-to-head FAQ)
@@ -156,6 +157,7 @@ PMET 长篇文档的家 —— 凡是细到不适合塞进仓库根 README 的�
 docs/
 ├── README.md                   你正在看的就是
 ├── deployment.md               docker-compose 栈：nginx + api + worker + frontend + redis
+├── email-setup.md               Brevo SMTP + ImprovMX 收发信铺设（中英双语，运维用）
 ├── methods/                    科学方法解释
 │   ├── pmet.md                    PMET 干什么、为什么这么干（英文）
 │   ├── promoter-extraction.md     如何从基因 + GFF3 派生启动子（双语 + head-to-head 答疑）
