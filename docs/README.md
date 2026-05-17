@@ -59,6 +59,7 @@ docs/
 ├── perf/                       performance investigations
 │   └── minhash_calibration.md     CIS-BP2 sweep, why MinHash prefilter ships off
 ├── figures/                    SVG flowcharts and example outputs
+├── legal/                      vendor DPA snapshots (GDPR Art. 28(3) evidence)
 ├── workflows/walkthroughs/     step-by-step pipeline walkthroughs (one per workflow)
 │                               that show what hand-verifiable depth looks like;
 │                               not auto-updated, paths inside are pre-monorepo
