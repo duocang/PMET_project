@@ -10,9 +10,14 @@ const en = {
   'nav.about': 'About',
   'nav.contributors': 'Contributors',
   'nav.tagline': 'Paired Motif Enrichment Tool',
+  'nav.menu.open': 'Open menu',
+  'nav.menu.close': 'Close menu',
   // footer
   'footer.text': 'PMET — Paired Motif Enrichment Tool',
   'footer.maintainer': 'Maintained by Dr. Xuesong Wang',
+  'footer.linksAria': 'Footer links',
+  // a11y
+  'a11y.skipToContent': 'Skip to main content',
   // lang toggle
   'lang.toggle.aria': 'Toggle language',
 
@@ -523,9 +528,14 @@ const zh: Record<keyof typeof en, string> = {
   'nav.about': '关于',
   'nav.contributors': '贡献者',
   'nav.tagline': 'Paired Motif Enrichment Tool',
+  'nav.menu.open': '打开菜单',
+  'nav.menu.close': '关闭菜单',
   // footer
   'footer.text': 'PMET — Paired Motif Enrichment Tool',
   'footer.maintainer': '由 王雪松 博士维护',
+  'footer.linksAria': '页脚链接',
+  // a11y
+  'a11y.skipToContent': '跳到正文',
   // lang toggle
   'lang.toggle.aria': '切换语言',
 

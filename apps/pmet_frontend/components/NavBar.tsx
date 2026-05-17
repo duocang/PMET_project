@@ -2,15 +2,32 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { LangToggle } from './LangToggle';
+import type { TranslationKey } from '@/lib/translations';
 
 const GITHUB_URL = 'https://github.com/duocang/PMET_project';
 
+type NavItem = { href: string; key: TranslationKey };
+
+const NAV_ITEMS: NavItem[] = [
+  { href: '/', key: 'nav.home' },
+  { href: '/submit', key: 'nav.analysis' },
+  { href: '/tasks', key: 'nav.tasks' },
+  { href: '/visualize', key: 'nav.visualize' },
+  { href: '/data', key: 'nav.data' },
+  { href: '/about', key: 'nav.about' },
+  { href: '/contributors', key: 'nav.contributors' },
+];
+
 const NAV_LINK_BASE =
-  'rounded-md px-1.5 py-2 text-xs font-medium transition-colors sm:px-2.5 sm:text-sm lg:text-base';
+  'inline-flex min-h-[44px] items-center rounded-md px-2.5 text-sm font-medium transition-colors lg:text-base';
 const NAV_LINK_IDLE = 'text-slate-600 hover:bg-slate-100 hover:text-primary-800';
 const NAV_LINK_ACTIVE = 'bg-primary-50 text-primary-800';
+
+const DRAWER_LINK_BASE =
+  'flex min-h-[48px] items-center rounded-md px-4 text-base font-medium transition-colors';
 
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
@@ -33,15 +50,67 @@ function GitHubIcon() {
   );
 }
 
+function MenuIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {open ? (
+        <>
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </>
+      ) : (
+        <>
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 export function NavBar() {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const linkClass = (href: string) =>
+  const [open, setOpen] = useState(false);
+
+  const desktopLinkClass = (href: string) =>
     `${NAV_LINK_BASE} ${isActive(pathname, href) ? NAV_LINK_ACTIVE : NAV_LINK_IDLE}`;
+  const drawerLinkClass = (href: string) =>
+    `${DRAWER_LINK_BASE} ${isActive(pathname, href) ? NAV_LINK_ACTIVE : NAV_LINK_IDLE}`;
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   return (
     <nav className="sticky top-0 z-50 border-b border-hairline bg-white/85 backdrop-blur">
       <div className="page-shell">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-16 items-center justify-between gap-3">
           <Link href="/" className="flex min-w-0 items-center group" aria-label="PMET home">
             <img
               src="/figures/logo_small.png"
@@ -52,41 +121,94 @@ export function NavBar() {
               {t('nav.tagline')}
             </span>
           </Link>
-          <div className="flex min-w-0 items-center gap-1 sm:gap-2 lg:gap-3">
-            <Link href="/" className={linkClass('/')}>
-              {t('nav.home')}
-            </Link>
-            <Link href="/submit" className={linkClass('/submit')}>
-              {t('nav.analysis')}
-            </Link>
-            <Link href="/tasks" className={linkClass('/tasks')}>
-              {t('nav.tasks')}
-            </Link>
-            <Link href="/visualize" className={linkClass('/visualize')}>
-              {t('nav.visualize')}
-            </Link>
-            <Link href="/data" className={linkClass('/data')}>
-              {t('nav.data')}
-            </Link>
-            <Link href="/about" className={linkClass('/about')}>
-              {t('nav.about')}
-            </Link>
-            <Link href="/contributors" className={linkClass('/contributors')}>
-              {t('nav.contributors')}
-            </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden min-w-0 items-center gap-1 lg:flex xl:gap-1.5">
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={desktopLinkClass(item.href)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {t(item.key)}
+                </Link>
+              );
+            })}
             <LangToggle />
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="View source on GitHub"
-              className="ml-0 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 sm:ml-1 sm:p-2"
+              className="ml-1 inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
               <GitHubIcon />
             </a>
           </div>
+
+          {/* Mobile cluster: lang + hamburger */}
+          <div className="flex items-center gap-1 lg:hidden">
+            <LangToggle />
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View source on GitHub"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            >
+              <GitHubIcon />
+            </a>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-label={open ? t('nav.menu.close') : t('nav.menu.open')}
+              aria-expanded={open}
+              aria-controls="mobile-nav-drawer"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-700 transition-colors hover:bg-slate-100"
+            >
+              <MenuIcon open={open} />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile drawer */}
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-label={t('nav.menu.close')}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 cursor-default bg-slate-900/30 backdrop-blur-sm lg:hidden"
+          />
+          <div
+            id="mobile-nav-drawer"
+            className="fixed left-0 right-0 top-16 z-50 border-b border-hairline bg-white shadow-card-hover lg:hidden"
+          >
+            <div className="page-shell">
+              <ul className="flex flex-col gap-1 py-3">
+                {NAV_ITEMS.map((item) => {
+                  const active = isActive(pathname, item.href);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={drawerLinkClass(item.href)}
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        {t(item.key)}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        </>
+      )}
     </nav>
   );
 }

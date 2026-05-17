@@ -40,6 +40,32 @@ module.exports = {
           DEFAULT: '#b7791f',
           soft: '#fdf6e7',
         },
+        // Categorical hues used by the concept SVGs. Defined here so
+        // future UI chips / badges can reference the same swatches.
+        mode: {
+          promoter: '#0f766e',
+          'promoter-soft': '#bdded8',
+          intervals: '#1f6feb',
+          'intervals-soft': '#d4e3fc',
+          elements: '#8a4cbe',
+          'elements-soft': '#e0d4f0',
+          pair: '#64748b',
+          'pair-soft': '#e2e8f0',
+        },
+        motif: {
+          a: '#b7791f',
+          'a-soft': '#fde9c6',
+          'a-ink': '#7a4d10',
+          b: '#0f766e',
+          'b-soft': '#bdded8',
+          'b-ink': '#134e4a',
+          c: '#8a4cbe',
+          'c-soft': '#e0d4f0',
+          'c-ink': '#5e2d8c',
+          d: '#64748b',
+          'd-soft': '#e2e8f0',
+          'd-ink': '#334155',
+        },
       },
       fontFamily: {
         mono: [

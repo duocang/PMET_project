@@ -25,6 +25,29 @@
   --accent:        #b7791f;
   --accent-soft:   #fdf6e7;
 
+  /* Categorical hues — shared with the concept SVGs in /public/figures/. */
+  --mode-promoter:        #0f766e;
+  --mode-promoter-soft:   #bdded8;
+  --mode-intervals:       #1f6feb;
+  --mode-intervals-soft:  #d4e3fc;
+  --mode-elements:        #8a4cbe;
+  --mode-elements-soft:   #e0d4f0;
+  --mode-pair:            #64748b;
+  --mode-pair-soft:       #e2e8f0;
+
+  --motif-a:       #b7791f;
+  --motif-a-soft:  #fde9c6;
+  --motif-a-ink:   #7a4d10;
+  --motif-b:       #0f766e;
+  --motif-b-soft:  #bdded8;
+  --motif-b-ink:   #134e4a;
+  --motif-c:       #8a4cbe;
+  --motif-c-soft:  #e0d4f0;
+  --motif-c-ink:   #5e2d8c;
+  --motif-d:       #64748b;
+  --motif-d-soft:  #e2e8f0;
+  --motif-d-ink:   #334155;
+
   --easing-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --dur-in:        180ms;
   --dur-out:       120ms;
@@ -51,6 +74,34 @@ body {
   min-height: 100vh;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Keyboard-only focus ring across all interactive elements that don't
+   ship their own (raw <a> in paragraph copy, generic <button>). */
+:where(a, button):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.28);
+  border-radius: 6px;
+}
+
+/* Skip-to-content link — visually hidden until focused. */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-150%);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.5rem 0.875rem;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px -4px rgba(15, 118, 110, 0.4);
+  transition: transform 140ms var(--easing-out);
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: none;
 }
 
 /* ============================================================
@@ -265,21 +316,19 @@ body {
 /* ============================================================
    Animations & micro-interactions (single easing curve).
    ============================================================ */
-@keyframes gh-pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.08); }
-}
+/* Calmer GitHub icon — no auto-pulse (was distracting + violated "1-2
+   animated elements per view"). Only react on hover. */
 @keyframes gh-wiggle {
-  0%, 100% { transform: rotate(0deg) scale(1.15); }
-  25%      { transform: rotate(-12deg) scale(1.15); }
-  75%      { transform: rotate(12deg) scale(1.15); }
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-10deg); }
+  75%      { transform: rotate(10deg); }
 }
 .gh-icon {
-  animation: gh-pulse 2.4s ease-in-out infinite;
   transform-origin: center;
+  transition: transform var(--dur-in) var(--easing-out);
 }
 .gh-icon:hover {
-  animation: gh-wiggle 0.6s ease-in-out infinite;
+  animation: gh-wiggle 0.55s ease-in-out;
 }
 
 @keyframes zoom-fade-in {
@@ -316,4 +365,19 @@ body {
 .hero-zoom-hint:hover,
 .hero-zoom-hint:focus-visible {
   animation-play-state: paused;
+}
+
+/* ============================================================
+   Respect the user's motion preference. Kills decorative
+   keyframes & cuts transitions to a near-instant fade.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
