@@ -10,12 +10,12 @@
 
 Four sibling subdirectories, each answering a different question. You usually only need to know two of them — `make test` chains the fast tracks, `make test-audit` is the heavy opt-in.
 
-| Subdir | Asks | When it runs | See |
+| Subdir | What it pins | When it runs | See |
 |---|---|---|---|
-| [`unit/`](unit/) | "Did this single function / R kernel / TS reducer change behaviour?" | every `make test` (~5 s) | [`tests/unit/README.md`](unit/README.md) |
-| [`integration/`](integration/) | "Do the pipeline-level invariants still hold? bedtools `-s`, chromosome preflight, R-vs-frontend heatmap consistency?" | every `make test` (~3–10 s, smoke), heavier scripts opt-in | [`tests/integration/README.md`](integration/README.md) |
-| [`baseline/`](baseline/) | "Did my edit accidentally change the demo's numerical output?" | opt-in `make baseline-check` (~30 s) | [`tests/baseline/README.md`](baseline/README.md) |
-| [`audit/`](audit/) | "What does each workflow actually do, on canonical inputs, end-to-end? Is it documented correctly?" | opt-in `make test-audit` (minutes); regenerates [`docs/workflows/*.md`](../docs/workflows/) | [`tests/audit/README.md`](audit/README.md) |
+| [`unit/`](unit/) | One file per fixed bug or new feature, each pinning one specific thing — BH correction monotonicity, mail templates, admin login throttle, task-status inference, `formatBytes`, MinHash resolver policy, … 18 files in total. | every `make test` (~5 s) | [`tests/unit/README.md`](unit/README.md) |
+| [`integration/`](integration/) | Pipeline-level invariants that span multiple scripts: `bedtools getfasta -s` for minus-strand promoters, `build_promoters.py` actually uses `-s`, chromosome-name preflight (`Chr1` vs `1`), `assess_integrity.py` resolving non-adjacent GFF3 fragments, R-side and frontend-side heatmaps selecting the same motifs. 7 checks in the smoke; heavier scripts opt-in. | every `make test` (~3–10 s, smoke), heavier scripts opt-in | [`tests/integration/README.md`](integration/README.md) |
+| [`baseline/`](baseline/) | SHA-256 of every demo-run output file + the two production binaries, frozen in `fingerprints.txt`. Catches "my refactor of `motif.cpp` accidentally shifted some hit's adj-p by 1e-16" — pure substance regression on the demo fixture. | opt-in `make baseline-check` (~30 s) | [`tests/baseline/README.md`](baseline/README.md) |
+| [`audit/`](audit/) | Per-workflow end-to-end replay on canonical inputs (promoter on TAIR10 + Franco-Zorrilla, intervals + pair_only on the bundled demo, elements across all 5 `-e` options). Captures SHA-256 anchors + row counts and rewrites `docs/workflows/*.md` from templates. Catches "the published workflow doc no longer matches what the script actually does." | opt-in `make test-audit` (minutes); regenerates [`docs/workflows/*.md`](../docs/workflows/) | [`tests/audit/README.md`](audit/README.md) |
 
 `make test` chains the three fast hermetic tracks (core + unit + integration smoke, ~10 s). `make test-all` layers on the backend API smoke + the CLI baseline-check for ~30 s of "everything that runs without an external service." E2E (`make test-e2e`) + audit + baseline-update are opt-in; see [README §10](../README.md#en-10) for the full track-by-track table.
 
@@ -31,13 +31,13 @@ All `make` targets are repo-root. The `make` ones are the canonical entry points
 | Just the Python / R / bash / TS unit tests | `make test-unit` (driver: [`tests/unit/run.sh`](unit/run.sh)) | ~5 s |
 | Just the integration smoke (`smoke/run.sh`) | `make test-integration` | ~3–10 s |
 | Backend FastAPI 5-stage smoke | `make test-backend-smoke` | ~2 s |
-| Frontend E2E (admin walkthrough) | `PMET_E2E_ADMIN_TOKEN=… make test-e2e` | ~10 s |
+| Frontend E2E (admin walkthrough; setup below) | `make test-e2e` | ~10 s |
 | Workflow audit + rewrite `docs/workflows/*.md` | `make test-audit` (or `python3 tests/audit/generate.py <name>`) | minutes |
 | Compare current output hashes vs committed baseline | `make baseline-check` (alias `make baseline`) | ~30 s |
 | Re-bless baseline after an intentional behavioural change | `make baseline-update` | ~30 s |
 | Run one specific Python test file | `/tmp/pmet_test_venv/bin/python tests/unit/test_audit.py` | < 1 s |
 | Run one specific C++ test suite | `make test-pairing` (the runner inside prints per-case PASS lines) | < 5 s |
-| Run one specific Playwright spec | `cd apps/pmet_frontend && PMET_E2E_ADMIN_TOKEN=… npx playwright test e2e/admin.spec.ts -g 'A6'` | ~3 s |
+| Run one specific Playwright spec | `cd apps/pmet_frontend && npx playwright test e2e/admin.spec.ts -g 'A6'` (needs the env var set; see setup below) | ~3 s |
 | Get verbose pytest-style output from a Python file | `python -m unittest -v tests/unit/test_audit` (run from `tests/unit/`) | < 1 s |
 
 **Need a test venv?** Python backend tests need `fastapi` and friends. The unit-test runner picks up `/tmp/pmet_test_venv` automatically if it exists:
@@ -54,6 +54,21 @@ cd apps/pmet_frontend && npm install
 ```
 
 Both are best-effort: missing the venv just skips the Python backend rows in `make test-unit`, missing `node_modules` skips the tsx rows.
+
+**Frontend E2E setup.** `make test-e2e` needs three things:
+
+```bash
+# 1. Admin token (server-side; the spec posts this to /admin/login).
+export PMET_E2E_ADMIN_TOKEN="$(cat deploy/configure/admin_token.txt)"
+
+# 2. Dev server on :3000 against the live docker backend on :5960.
+( cd apps/pmet_frontend && NEXT_PUBLIC_API_URL=http://localhost:5960 npm run dev ) &
+
+# 3. Run the suite.
+make test-e2e
+```
+
+The whole suite **self-skips** if `PMET_E2E_ADMIN_TOKEN` is unset, so CI without admin creds stays green. Bring the dev server down (`pkill -f 'next dev'`) when you're done.
 
 ## Where outputs land — the `results/tests/` convention
 
@@ -208,12 +223,12 @@ The two backend files are the real problem — they have **30 cases of unique up
 
 四个并列子目录，各回答一个不同的问题。日常通常只关心两个 —— `make test` 串起来跑那些快的，`make test-audit` 是重型 opt-in。
 
-| 子目录 | 回答的问题 | 跑时机 | 详见 |
+| 子目录 | 钉住什么 | 跑时机 | 详见 |
 |---|---|---|---|
-| [`unit/`](unit/) | "这个单函数 / R kernel / TS reducer 行为变了没？" | 每次 `make test`（~5 秒） | [`tests/unit/README.md`](unit/README.md) |
-| [`integration/`](integration/) | "Pipeline 级不变量还在不在？bedtools `-s`、染色体预检、R 与前端的热图一致性？" | 每次 `make test`（smoke ~3–10 秒），重脚本 opt-in | [`tests/integration/README.md`](integration/README.md) |
-| [`baseline/`](baseline/) | "我这次改有没有意外改了 demo 的数字输出？" | opt-in `make baseline-check`（~30 秒） | [`tests/baseline/README.md`](baseline/README.md) |
-| [`audit/`](audit/) | "每个 workflow 在 canonical 输入上实际做了什么？文档跟实际对得上吗？" | opt-in `make test-audit`（分钟级），重生 [`docs/workflows/*.md`](../docs/workflows/) | [`tests/audit/README.md`](audit/README.md) |
+| [`unit/`](unit/) | 一 bug 一文件、一新功能一文件，钉住一件具体的事 —— BH 校正单调性、邮件模板、管理员登录节流、任务状态推导、`formatBytes`、MinHash 解析器策略 …… 共 18 份。 | 每次 `make test`（~5 秒） | [`tests/unit/README.md`](unit/README.md) |
+| [`integration/`](integration/) | 跨多脚本的 pipeline 级不变量：`bedtools getfasta -s` 处理负链启动子、`build_promoters.py` 实际带了 `-s`、染色体名预检（`Chr1` vs `1`）、`assess_integrity.py` 处理非相邻 GFF3 fragment、R 端和前端热图从同一份 motif_output.txt 选出同一组 motif。smoke 7 个 check；重脚本 opt-in。 | 每次 `make test`（smoke ~3–10 秒），重脚本 opt-in | [`tests/integration/README.md`](integration/README.md) |
+| [`baseline/`](baseline/) | demo 跑的每个输出文件 + 两个生产二进制的 SHA-256，冻结在 `fingerprints.txt` 里。抓"我重构 `motif.cpp` 不小心把某个 hit 的 adj-p 挪了 1e-16"那种 demo fixture 上的纯 substance 回归。 | opt-in `make baseline-check`（~30 秒） | [`tests/baseline/README.md`](baseline/README.md) |
+| [`audit/`](audit/) | 每个 workflow 用 canonical 输入端到端重跑一遍（promoter 跑 TAIR10 + Franco-Zorrilla、intervals + pair_only 跑自带 demo、elements 跑 5 个 `-e` 选项）。抓 SHA-256 anchor + 行数，从模板重渲染 `docs/workflows/*.md`。抓"发布出去的 workflow 文档跟脚本实际行为不一致"。 | opt-in `make test-audit`（分钟级），重生 [`docs/workflows/*.md`](../docs/workflows/) | [`tests/audit/README.md`](audit/README.md) |
 
 `make test` 串起三条快 hermetic 轨道（core + unit + integration smoke，~10 秒）。`make test-all` 再叠加后端 API smoke + CLI baseline-check，~30 秒"无外部依赖能跑的全跑了"。E2E（`make test-e2e`）+ audit + baseline-update 留 opt-in；完整一表见 [README §10](../README.md#cn-10)。
 
@@ -229,13 +244,13 @@ The two backend files are the real problem — they have **30 cases of unique up
 | 只跑 Python / R / bash / TS 单测 | `make test-unit`（驱动：[`tests/unit/run.sh`](unit/run.sh)） | ~5 秒 |
 | 只跑集成 smoke（`smoke/run.sh`） | `make test-integration` | ~3–10 秒 |
 | 后端 FastAPI 5 阶段 smoke | `make test-backend-smoke` | ~2 秒 |
-| 前端 E2E（管理员 walkthrough） | `PMET_E2E_ADMIN_TOKEN=… make test-e2e` | ~10 秒 |
+| 前端 E2E（管理员 walkthrough；准备见下方） | `make test-e2e` | ~10 秒 |
 | Workflow audit + 重写 `docs/workflows/*.md` | `make test-audit`（或 `python3 tests/audit/generate.py <name>`） | 分钟级 |
 | 比对当前输出 hash 与 commit 过的 baseline | `make baseline-check`（别名 `make baseline`） | ~30 秒 |
 | 故意更新 baseline（行为变化是有意的） | `make baseline-update` | ~30 秒 |
 | 单跑某个 Python 测试文件 | `/tmp/pmet_test_venv/bin/python tests/unit/test_audit.py` | < 1 秒 |
 | 单跑某个 C++ 测试套 | `make test-pairing`（内部 runner 逐 case 打 PASS） | < 5 秒 |
-| 单跑某个 Playwright spec | `cd apps/pmet_frontend && PMET_E2E_ADMIN_TOKEN=… npx playwright test e2e/admin.spec.ts -g 'A6'` | ~3 秒 |
+| 单跑某个 Playwright spec | `cd apps/pmet_frontend && npx playwright test e2e/admin.spec.ts -g 'A6'`（需先设好 env，见下方准备） | ~3 秒 |
 | 拿到 pytest 风格的详细输出 | `python -m unittest -v tests/unit/test_audit`（在 `tests/unit/` 下执行） | < 1 秒 |
 
 **需要 Python venv？** 后端 Python 测试要 `fastapi` 等。`make test-unit` 自动认 `/tmp/pmet_test_venv`：
@@ -252,6 +267,21 @@ cd apps/pmet_frontend && npm install
 ```
 
 两者都是 best-effort：没 venv 时 `make test-unit` 跳过 Python 后端那几行；没 `node_modules` 时跳 tsx 那几行。
+
+**前端 E2E 准备**。`make test-e2e` 三件事：
+
+```bash
+# 1. admin token（服务端那份；spec 会 POST 到 /admin/login）。
+export PMET_E2E_ADMIN_TOKEN="$(cat deploy/configure/admin_token.txt)"
+
+# 2. dev server 起在 :3000，对接活的 docker 后端 :5960。
+( cd apps/pmet_frontend && NEXT_PUBLIC_API_URL=http://localhost:5960 npm run dev ) &
+
+# 3. 跑测试。
+make test-e2e
+```
+
+`PMET_E2E_ADMIN_TOKEN` 没设时整套 **自动 skip**，CI 没管理员凭据也不会红。跑完用 `pkill -f 'next dev'` 把 dev server 关掉。
 
 ## 输出落点 —— `results/tests/` 约定
 
