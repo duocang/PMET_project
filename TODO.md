@@ -1,8 +1,107 @@
 # TODO
 
-两批待办按时间分层。**最近一批（2026-05-04）**：3 方代码审查（我 + DeepSeek + GPT）+ MCP 浏览器实地验证后筛出来的安全/正确性/性能问题。**老的（2026-04-30）**：矩阵测试 72 个任务暴露的工作流问题，多数已修。
+三批待办按时间分层。**最新一批（2026-05-17）**：admin 体验整改 —— 把隐藏在 `/tasks` 角落的管理入口提到独立的 dashboard，加任务统计 + 4 张图，扩 4 个运行时开关，并列出后续 9 项 hardening。**(2026-05-04)**：3 方代码审查（我 + DeepSeek + GPT）+ MCP 浏览器实地验证后筛出来的安全/正确性/性能问题。**老的（2026-04-30）**：矩阵测试 72 个任务暴露的工作流问题，多数已修。
 
 > 本文件聚焦"已知问题与改进路线"。"如何安装/使用"在 [README.md](README.md)，两者不重叠。
+
+---
+
+## 管理员特性（2026-05-17）
+
+把 admin 从"`/tasks` 页角落里的小链接"提升为"导航栏独立 tab + 完整 dashboard"。三个 checkpoint 已落地，9 项后续 hardening 待做。
+
+### 已完成
+
+| Checkpoint | 主要交付 | commit |
+|---|---|---|
+| CP1 | NavBar `Admin` tab（仅 admin cookie 在场显示）+ `/admin` dashboard 骨架（Stats 占位 / Settings / Logout 三段）+ `/admin/settings` 重定向 + `useAdminStore` zustand 状态托管 + `AdminInitializer` 在 root layout 调一次 `/admin/me` | `ce70afa` |
+| CP2 | `GET /api/admin/stats?days=N` 后端聚合（提交日历 / 状态分布 / mode 运行时长 p50/p95 / Top errors，task-id 哈希归一化）+ 4 张 Plotly 图（dynamic import 不污染 shared bundle）+ 7d/30d/90d 切换 | `af78fcc` |
+| CP3 | 4 个 admin 运行时开关：`submissions_paused`（POST `/api/tasks` 503 + `/submit` 横幅 + 按钮禁用）/ `admin_notify_email`（管理员邮件收件人覆盖）/ `minhash_threshold`（注入 `PMET_MINHASH_THRESHOLD` 到 worker env）/ `result_retention_days`（预留字段，下方 #4 兑现）；SettingsCard 三段式重写（Maintenance / Notifications / Advanced） | `e32f31b` |
+
+外加 `make up` 启动时检测 `admin_token.txt` 缺失则交互式 prompt 生成（commit `2475179`），README §9.6 重组为 Admin quick-start（commit `2475179`）。
+
+### 后续（9 项 + UI bug 2）—— 已全部落地，MCP 浏览器实测通过
+
+| # | 项 | 状态 | 实测凭证 |
+|---|---|---|---|
+| [A1](#admin-1) | `/admin/login` brute-force 防护 | ✅ | 5 个 401 + 第 6 个 `429` |
+| [A2](#admin-2) | Admin 操作审计日志 | ✅ | login_ok / logout / settings_put / cleanup_run / task_note / task_rerun 全在 `admin_audit.jsonl` |
+| [A3](#admin-3) | Admin token UI 轮换 | ✅ | rotate → modal 显示 64 字符新 token；**修了 modal 被 `reset()` 提前卸载** 的 bug |
+| [A4](#admin-4) | 兑现 `result_retention_days` | ✅ | preview / run / candidates=0；**修了 CleanupCard 在 SettingsCard 保存后不刷新** 的 bug |
+| [A5](#admin-5) | Task 详情页 admin debug 段 | ✅ | meta JSON pretty + "No stderr captured" 落地 |
+| [A6](#admin-6) | `/admin/health` 自检页 | ✅ | 5/5 OK（SMTP 455ms / Redis 2ms / Disk 54G / tasks_dir / configure_dir） |
+| [A7](#admin-7) | 邮件发送审计 | ✅ | rerun 触发的两封 `send_ok` 显示在 Mail tab |
+| [A8](#admin-8) | 失败任务一键重跑 | ✅ | 真把 `rerun_phase1_…_f4601b99` 跑了一遍，复现原 error |
+| [A9](#admin-9) | Admin 给任务挂 banner / note | ✅ | 写 note → 用户视角黄 banner 出现，admin 隐藏 |
+
+外加 CP3 后报的 **登录跳转 bug**（store 未刷新导致 `/admin` 弹回 login）已修：login 成功后立即 `setStatus(true, paused)` 再 push。
+
+### 后续可做（暂未排进）
+
+- 4 个新 backend 模块（audit / cleanup / healthcheck / admin_tasks）的单元测试还没写
+- README §9.6 Admin 段落只写到 CP3，没收录 A1–A9 这一批
+- pmet.online 生产服务器：A1 brute-force 防护 + token 轮换 UI 上线后还需要手动同步部署
+- SettingsCard 清空 number 输入再 Save **不会**真把后端的 `minhash_threshold` / `result_retention_days` 设回 null —— 前端传 `null` 时后端 `if payload.X is not None` 跳过赋值。要么前端发哨兵值 `0`、要么后端区分 "missing" vs "explicit null"（用 Pydantic `Field(default=...)` + `model_fields_set`）
+
+<a id="admin-1"></a>
+
+#### A1 / `/admin/login` brute-force 防护
+
+**风险**：[admin.py:64-80](apps/pmet_backend/api/routes/admin.py#L64-L80) 的 POST 没有任何节流。攻击者可以爆 token 字典/弱 token，速度只受网络 RTT 限制。`hmac.compare_digest` 防的是计时侧信道、不是速率。
+
+**思路**：在 process-local 维护 `dict[ip, [失败次数, 第一次失败时间]]`，超阈值（5 / 5 min）后 60s 锁。上 nginx 才完美（多 worker / 分布式），但单 worker 部署用内存就够。
+
+**完成条件**：5 次 401 后第 6 次返回 429，单测覆盖 reset 窗口 + 成功登录清零计数。
+
+<a id="admin-2"></a>
+
+#### A2 / Admin 操作审计日志
+
+**为什么**：Terminate / settings PUT / login / token-rotate 都是 destructive；出事没法回溯。
+
+**实现**：`deploy/configure/admin_audit.jsonl`（gitignored，hot-write, fsync 不做）。每行 `{ts, ip, action, target, ok, detail}`。helper 在 `services/audit.py` 一处写入，被 admin.py / tasks.py cancel / 邮件 / 重启 token 共用。新端点 `GET /api/admin/audit?n=200` 倒序返回。Dashboard 加 "Recent activity" 卡片。
+
+<a id="admin-3"></a>
+
+#### A3 / Admin token UI 轮换
+
+按钮 → 调 `POST /api/admin/rotate-token` → 后端 `secrets.token_hex(32)` 写文件 + 删旧 cookie + 弹 modal 一次性展示新 token（"复制到密码管理器"提示）。新登录页用新值。
+
+<a id="admin-4"></a>
+
+#### A4 / 兑现 `result_retention_days`
+
+`scripts/admin/cleanup_old_results.sh`（或 python），删 `results/app/<id>/`、`results/app/<id>.zip`、`results/app/tasks/<id>.json` 中 `created_at` 超过 `config.RESULT_RETENTION_DAYS` 的。Dashboard 加 "Run cleanup now" 按钮 + `next eligible: N tasks` 计数；自动 cron 留作部署期决策（写到 README，不在代码里硬编 schedule）。
+
+<a id="admin-5"></a>
+
+#### A5 / Task 详情页 admin debug 段
+
+[app/tasks/[id]/page.tsx](apps/pmet_frontend/app/tasks/[id]/page.tsx) 在 admin 在场时多渲染一张卡片：raw task_meta JSON pretty-printed + stderr 尾 50 行（来自 `results/app/<id>/stderr.log` 若存在）+ executor 注入的环境变量字典。新端点 `GET /api/admin/task/<id>/debug` 守 `require_admin`。
+
+<a id="admin-6"></a>
+
+#### A6 / `/admin/health` 自检页
+
+新端点 `GET /api/admin/health/check`，返回 `{smtp: ok/warn/fail, redis: ..., disk_free_gb: N, tasks_dir_writable: bool, worker_alive: bool}`。SMTP 测发件人 connect+EHLO+QUIT 不真发；redis ping；disk 用 `shutil.disk_usage`；worker 检查 ping celery task ttl。Dashboard 加 HealthPanel。
+
+<a id="admin-7"></a>
+
+#### A7 / 邮件发送审计
+
+复用 A2 的 audit JSONL；mail.py `_send_email` 包一层 try，成功/失败各写一行。Dashboard 把 Activity 卡片再加 "Mail log" tab。
+
+<a id="admin-8"></a>
+
+#### A8 / 失败任务一键重跑
+
+按钮在 task 详情页（admin 看到）。后端 `POST /api/admin/task/<id>/rerun` 读老 task_meta，硬深拷一份新 task_id（`rerun_<orig>`），原 upload 路径需要还在（如果 retention 清掉了 → 拒绝并提示）；给用户发邮件 "your task was retried by ops"。
+
+<a id="admin-9"></a>
+
+#### A9 / Admin task note / banner
+
+task JSON 加 `admin_note: str | null`。`POST /api/admin/task/<id>/note` 守 admin。详情页 admin 模式下可编辑；普通用户模式下若存在则 banner 显示。
 
 ---
 

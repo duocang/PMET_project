@@ -5,6 +5,7 @@ import { adminApi } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useTranslation } from '@/lib/i18n';
+import { useAdminStore } from '@/lib/adminStore';
 
 export default function AdminLoginPage() {
   return (
@@ -41,11 +42,18 @@ function AdminLoginPageInner() {
     setErr(null);
     try {
       await adminApi.login(token.trim());
+      // AdminInitializer only fires on root-layout mount, so the
+      // useAdminStore still says isAdmin=false at this point. Push the
+      // truth in before navigating, otherwise /admin's auth guard sees
+      // stale state and bounces us back to /admin/login.
+      const paused = useAdminStore.getState().submissionsPaused;
+      useAdminStore.getState().setStatus(true, paused);
       router.push(next);
     } catch (e: any) {
       const status = e?.response?.status;
       if (status === 401) setErr(t('admin.login.error_invalid'));
       else if (status === 503) setErr(t('admin.login.error_disabled'));
+      else if (status === 429) setErr(t('admin.login.error_rate_limited'));
       else setErr(e?.message ?? 'Failed');
     } finally {
       setBusy(false);

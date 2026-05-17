@@ -77,6 +77,9 @@ export interface TaskResponse {
   // Display-only label that may be 'completed_with_warnings' on top
   // of the persisted status enum. Use for badge text/colour.
   effective_status?: string | null;
+  // Admin-authored free-form note. When set, rendered as a banner on
+  // the task detail page for the user.
+  admin_note?: string | null;
 }
 
 export interface TaskStage {

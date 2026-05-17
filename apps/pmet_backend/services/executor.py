@@ -183,6 +183,17 @@ class PMETExecutor:
             if proc.returncode != 0:
                 clean_stdout = self._clean_process_output(stdout)
                 clean_stderr = self._clean_process_output(stderr)
+                # Persist stderr to disk so the admin debug endpoint can
+                # tail it after the worker has long moved on. Best-effort
+                # — write failure shouldn't mask the original command
+                # failure we're already reporting.
+                if task_id:
+                    try:
+                        log_path = config.RESULT_DIR / task_id / "stderr.log"
+                        log_path.parent.mkdir(parents=True, exist_ok=True)
+                        log_path.write_text(clean_stderr or "")
+                    except OSError:
+                        pass
                 return {
                     "success": False,
                     "error": f"Command failed: {clean_stderr or clean_stdout or 'Unknown error'}",

@@ -139,7 +139,78 @@ export const adminApi = {
     const response = await api.get(`/api/admin/stats?days=${days}`);
     return response.data;
   },
+
+  audit: async (params?: { n?: number; category?: 'admin' | 'mail' }): Promise<{ records: AdminAuditRecord[] }> => {
+    const q = new URLSearchParams();
+    if (params?.n) q.set('n', String(params.n));
+    if (params?.category) q.set('category', params.category);
+    const qs = q.toString();
+    const response = await api.get(`/api/admin/audit${qs ? '?' + qs : ''}`);
+    return response.data;
+  },
+
+  rotateToken: async (): Promise<{ token: string }> => {
+    const response = await api.post('/api/admin/rotate-token');
+    return response.data;
+  },
+
+  cleanupPreview: async (): Promise<{ retention_days: number; eligible: number }> => {
+    const response = await api.get('/api/admin/cleanup/preview');
+    return response.data;
+  },
+
+  cleanupRun: async (): Promise<CleanupReport> => {
+    const response = await api.post('/api/admin/cleanup/run');
+    return response.data;
+  },
+
+  health: async (): Promise<{ checks: HealthCheck[] }> => {
+    const response = await api.get('/api/admin/health/check');
+    return response.data;
+  },
+
+  taskDebug: async (taskId: string): Promise<{ task_id: string; meta: Record<string, unknown>; stderr_tail: string[] | null }> => {
+    const response = await api.get(`/api/admin/task/${taskId}/debug`);
+    return response.data;
+  },
+
+  taskSetNote: async (taskId: string, note: string | null): Promise<{ task_id: string; admin_note: string | null }> => {
+    const response = await api.put(`/api/admin/task/${taskId}/note`, { note });
+    return response.data;
+  },
+
+  taskRerun: async (taskId: string): Promise<{ task_id: string; rerun_of: string }> => {
+    const response = await api.post(`/api/admin/task/${taskId}/rerun`);
+    return response.data;
+  },
 };
+
+export interface HealthCheck {
+  name: 'smtp' | 'redis' | 'disk' | 'tasks_dir' | 'configure_dir' | string;
+  status: 'ok' | 'warn' | 'fail';
+  detail: Record<string, unknown>;
+}
+
+export interface CleanupReport {
+  retention_days: number;
+  skipped?: boolean;
+  reason?: string;
+  candidates?: number;
+  removed_dirs: number;
+  removed_zips: number;
+  removed_metas: number;
+  errors: string[];
+}
+
+export interface AdminAuditRecord {
+  ts: string;
+  category: 'admin' | 'mail' | string;
+  action: string;
+  ok: boolean;
+  ip: string | null;
+  target: string | null;
+  detail: unknown;
+}
 
 export const resultsApi = {
   get: async (taskId: string, params?: {

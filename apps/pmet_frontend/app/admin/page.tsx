@@ -7,6 +7,10 @@ import { useAdminStore } from '@/lib/adminStore';
 import { useTranslation } from '@/lib/i18n';
 import { SettingsCard } from '@/components/admin/SettingsCard';
 import { StatsPanel } from '@/components/admin/StatsPanel';
+import { ActivityPanel } from '@/components/admin/ActivityPanel';
+import { CleanupCard } from '@/components/admin/CleanupCard';
+import { HealthPanel } from '@/components/admin/HealthPanel';
+import { DangerZone } from '@/components/admin/DangerZone';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -56,11 +60,39 @@ export default function AdminDashboardPage() {
         <StatsPanel />
       </section>
 
+      <section id="activity" className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+          {t('admin.dashboard.section.activity')}
+        </h2>
+        <ActivityPanel />
+      </section>
+
+      <section id="health" className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+          {t('admin.dashboard.section.health')}
+        </h2>
+        <HealthPanel />
+      </section>
+
       <section id="settings" className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
           {t('admin.dashboard.section.settings')}
         </h2>
         <SettingsCard />
+      </section>
+
+      <section id="maintenance" className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+          {t('admin.dashboard.section.maintenance')}
+        </h2>
+        <CleanupCard />
+      </section>
+
+      <section id="danger" className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+          {t('admin.dashboard.section.danger')}
+        </h2>
+        <DangerZone />
       </section>
     </div>
   );

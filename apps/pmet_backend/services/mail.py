@@ -29,6 +29,14 @@ class MailService:
     def _send_email(self, to: str, subject: str, body: str, html_body: bool = True):
         if not all([self.username, self.password, self.server]):
             print(f"Email not configured, skipping send to {to}")
+            from . import audit
+            audit.emit(
+                category="mail",
+                action="send_skip",
+                ok=False,
+                target=to,
+                detail={"subject": subject, "reason": "smtp not configured"},
+            )
             return False
 
         msg = MIMEMultipart("alternative")
@@ -38,14 +46,29 @@ class MailService:
 
         msg.attach(MIMEText(body, "html" if html_body else "plain"))
 
+        from . import audit
         try:
             with smtplib.SMTP(self.server, self.port) as server:
                 server.starttls()
                 server.login(self.username, self.password)
                 server.sendmail(self.address, to, msg.as_string())
+            audit.emit(
+                category="mail",
+                action="send_ok",
+                ok=True,
+                target=to,
+                detail={"subject": subject},
+            )
             return True
         except Exception as e:
             print(f"Failed to send email: {e}")
+            audit.emit(
+                category="mail",
+                action="send_fail",
+                ok=False,
+                target=to,
+                detail={"subject": subject, "error": str(e)[:200]},
+            )
             return False
 
     def _escape(self, value) -> str:

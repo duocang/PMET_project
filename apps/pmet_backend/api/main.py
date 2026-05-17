@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from .routes import tasks, files, results, demo, indexing, admin, admin_stats
+from .routes import tasks, files, results, demo, indexing, admin, admin_stats, admin_tasks
 from ..config import config
 
 @asynccontextmanager
@@ -39,6 +39,7 @@ app.include_router(demo.router, prefix="/api")
 app.include_router(indexing.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(admin_stats.router, prefix="/api")
+app.include_router(admin_tasks.router, prefix="/api")
 
 
 @app.get("/")

@@ -48,6 +48,10 @@ email_credential.txt
 admin_token.txt
 *.pem
 *.key
+
+# Admin audit trail (append-only JSONL; rotated to .jsonl.1)
+admin_audit.jsonl
+admin_audit.jsonl.1
 .env
 .env.*
 

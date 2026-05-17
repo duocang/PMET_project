@@ -11,6 +11,7 @@ import { formatBytes, formatRuntimeRange, humanizeIdentifier, summarizeError } f
 import StageBadge from '@/components/StageBadge';
 import TaskQuickLook from '@/components/TaskQuickLook';
 import FileDrawer from '@/components/FileDrawer';
+import { AdminTaskPanel } from '@/components/admin/AdminTaskPanel';
 
 type PreviewSlot = 'genes' | 'fasta' | 'gff3' | 'meme';
 
@@ -113,6 +114,15 @@ export default function TaskDetailPage({ params }: PageProps) {
       <Link href="/tasks" className="text-sm text-slate-500 hover:text-slate-700">
         {t('task.back')}
       </Link>
+
+      {task.admin_note && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="font-medium">{t('task.admin_note.title')}</div>
+          <div className="mt-1 whitespace-pre-wrap text-amber-800">{task.admin_note}</div>
+        </div>
+      )}
+
+      <AdminTaskPanel taskId={task.task_id} initialNote={task.admin_note ?? null} />
 
       {/* Header card: ID + mode + status + action buttons */}
       <div className="card">

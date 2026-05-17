@@ -27,6 +27,7 @@ function parseIntOrNull(raw: string): number | null {
 export function SettingsCard() {
   const { t } = useTranslation();
   const setSubmissionsPaused = useAdminStore((s) => s.setSubmissionsPaused);
+  const bumpSettings = useAdminStore((s) => s.bumpSettings);
   const [loading, setLoading] = useState(true);
   const [s, setS] = useState<AdminSettings>(initial);
   // Number fields render as text so the user can briefly clear them
@@ -74,6 +75,9 @@ export function SettingsCard() {
       // Keep the global store in sync so the /submit banner reacts
       // without waiting for the next AdminInitializer fetch.
       setSubmissionsPaused(result.submissions_paused);
+      // Nudge sibling panels (CleanupCard's eligible-count preview) so
+      // they re-fetch against the new policy without a page reload.
+      bumpSettings();
       setSavedAt(Date.now());
     } catch (e: any) {
       setErr(e?.message ?? 'Failed to save');

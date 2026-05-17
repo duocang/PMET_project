@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from datetime import datetime
 from pathlib import Path
@@ -14,7 +14,8 @@ from ...proc import kill_process_tree
 from ...services.storage import StorageService
 from ...services.mail import MailService
 from ...services.stage_status import infer_stages, derive_warnings, derive_effective_status
-from .admin import require_admin
+from ...services import audit
+from .admin import require_admin, _client_ip
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 storage = StorageService()
@@ -509,6 +510,7 @@ async def get_task(task_id: str):
         stages=view["stages"],
         warnings=view["warnings"],
         effective_status=view["effective_status"],
+        admin_note=task_data.get("admin_note"),
         created_at=datetime.fromisoformat(task_data["created_at"]),
         started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
         completed_at=datetime.fromisoformat(view["completed_at_iso"]) if view["completed_at_iso"] else None,
@@ -632,6 +634,7 @@ async def list_tasks(email: str = None, task_id: str = None, limit: int = 50, of
             stages=view["stages"],
             warnings=view["warnings"],
             effective_status=view["effective_status"],
+            admin_note=task_data.get("admin_note"),
             created_at=datetime.fromisoformat(task_data["created_at"]),
             started_at=datetime.fromisoformat(task_data["started_at"]) if task_data.get("started_at") else None,
             completed_at=datetime.fromisoformat(view["completed_at_iso"]) if view["completed_at_iso"] else None,
@@ -686,7 +689,7 @@ async def estimate_task(payload: EstimatePayload):
 
 
 @router.post("/{task_id}/cancel", dependencies=[Depends(require_admin)])
-async def cancel_task(task_id: str, payload: CancelPayload):
+async def cancel_task(task_id: str, payload: CancelPayload, request: Request):
     """Admin-only: terminate a running task.
 
     Order of operations matters here. We *first* mark the task as cancelled
@@ -745,4 +748,11 @@ async def cancel_task(task_id: str, payload: CancelPayload):
     except Exception:
         pass
 
+    audit.emit(
+        action="task_terminate",
+        ok=True,
+        ip=_client_ip(request),
+        target=task_id,
+        detail={"reason": reason, "killed_pids": killed},
+    )
     return {"ok": True, "killed_pids": killed, "task_id": task_id}

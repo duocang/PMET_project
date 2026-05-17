@@ -111,6 +111,9 @@ class TaskResponse(BaseModel):
     # successful task had a non-fatal skip. UI uses this for badge
     # text/colour; never overwrites the persisted `status`.
     effective_status: Optional[str] = None
+    # Free-form note set by an admin via /admin/task/<id>/note. Rendered
+    # as a banner on the user's task detail page; null when unset.
+    admin_note: Optional[str] = None
 
     class Config:
         from_attributes = True
