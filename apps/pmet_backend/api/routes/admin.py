@@ -45,6 +45,12 @@ class LoginPayload(BaseModel):
 class AdminSettings(BaseModel):
     notify_on_submit: Optional[bool] = None
     notify_user_on_start: Optional[bool] = None
+    submissions_paused: Optional[bool] = None
+    admin_notify_email: Optional[str] = None
+    # 0 / negative is treated as "unset" — same convention used by the
+    # config loader so the JSON file shape matches the API contract.
+    minhash_threshold: Optional[int] = None
+    result_retention_days: Optional[int] = None
 
 
 def _settings_path() -> Path:
@@ -91,16 +97,32 @@ async def me(pmet_admin: Optional[str] = Cookie(default=None)):
     """Used by the frontend to flip into admin mode. Returns 200 + is_admin
     rather than 401 so the frontend can render anonymously without spamming
     the console with errors.
+
+    Also returns ``submissions_paused`` so the public /submit page can
+    render the maintenance banner without exposing a dedicated public
+    endpoint. The flag isn't sensitive — anyone hitting POST /tasks
+    would learn about it anyway.
     """
-    return {"is_admin": _token_matches(pmet_admin)}
+    return {
+        "is_admin": _token_matches(pmet_admin),
+        "submissions_paused": config.SUBMISSIONS_PAUSED,
+    }
+
+
+def _settings_snapshot() -> dict:
+    return {
+        "notify_on_submit": config.NOTIFY_ON_SUBMIT,
+        "notify_user_on_start": config.NOTIFY_USER_ON_START,
+        "submissions_paused": config.SUBMISSIONS_PAUSED,
+        "admin_notify_email": config.ADMIN_NOTIFY_EMAIL,
+        "minhash_threshold": config.MINHASH_THRESHOLD,
+        "result_retention_days": config.RESULT_RETENTION_DAYS,
+    }
 
 
 @router.get("/settings", dependencies=[Depends(require_admin)])
 async def get_settings():
-    return {
-        "notify_on_submit": config.NOTIFY_ON_SUBMIT,
-        "notify_user_on_start": config.NOTIFY_USER_ON_START,
-    }
+    return _settings_snapshot()
 
 
 @router.put("/settings", dependencies=[Depends(require_admin)])
@@ -120,9 +142,22 @@ async def update_settings(payload: AdminSettings):
         existing["notify_on_submit"] = payload.notify_on_submit
     if payload.notify_user_on_start is not None:
         existing["notify_user_on_start"] = payload.notify_user_on_start
+    if payload.submissions_paused is not None:
+        existing["submissions_paused"] = payload.submissions_paused
+    if payload.admin_notify_email is not None:
+        # Empty string is a valid "clear the override" instruction; keep
+        # the field present so the file shape stays predictable.
+        existing["admin_notify_email"] = payload.admin_notify_email.strip()
+    if payload.minhash_threshold is not None:
+        # 0 / negative collapses to None (= "use default") to keep the
+        # JSON file readable for the next operator.
+        existing["minhash_threshold"] = (
+            payload.minhash_threshold if payload.minhash_threshold > 0 else None
+        )
+    if payload.result_retention_days is not None:
+        existing["result_retention_days"] = (
+            payload.result_retention_days if payload.result_retention_days > 0 else None
+        )
     path.write_text(json.dumps(existing, indent=2) + "\n")
     config.reload()
-    return {
-        "notify_on_submit": config.NOTIFY_ON_SUBMIT,
-        "notify_user_on_start": config.NOTIFY_USER_ON_START,
-    }
+    return _settings_snapshot()

@@ -9,8 +9,8 @@ export function AdminInitializer() {
   useEffect(() => {
     adminApi
       .me()
-      .then((r) => setStatus(r.is_admin))
-      .catch(() => setStatus(false));
+      .then((r) => setStatus(r.is_admin, r.submissions_paused))
+      .catch(() => setStatus(false, false));
   }, [setStatus]);
   return null;
 }

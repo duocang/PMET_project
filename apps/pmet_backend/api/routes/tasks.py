@@ -421,6 +421,13 @@ def _locate_motif_output(task_id: str) -> Optional[Path]:
 @router.post("", response_model=TaskResponse)
 async def create_task(task: TaskCreate):
     """Create a new PMET task"""
+    # Admin kill-switch — refuse new submissions during maintenance windows.
+    # Pick up the latest value rather than the cached singleton because
+    # operators expect the flag to take effect immediately after they
+    # save it on the admin dashboard.
+    config.reload()
+    if config.SUBMISSIONS_PAUSED:
+        raise HTTPException(status_code=503, detail="Submissions are paused")
     if not task.task_id:
         raise HTTPException(status_code=400, detail="task_id is required; call /api/files/issue-session first")
     if not UPLOAD_SESSION_RE.match(task.task_id):

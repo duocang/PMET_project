@@ -10,6 +10,7 @@ import { EXAMPLE_FASTA, EXAMPLE_GFF3, EXAMPLE_MEME, EXAMPLE_GENE_LIST, EXAMPLE_P
 import { AnalysisMode, EstimateResponse } from '@/lib/types';
 import { taskApi, fileApi, indexingApi, IndexingEntry, IndexingSpeciesDetail, IndexingMotifDbDetail, MotifDbCatalogEntry } from '@/lib/api';
 import { useSettingsStore, useTaskStore } from '@/lib/store';
+import { useAdminStore } from '@/lib/adminStore';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/translations';
 import { formatRuntimeRange } from '@/lib/runtime';
@@ -472,9 +473,18 @@ function SubmitPageContent() {
     intervals: t('submit.mode.intervals'),
   };
 
+  const submissionsPaused = useAdminStore((s) => s.submissionsPaused);
+
   return (
     <div className="max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">{t('submit.title')}</h1>
+
+      {submissionsPaused && (
+        <div className="mb-6 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="font-medium">{t('submit.paused.title')}</div>
+          <div className="mt-1 text-amber-800">{t('submit.paused.body')}</div>
+        </div>
+      )}
 
       {/* Mode Selection — buttons say what the user provides; a short
           subtitle below the active button explains it in one line, and
@@ -836,8 +846,16 @@ function SubmitPageContent() {
             ) : null}
           </div>
         )}
-        <button onClick={handleSubmit} disabled={submitting} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
-          {submitting ? t('submit.button.submitting') : t('submit.button.submit')}
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || submissionsPaused}
+          className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submissionsPaused
+            ? t('submit.paused.button')
+            : submitting
+              ? t('submit.button.submitting')
+              : t('submit.button.submit')}
         </button>
       </div>
     </div>

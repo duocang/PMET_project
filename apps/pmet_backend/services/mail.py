@@ -503,9 +503,17 @@ class MailService:
         )
 
     def send_admin_notification(self, user_email: str, task_meta: dict):
-        """Send notification to admin about new task."""
+        """Send notification to admin about new task.
+
+        Recipient defaults to the SMTP sender (self.username) so the
+        legacy behaviour is preserved when no override is set. If the
+        admin configured ``admin_notify_email`` in the dashboard, that
+        wins — useful when one operator runs the server but a different
+        address (an alias, a shared inbox) should see ops mail.
+        """
+        recipient = config.ADMIN_NOTIFY_EMAIL or self.username
         return self._send_email(
-            self.username,
+            recipient,
             f"PMET new task submitted: {task_meta.get('task_id', '')}",
             self._template(
                 "New PMET task submitted",

@@ -151,6 +151,14 @@ class PMETExecutor:
         if task_id:
             env["PROGRESS_FILE"] = str(config.RESULT_DIR / task_id / "progress.json")
 
+        # Admin-configurable MinHash threshold (see deploy/configure/
+        # admin_settings.json). When set, this overrides the container
+        # env / hardcoded default that scripts/lib/minhash.sh would
+        # otherwise see. Unset / None falls back to the env value, so
+        # docker-compose remains the source of truth in default deploys.
+        if config.MINHASH_THRESHOLD is not None and config.MINHASH_THRESHOLD > 0:
+            env["PMET_MINHASH_THRESHOLD"] = str(config.MINHASH_THRESHOLD)
+
         proc = None
         try:
             proc = subprocess.Popen(

@@ -32,7 +32,7 @@ test('initial state is unchecked and not admin', () => {
 
 test('setStatus(true) marks checked and flips isAdmin', () => {
   reset();
-  useAdminStore.getState().setStatus(true);
+  useAdminStore.getState().setStatus(true, false);
   const s = useAdminStore.getState();
   assert.strictEqual(s.isAdmin, true);
   assert.strictEqual(s.checked, true);
@@ -40,16 +40,25 @@ test('setStatus(true) marks checked and flips isAdmin', () => {
 
 test('setStatus(false) marks checked but leaves isAdmin false', () => {
   reset();
-  useAdminStore.getState().setStatus(false);
+  useAdminStore.getState().setStatus(false, false);
   const s = useAdminStore.getState();
   assert.strictEqual(s.isAdmin, false);
   assert.strictEqual(s.checked, true,
     'a confirmed "not admin" result must still set checked=true');
 });
 
+test('setStatus propagates submissions_paused regardless of admin flag', () => {
+  reset();
+  useAdminStore.getState().setStatus(false, true);
+  const s = useAdminStore.getState();
+  assert.strictEqual(s.isAdmin, false);
+  assert.strictEqual(s.submissionsPaused, true,
+    'anonymous visitors still need to know about a maintenance window');
+});
+
 test('reset returns to initial state after a successful login', () => {
   reset();
-  useAdminStore.getState().setStatus(true);
+  useAdminStore.getState().setStatus(true, false);
   useAdminStore.getState().reset();
   const s = useAdminStore.getState();
   assert.strictEqual(s.isAdmin, false);

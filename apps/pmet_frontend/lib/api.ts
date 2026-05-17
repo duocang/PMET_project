@@ -4,6 +4,15 @@ import { TaskCreate, TaskResponse, TaskListResponse, UploadResponse, EstimatePay
 export interface AdminSettings {
   notify_on_submit: boolean;
   notify_user_on_start: boolean;
+  submissions_paused: boolean;
+  admin_notify_email: string;
+  minhash_threshold: number | null;
+  result_retention_days: number | null;
+}
+
+export interface AdminMeResponse {
+  is_admin: boolean;
+  submissions_paused: boolean;
 }
 
 export interface AdminTrendPoint {
@@ -109,7 +118,7 @@ export const adminApi = {
     return response.data;
   },
 
-  me: async (): Promise<{ is_admin: boolean }> => {
+  me: async (): Promise<AdminMeResponse> => {
     const response = await api.get('/api/admin/me');
     return response.data;
   },

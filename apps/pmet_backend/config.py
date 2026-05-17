@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 # Subdir of PROJECT_ROOT where task outputs land. Default keeps the
@@ -131,6 +132,21 @@ class Config:
     NOTIFY_ON_SUBMIT: bool = True
     NOTIFY_USER_ON_START: bool = True
 
+    # Operational kill-switch the admin can flip on the dashboard. While
+    # True, POST /api/tasks returns 503 and /submit shows a banner.
+    SUBMISSIONS_PAUSED: bool = False
+    # If non-empty, overrides the admin-notification recipient. Falls
+    # back to EMAIL_USERNAME (the SMTP sender) when blank — that is the
+    # historical behaviour.
+    ADMIN_NOTIFY_EMAIL: str = ""
+    # When set, exported to PMET_MINHASH_THRESHOLD for each task the
+    # worker launches. None / 0 keeps the env / hardcoded default.
+    MINHASH_THRESHOLD: Optional[int] = None
+    # Reserved policy field — the admin states an intent ("forget runs
+    # older than N days") but no cleanup script is wired yet. Persisting
+    # it now means a future cleaner can read the operator's choice.
+    RESULT_RETENTION_DAYS: Optional[int] = None
+
     def __post_init__(self):
         self.TASKS_DIR = self.RESULT_DIR / "tasks"
         self.RESULT_DIR.mkdir(parents=True, exist_ok=True)
@@ -169,6 +185,23 @@ class Config:
                         self.NOTIFY_ON_SUBMIT = settings["notify_on_submit"]
                     if isinstance(settings.get("notify_user_on_start"), bool):
                         self.NOTIFY_USER_ON_START = settings["notify_user_on_start"]
+                    if isinstance(settings.get("submissions_paused"), bool):
+                        self.SUBMISSIONS_PAUSED = settings["submissions_paused"]
+                    val = settings.get("admin_notify_email")
+                    if isinstance(val, str):
+                        self.ADMIN_NOTIFY_EMAIL = val.strip()
+                    val = settings.get("minhash_threshold")
+                    # None and 0 both mean "use default" — only honour
+                    # a strictly positive int.
+                    if isinstance(val, int) and val > 0:
+                        self.MINHASH_THRESHOLD = val
+                    elif val is None:
+                        self.MINHASH_THRESHOLD = None
+                    val = settings.get("result_retention_days")
+                    if isinstance(val, int) and val > 0:
+                        self.RESULT_RETENTION_DAYS = val
+                    elif val is None:
+                        self.RESULT_RETENTION_DAYS = None
             except (json.JSONDecodeError, OSError):
                 # Bad JSON shouldn't break config — keep defaults and let the
                 # admin settings page rewrite it.
