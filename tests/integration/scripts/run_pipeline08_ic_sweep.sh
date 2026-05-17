@@ -6,13 +6,13 @@
 # time.
 #
 # Usage:
-#   bash tests/integration/run_pipeline08_ic_sweep.sh
-#   IC_VALUES="2 4 6 8 10" bash tests/integration/run_pipeline08_ic_sweep.sh
+#   bash tests/integration/scripts/run_pipeline08_ic_sweep.sh
+#   IC_VALUES="2 4 6 8 10" bash tests/integration/scripts/run_pipeline08_ic_sweep.sh
 #   HOMOTYPIC=results/cli/promoter/01_homotypic \
 #       GENE_LIST=data/genes/my_other_list.txt \
 #       OUT_BASE=results/cli/pair_only/exp_2026q2 \
 #       JOBS=2 \
-#       bash tests/integration/run_pipeline08_ic_sweep.sh
+#       bash tests/integration/scripts/run_pipeline08_ic_sweep.sh
 #
 # Environment variables (all optional):
 #   IC_VALUES   space-separated list of IC thresholds (default: "2 4 6 8")
@@ -38,7 +38,7 @@
 
 set -uo pipefail
 
-repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)
+repo_root=$(cd -- "$(dirname "$0")/../../.." && pwd)
 cd "$repo_root"
 
 ic_values=${IC_VALUES:-"2 4 6 8"}

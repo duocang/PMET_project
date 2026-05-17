@@ -138,7 +138,7 @@ function markDuplicatePairs(results: MotifResult[]): Set<string> {
 // previous "top-N pairs, collect motifs from those pairs" heuristic
 // produced a different motif set than the R-rendered PNG used in
 // papers / CLI / QuickLook, so the on-screen heatmap was a different
-// view of the same data. tests/integration/verify_heatmap_consistency.py
+// view of the same data. tests/integration/smoke/verify_heatmap_consistency.py
 // runs both pipelines on the same fixture and exits non-zero on
 // divergence — keep it green when touching this function.
 //

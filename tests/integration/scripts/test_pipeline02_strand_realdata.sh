@@ -15,7 +15,7 @@
 
 set -uo pipefail
 
-repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)
+repo_root=$(cd -- "$(dirname "$0")/../../.." && pwd)
 cd "$repo_root"
 
 genome=data/reference/TAIR10.fasta

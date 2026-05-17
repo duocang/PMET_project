@@ -105,7 +105,7 @@ test-unit:
 # present. The other scripts under tests/integration/ are heavier (need
 # the full pipeline) and stay opt-in — see tests/integration/README.md.
 test-integration:
-	@bash tests/integration/run_smoke.sh
+	@bash tests/integration/smoke/run.sh
 
 # Workflow audit — runs each workflow against canonical inputs and
 # renders the per-workflow docs at docs/workflows/*.md. Minutes

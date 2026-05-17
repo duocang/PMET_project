@@ -8,7 +8,8 @@
 set -uo pipefail
 
 script_dir=$(cd -- "$(dirname "$0")" && pwd)
-repo_root=$(cd -- "$script_dir/../.." && pwd)
+# script_dir is tests/integration/smoke/, so repo root is three up.
+repo_root=$(cd -- "$script_dir/../../.." && pwd)
 pipeline_dir="$repo_root/scripts/workflows/cli"
 cd "$script_dir"
 
@@ -227,7 +228,7 @@ section "real-data strand extraction (TAIR10)"
 
 if [[ -s "$repo_root/data/reference/TAIR10.fasta" && -s "$repo_root/data/reference/TAIR10.gff3" ]]; then
     strand_log="$log_dir/strand_real.log"
-    if bash "$script_dir/test_pipeline02_strand_realdata.sh" > "$strand_log" 2>&1; then
+    if bash "$script_dir/../scripts/test_pipeline02_strand_realdata.sh" > "$strand_log" 2>&1; then
         pass "TAIR10 promoter FASTA: + strand unchanged, - strand reverse-complemented by -s"
     else
         fail "real-data strand check failed (see $strand_log)"
@@ -244,9 +245,9 @@ fi
 # ---------------------------------------------------------------------------
 section "R vs frontend heatmap consistency"
 
-heatmap_fixture="$repo_root/tests/integration/fixtures/heatmap/motif_output.txt"
+heatmap_fixture="$script_dir/fixtures/heatmap/motif_output.txt"
 if [[ ! -s "$heatmap_fixture" ]]; then
-    printf '  SKIP  fixture missing: tests/integration/fixtures/heatmap/motif_output.txt\n'
+    printf '  SKIP  fixture missing: tests/integration/smoke/fixtures/heatmap/motif_output.txt\n'
 elif ! command -v Rscript >/dev/null 2>&1; then
     printf '  SKIP  Rscript not on PATH (heatmap consistency check needs R)\n'
 else

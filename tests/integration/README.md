@@ -26,13 +26,15 @@ It sits in the middle of the test pyramid: slower than `tests/unit/`, faster and
 
 ```
 tests/integration/
-├── run_smoke.sh                          fast invariants + heatmap consistency (~3–10 s)
-├── run_pipeline02_one_combo.sh           one-cell perf-params run end-to-end (~1 min, needs TAIR10)
-├── run_pipeline08_ic_sweep.sh            IC-threshold sweep on a built homotypic index (~30 s × N values)
-├── test_pipeline02_strand_realdata.sh    TAIR10 strand extraction sanity (~3 s)
-├── verify_heatmap_consistency.py         R-vs-frontend heatmap motif-selection diff (~5–10 s)
-├── verify_baseline.sh                    generic <results_dir> ↔ <hashes.txt> differ
-└── fixtures/                             tiny FASTA / BED / heatmap fixtures
+├── smoke/                                fast checks wired into `make test-integration`
+│   ├── run.sh                            fast invariants + heatmap consistency (~3–10 s)
+│   ├── verify_heatmap_consistency.py     R-vs-frontend heatmap motif-selection diff (~5–10 s)
+│   └── fixtures/                         tiny FASTA / BED / heatmap fixtures
+└── scripts/                              heavy manual scripts (real-data, slow, opt-in)
+    ├── run_pipeline02_one_combo.sh       one-cell perf-params run end-to-end (~1 min, needs TAIR10)
+    ├── run_pipeline08_ic_sweep.sh        IC-threshold sweep on a built homotypic index (~30 s × N values)
+    ├── test_pipeline02_strand_realdata.sh  TAIR10 strand extraction sanity (~3 s)
+    └── verify_baseline.sh                generic <results_dir> ↔ <hashes.txt> differ
 ```
 
 <a id="en-2"></a>
@@ -59,10 +61,10 @@ Every row below was actually run on this machine and the verdict reflects observ
 make test-integration
 
 # Real-data strand extraction (auto-skips if TAIR10 not yet fetched).
-bash tests/integration/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
 
 # Heatmap consistency on your own task output.
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input results/app/<task_id>/pairing/motif_output.txt
 ```
 
@@ -87,7 +89,7 @@ python3 tests/integration/verify_heatmap_consistency.py \
 |---|---|
 | `Rscript` | required (drives the R-side dump) |
 | `python3` | 3.9+ (uses `Path.is_relative_to`) |
-| `motif_output.txt` | any PMET pairing output; default fixture is `tests/integration/fixtures/heatmap/motif_output.txt`, real-task outputs work too |
+| `motif_output.txt` | any PMET pairing output; default fixture is `tests/integration/smoke/fixtures/heatmap/motif_output.txt`, real-task outputs work too |
 | Playwright + Chromium | optional, only for `--render-dir` (visual side-by-side) |
 | Docker stack at `--base-url` | optional, only for `--render-dir` frontend capture |
 
@@ -95,18 +97,18 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 ```bash
 # Default: data-level check on the bundled fixture.
-python3 tests/integration/verify_heatmap_consistency.py
+python3 tests/integration/smoke/verify_heatmap_consistency.py
 
 # On a real task's output.
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input results/app/<task_id>/pairing/motif_output.txt
 
 # Tune the cap if you want to match a specific draw_heatmap.R run.
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input <path> --max-motifs 30 --p-adj-limit 0.05
 
 # Visual side-by-side. Drops r.png + frontend.png into the chosen dir.
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input <path> --render-dir tmp/heatmap_visuals
 ```
 
@@ -123,7 +125,7 @@ Sample agree report:
 
 ```
 # heatmap consistency report
-# input:  tests/integration/fixtures/heatmap/motif_output.txt
+# input:  tests/integration/smoke/fixtures/heatmap/motif_output.txt
 # params: p_adj_limit=0.05 unique=True max_motifs=30
 # verdict: AGREE
 
@@ -153,7 +155,7 @@ Sample agree report:
 
 ```bash
 make test-integration            # equivalent to:
-bash tests/integration/run_smoke.sh
+bash tests/integration/smoke/run.sh
 ```
 
 **Produces.**
@@ -187,7 +189,7 @@ Sample stdout tail:
 **Command.**
 
 ```bash
-bash tests/integration/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
 ```
 
 **Produces.**
@@ -221,11 +223,11 @@ Exits 0 on every-check pass, non-zero on any mismatch.
 
 ```bash
 # Defaults: task=genes_cell_type_treatment plen=200 maxk=5 topn=5000.
-bash tests/integration/run_pipeline02_one_combo.sh
+bash tests/integration/scripts/run_pipeline02_one_combo.sh
 
 # Override the combo via env vars.
 TASK=my_task PLEN=1000 MAXK=4 TOPN=3000 \
-    bash tests/integration/run_pipeline02_one_combo.sh
+    bash tests/integration/scripts/run_pipeline02_one_combo.sh
 ```
 
 **Produces.**
@@ -249,14 +251,14 @@ Mirror the structure of a full sweep at one combo so any downstream tooling that
 
 ```bash
 # Default: IC values 2 4 6 8 against the canonical homotypic index.
-bash tests/integration/run_pipeline08_ic_sweep.sh
+bash tests/integration/scripts/run_pipeline08_ic_sweep.sh
 
 # Quick smoke against the bundled demo index.
 HOMOTYPIC=data/demos/promoters/pairing/demo \
 GENE_LIST=data/demos/promoters/pairing/demo/gene.txt \
 OUT_BASE=/tmp/ic_sweep \
 IC_VALUES="2 4" \
-    bash tests/integration/run_pipeline08_ic_sweep.sh
+    bash tests/integration/scripts/run_pipeline08_ic_sweep.sh
 ```
 
 **Produces.**
@@ -292,7 +294,7 @@ Verified: `ic=4` SHA matches the binomial baseline anchor in [`tests/baseline/fi
 ( cd results/cli/promoter && find . -type f | sort | xargs shasum -a 256 ) > my_baseline.hashes.txt
 
 # Diff a later run against it:
-bash tests/integration/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
+bash tests/integration/scripts/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
 ```
 
 **Produces.**
@@ -338,13 +340,15 @@ Exits 0 on match, 1 on diverge, 2 on usage errors. The default exclude pattern d
 
 ```
 tests/integration/
-├── run_smoke.sh                          快不变量 + 热图一致性（~3–10 秒）
-├── run_pipeline02_one_combo.sh           perf-params 一格端到端（~1 分钟，需 TAIR10）
-├── run_pipeline08_ic_sweep.sh            已建好同型索引上做 IC 阈值 sweep（每 IC ~30 秒）
-├── test_pipeline02_strand_realdata.sh    TAIR10 strand 抽取 sanity（~3 秒）
-├── verify_heatmap_consistency.py         R vs 前端热图 motif 选择 diff（~5–10 秒）
-├── verify_baseline.sh                    通用 <results_dir> ↔ <hashes.txt> differ
-└── fixtures/                             小 FASTA / BED / 热图 fixture
+├── smoke/                                进 `make test-integration` 的快检查
+│   ├── run.sh                            快不变量 + 热图一致性（~3–10 秒）
+│   ├── verify_heatmap_consistency.py     R vs 前端热图 motif 选择 diff（~5–10 秒）
+│   └── fixtures/                         小 FASTA / BED / 热图 fixture
+└── scripts/                              手动跑的重脚本（真实数据、慢、opt-in）
+    ├── run_pipeline02_one_combo.sh       perf-params 一格端到端（~1 分钟，需 TAIR10）
+    ├── run_pipeline08_ic_sweep.sh        已建好同型索引上做 IC 阈值 sweep（每 IC ~30 秒）
+    ├── test_pipeline02_strand_realdata.sh  TAIR10 strand 抽取 sanity（~3 秒）
+    └── verify_baseline.sh                通用 <results_dir> ↔ <hashes.txt> differ
 ```
 
 <a id="cn-2"></a>
@@ -371,10 +375,10 @@ tests/integration/
 make test-integration
 
 # 真实数据 strand 抽取（没 TAIR10 自动跳过）。
-bash tests/integration/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
 
 # 在自己的任务输出上跑热图一致性检查。
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input results/app/<task_id>/pairing/motif_output.txt
 ```
 
@@ -399,7 +403,7 @@ python3 tests/integration/verify_heatmap_consistency.py \
 |---|---|
 | `Rscript` | 必需（驱动 R 端 dump） |
 | `python3` | 3.9+（用了 `Path.is_relative_to`） |
-| `motif_output.txt` | 任意 PMET pairing 输出；默认 fixture 是 `tests/integration/fixtures/heatmap/motif_output.txt`，真实任务输出也行 |
+| `motif_output.txt` | 任意 PMET pairing 输出；默认 fixture 是 `tests/integration/smoke/fixtures/heatmap/motif_output.txt`，真实任务输出也行 |
 | Playwright + Chromium | 可选，仅 `--render-dir`（视觉对比）要用 |
 | 跑着的 docker 栈（`--base-url`） | 可选，仅 `--render-dir` 抓前端图要用 |
 
@@ -407,18 +411,18 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 ```bash
 # 默认：bundled fixture 上的数据级 check。
-python3 tests/integration/verify_heatmap_consistency.py
+python3 tests/integration/smoke/verify_heatmap_consistency.py
 
 # 真实任务的输出。
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input results/app/<task_id>/pairing/motif_output.txt
 
 # 调上限匹配某次 draw_heatmap.R 跑的。
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input <path> --max-motifs 30 --p-adj-limit 0.05
 
 # 视觉左右对比。在指定目录里输出 r.png + frontend.png。
-python3 tests/integration/verify_heatmap_consistency.py \
+python3 tests/integration/smoke/verify_heatmap_consistency.py \
     --input <path> --render-dir tmp/heatmap_visuals
 ```
 
@@ -435,7 +439,7 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 ```
 # heatmap consistency report
-# input:  tests/integration/fixtures/heatmap/motif_output.txt
+# input:  tests/integration/smoke/fixtures/heatmap/motif_output.txt
 # params: p_adj_limit=0.05 unique=True max_motifs=30
 # verdict: AGREE
 
@@ -465,7 +469,7 @@ python3 tests/integration/verify_heatmap_consistency.py \
 
 ```bash
 make test-integration            # 等价于：
-bash tests/integration/run_smoke.sh
+bash tests/integration/smoke/run.sh
 ```
 
 **产出**：
@@ -499,7 +503,7 @@ stdout 尾段样例：
 **命令**：
 
 ```bash
-bash tests/integration/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
 ```
 
 **产出**：
@@ -533,11 +537,11 @@ bash tests/integration/test_pipeline02_strand_realdata.sh
 
 ```bash
 # 默认：task=genes_cell_type_treatment plen=200 maxk=5 topn=5000。
-bash tests/integration/run_pipeline02_one_combo.sh
+bash tests/integration/scripts/run_pipeline02_one_combo.sh
 
 # env 改组合。
 TASK=my_task PLEN=1000 MAXK=4 TOPN=3000 \
-    bash tests/integration/run_pipeline02_one_combo.sh
+    bash tests/integration/scripts/run_pipeline02_one_combo.sh
 ```
 
 **产出**：
@@ -561,14 +565,14 @@ TASK=my_task PLEN=1000 MAXK=4 TOPN=3000 \
 
 ```bash
 # 默认：IC 值 2 4 6 8 跑 canonical 同型索引。
-bash tests/integration/run_pipeline08_ic_sweep.sh
+bash tests/integration/scripts/run_pipeline08_ic_sweep.sh
 
 # 用 bundled demo 索引快速 smoke。
 HOMOTYPIC=data/demos/promoters/pairing/demo \
 GENE_LIST=data/demos/promoters/pairing/demo/gene.txt \
 OUT_BASE=/tmp/ic_sweep \
 IC_VALUES="2 4" \
-    bash tests/integration/run_pipeline08_ic_sweep.sh
+    bash tests/integration/scripts/run_pipeline08_ic_sweep.sh
 ```
 
 **产出**：
@@ -604,7 +608,7 @@ ic   motif_output_lines   sha256                                                
 ( cd results/cli/promoter && find . -type f | sort | xargs shasum -a 256 ) > my_baseline.hashes.txt
 
 # 后续 diff：
-bash tests/integration/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
+bash tests/integration/scripts/verify_baseline.sh results/cli/promoter my_baseline.hashes.txt
 ```
 
 **产出**：

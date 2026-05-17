@@ -18,7 +18,7 @@
 
 set -uo pipefail
 
-repo_root=$(cd -- "$(dirname "$0")/../.." && pwd)
+repo_root=$(cd -- "$(dirname "$0")/../../.." && pwd)
 cd "$repo_root"
 
 task=${TASK:-genes_cell_type_treatment}
@@ -43,7 +43,7 @@ sed \
     -e "s/^promlength_values=(.*/promlength_values=($plen)/" \
     -e "s/^maxk_values=(.*/maxk_values=($maxk)/" \
     -e "s/^topn_values=(.*/topn_values=($topn)/" \
-    -e "s|^keep_intermediate=.*|keep_intermediate=true  # forced by tests/integration/run_pipeline02_one_combo.sh|" \
+    -e "s|^keep_intermediate=.*|keep_intermediate=true  # forced by tests/integration/scripts/run_pipeline02_one_combo.sh|" \
     "$src" > "$patched"
 
 # Sanity: make sure exactly one of each array survived.

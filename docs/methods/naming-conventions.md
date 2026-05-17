@@ -136,11 +136,11 @@ Naming inside each:
 | Prefix / shape | Role | Examples |
 |---|---|---|
 | `test_<topic>.{py,R,sh,ts}` | one bug or invariant per file; exit 0 on pass | `tests/unit/test_heatmap_dim_cap.R` |
-| `run_<scope>.sh` | run a suite or controlled workflow | `tests/integration/run_smoke.sh` |
-| `verify_<thing>.sh` | compare output against a recorded contract / baseline | `tests/integration/verify_baseline.sh` |
+| `run_<scope>.sh` | run a suite or controlled workflow | `tests/integration/smoke/run.sh` |
+| `verify_<thing>.sh` | compare output against a recorded contract / baseline | `tests/integration/scripts/verify_baseline.sh` |
 | `<workflow>.py`, `<workflow>.md` (under `audit/`) | workflow audit specs and templates | `tests/audit/workflows/promoter.py` |
 
-Subdirs: `tests/integration/fixtures/` for synthetic inputs (and a small motif_output.txt for the heatmap consistency check). The pre-monorepo `tests/integration/baselines/` directory was retired in favour of inline binary calls in `tests/baseline/capture.sh` and the data-level `verify_heatmap_consistency.py` regression check.
+Subdirs: `tests/integration/smoke/` for the fast in-CI checks (with `fixtures/` for synthetic inputs + a small motif_output.txt for the heatmap consistency check), `tests/integration/scripts/` for the heavy manual scripts (real-data strand check, IC sweep, perf-params combo, generic baseline differ). The pre-monorepo `tests/integration/baselines/` directory was retired in favour of inline binary calls in `tests/baseline/capture.sh` and the data-level `verify_heatmap_consistency.py` regression check.
 
 <a id="en-6"></a>
 
@@ -336,11 +336,11 @@ tests/
 | 前缀 / 形态 | 角色 | 示例 |
 |---|---|---|
 | `test_<topic>.{py,R,sh,ts}` | 一个 bug 或不变量一份；exit 0 即通过 | `tests/unit/test_heatmap_dim_cap.R` |
-| `run_<scope>.sh` | 跑一个 suite 或受控 workflow | `tests/integration/run_smoke.sh` |
-| `verify_<thing>.sh` | 输出对录制的契约 / baseline 做 diff | `tests/integration/verify_baseline.sh` |
+| `run_<scope>.sh` | 跑一个 suite 或受控 workflow | `tests/integration/smoke/run.sh` |
+| `verify_<thing>.sh` | 输出对录制的契约 / baseline 做 diff | `tests/integration/scripts/verify_baseline.sh` |
 | `<workflow>.py`、`<workflow>.md`（在 `audit/` 下） | workflow 审计 spec 与模板 | `tests/audit/workflows/promoter.py` |
 
-子目录：`tests/integration/fixtures/` 放合成输入（含一份小的 motif_output.txt 给热图一致性检查用）。monorepo 之前的 `tests/integration/baselines/` 已退役 —— 由 `tests/baseline/capture.sh` 内联二进制调用 + 数据级 `verify_heatmap_consistency.py` 接管。
+子目录：`tests/integration/smoke/` 放 CI 跑的快检查（带 `fixtures/` 合成输入 + 一份小的 motif_output.txt 给热图一致性检查用），`tests/integration/scripts/` 放手动跑的重脚本（real-data strand 检查、IC sweep、perf-params 组合、通用 baseline differ）。monorepo 之前的 `tests/integration/baselines/` 已退役 —— 由 `tests/baseline/capture.sh` 内联二进制调用 + 数据级 `verify_heatmap_consistency.py` 接管。
 
 <a id="cn-6"></a>
 

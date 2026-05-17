@@ -32,7 +32,7 @@ results/tests/
 Two anchors stay outside — they're committed artefacts, not per-run logs:
 
 - [`tests/baseline/fingerprints.txt`](baseline/fingerprints.txt) — the SHA anchors `make baseline` regenerates and you `git diff` against
-- [`tests/integration/fixtures/`](integration/fixtures/) — small synthetic inputs (FASTA / BED / `motif_output.txt` for the heatmap consistency check)
+- [`tests/integration/smoke/fixtures/`](integration/smoke/fixtures/) — small synthetic inputs (FASTA / BED / `motif_output.txt` for the heatmap consistency check)
 
 `results/tests/` is gitignored (covered by the top-level `results/` rule), and `make clean-results-tests` wipes the whole tree in one shot. `unit/` writes nothing to disk — those tests are pure stdout PASS/FAIL.
 
@@ -75,7 +75,7 @@ results/tests/
 两个锚点留在外头 —— 它们是要 commit 的产物，不是每次运行的日志：
 
 - [`tests/baseline/fingerprints.txt`](baseline/fingerprints.txt) —— `make baseline` 重抓的 SHA 锚，是 `git diff` 的对象
-- [`tests/integration/fixtures/`](integration/fixtures/) —— 小合成输入（FASTA / BED / 给热图一致性检查用的 `motif_output.txt`）
+- [`tests/integration/smoke/fixtures/`](integration/smoke/fixtures/) —— 小合成输入（FASTA / BED / 给热图一致性检查用的 `motif_output.txt`）
 
 `results/tests/` 被 gitignore（顶层 `results/` 规则覆盖），`make clean-results-tests` 一次性擦掉整个子树。`unit/` 不写盘 —— 那些测试纯靠 stdout 的 PASS/FAIL。
 

@@ -454,7 +454,7 @@ The six things that bite new users most often. Each is a real support email redu
 | `make up` says `port 5960 already in use` | Another container or a non-docker process is bound to 5960. | The Makefile auto-stops leftover docker containers on 5960; if it still fails, the bound process is non-docker — the error message lists the PID. Free it, or change the host port in [`deploy/docker-compose.yml`](deploy/docker-compose.yml). |
 | Web task is stuck on "running" forever | The worker was SIGKILLed mid-run and never wrote the final status. | The `liveness-watchdog` container marks any task with no `progress.json` update for 15 min as `failed`. To rescue earlier: `cd deploy && make restart-worker` and resubmit. |
 
-If none of these match, the next places to look are [`tests/integration/run_smoke.sh`](tests/integration/run_smoke.sh) (catches most environment / convention regressions in ~3 s) and the backend logs (`make logs` in repo root, then filter by service).
+If none of these match, the next places to look are [`tests/integration/smoke/run.sh`](tests/integration/smoke/run.sh) (catches most environment / convention regressions in ~3 s) and the backend logs (`make logs` in repo root, then filter by service).
 
 <a id="en-12"></a>
 
@@ -920,7 +920,7 @@ make rebuild
 | `make up` 报 `port 5960 already in use` | 另一个容器或非 docker 进程占着 5960 端口。 | Makefile 会先尝试把 5960 上残留的 docker 容器停掉；还失败就是非 docker 进程占着 —— 错误信息里有 PID。腾出来，或者改 [`deploy/docker-compose.yml`](deploy/docker-compose.yml) 里的 host 端口。 |
 | web 任务一直卡在 "running" | worker 跑一半被 SIGKILL 了，没机会写最终状态。 | `liveness-watchdog` 容器会把 `progress.json` 超过 15 分钟没更新的任务标 `failed`。想立刻救场：`cd deploy && make restart-worker` 然后重提一次。 |
 
-以上都不对的话，下一步去看 [`tests/integration/run_smoke.sh`](tests/integration/run_smoke.sh) （~3 秒抓出大部分环境/约定回归）和后端日志（仓库根 `make logs`，按 service 过滤）。
+以上都不对的话，下一步去看 [`tests/integration/smoke/run.sh`](tests/integration/smoke/run.sh) （~3 秒抓出大部分环境/约定回归）和后端日志（仓库根 `make logs`，按 service 过滤）。
 
 <a id="cn-12"></a>
 

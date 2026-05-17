@@ -21,7 +21,7 @@ plotting the same data; any difference is a real divergence the user
 would see as "the two heatmaps don't agree".
 
 Usage:
-    python3 tests/integration/verify_heatmap_consistency.py \
+    python3 tests/integration/smoke/verify_heatmap_consistency.py \
         [--input data/demos/promoters/pairing/demo/motif_output.txt] \
         [--p-adj-limit 0.05] [--topn 5] [--max-motifs 30] \
         [--unique-combination] [--report PATH]
@@ -46,8 +46,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT = REPO_ROOT / "tests/integration/fixtures/heatmap/motif_output.txt"
+# __file__ lives at tests/integration/smoke/verify_heatmap_consistency.py
+# (3 levels deep from repo root).
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_INPUT = REPO_ROOT / "tests/integration/smoke/fixtures/heatmap/motif_output.txt"
 # All test artefacts share results/tests/<suite>/ — one root for every
 # gitignored test output makes `make clean-tests` straightforward and
 # survives across reboots (unlike /tmp).
