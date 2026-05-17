@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
+import { useAdminStore } from '@/lib/adminStore';
 import { LangToggle } from './LangToggle';
 import type { TranslationKey } from '@/lib/translations';
 
@@ -79,10 +80,14 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
+const ADMIN_NAV_ITEM: NavItem = { href: '/admin', key: 'nav.admin' };
+
 export function NavBar() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const isAdmin = useAdminStore((s) => s.isAdmin);
+  const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   const desktopLinkClass = (href: string) =>
     `${NAV_LINK_BASE} ${isActive(pathname, href) ? NAV_LINK_ACTIVE : NAV_LINK_IDLE}`;
@@ -124,7 +129,7 @@ export function NavBar() {
 
           {/* Desktop nav */}
           <div className="hidden min-w-0 items-center gap-1 lg:flex xl:gap-1.5">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const active = isActive(pathname, item.href);
               return (
                 <Link
@@ -190,7 +195,7 @@ export function NavBar() {
           >
             <div className="page-shell">
               <ul className="flex flex-col gap-1 py-3">
-                {NAV_ITEMS.map((item) => {
+                {navItems.map((item) => {
                   const active = isActive(pathname, item.href);
                   return (
                     <li key={item.href}>

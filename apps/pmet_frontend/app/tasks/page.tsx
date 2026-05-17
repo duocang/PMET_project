@@ -1,11 +1,12 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { adminApi, taskApi } from '@/lib/api';
+import { taskApi } from '@/lib/api';
 import { TaskMode, TaskResponse, TaskStatus } from '@/lib/types';
 import TaskCard from '@/components/TaskCard';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
+import { useAdminStore } from '@/lib/adminStore';
 
 // Search ?q= survives navigating away and back so results don't vanish on
 // tab switch. A query that contains '@' is treated as an email (exact
@@ -37,21 +38,14 @@ function TasksPageInner() {
   const [searchInput, setSearchInput] = useState(urlQuery);
   const [tasks, setTasks] = useState<TaskResponse[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const isAdmin = useAdminStore((s) => s.isAdmin);
+  const adminChecked = useAdminStore((s) => s.checked);
 
   // Admin-only filters
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [modeFilter, setModeFilter] = useState<TaskMode | 'all'>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
-
-  // Detect admin once on mount.
-  useEffect(() => {
-    adminApi
-      .me()
-      .then((r) => setIsAdmin(r.is_admin))
-      .catch(() => setIsAdmin(false));
-  }, []);
 
   // Restore last search if URL has none (covers navbar tab clicks).
   useEffect(() => {
@@ -86,20 +80,20 @@ function TasksPageInner() {
 
   useEffect(() => {
     setSearchInput(urlQuery);
-    if (isAdmin === null) return; // still detecting; avoid double-fetch
+    if (!adminChecked) return; // still detecting; avoid double-fetch
     fetchTasks(urlQuery);
-  }, [urlQuery, fetchTasks, isAdmin]);
+  }, [urlQuery, fetchTasks, adminChecked]);
 
   // Poll while pending/running tasks are visible.
   useEffect(() => {
-    if (isAdmin === null) return;
+    if (!adminChecked) return;
     if (!isAdmin && !urlQuery) return;
     if (!tasks.some((task) => task.status === 'pending' || task.status === 'running')) {
       return;
     }
     const interval = setInterval(() => fetchTasks(urlQuery, false), 5000);
     return () => clearInterval(interval);
-  }, [tasks, urlQuery, fetchTasks, isAdmin]);
+  }, [tasks, urlQuery, fetchTasks, isAdmin, adminChecked]);
 
   const handleSearch = () => {
     const q = searchInput.trim();
@@ -156,14 +150,6 @@ function TasksPageInner() {
           {isAdmin ? t('tasks.title.admin') : t('tasks.title')}
         </h1>
         <div className="flex items-center gap-3">
-          {isAdmin && (
-            <button
-              onClick={() => router.push('/admin/settings')}
-              className="text-sm text-slate-500 hover:text-slate-700"
-            >
-              {t('tasks.admin.settings_link')}
-            </button>
-          )}
           <button onClick={() => router.push('/submit')} className="btn-primary">
             {t('tasks.new')}
           </button>

@@ -6,6 +6,7 @@ import { HtmlLangSync } from '@/components/HtmlLangSync';
 import { NavBar } from '@/components/NavBar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
+import { AdminInitializer } from '@/components/AdminInitializer';
 
 export const metadata: Metadata = {
   title: 'PMET - Paired Motif Enrichment Tool',
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Toaster position="bottom-right" />
         <I18nProvider>
           <HtmlLangSync />
+          <AdminInitializer />
           <SkipLink />
           <NavBar />
           <main id="main-content" tabIndex={-1} className="page-shell flex-1 py-8 focus:outline-none">
