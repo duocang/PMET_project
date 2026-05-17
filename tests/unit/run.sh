@@ -67,6 +67,16 @@ run_one "fimo progress monitor (bash)" \
 run_one "list_tasks pagination + filter (Python)" \
     "$PYTHON" tests/unit/test_list_tasks_pagination.py
 
+# Backend security: upload-session binding + task-creation hardening.
+# These tests live next to the code they cover (apps/pmet_backend/)
+# rather than under tests/unit/ — historical placement. Running them
+# from `apps/` puts `pmet_backend` on sys.path as a top-level package.
+run_one "task creation security: session binding + token (Python)" \
+    bash -c "cd apps && \"$PYTHON\" -m unittest -v pmet_backend.test_task_creation_security 2>&1 | tail -5"
+
+run_one "upload routes: types / gzip / size caps / sessions (Python)" \
+    bash -c "cd apps && \"$PYTHON\" -m unittest -v pmet_backend.test_upload_routes 2>&1 | tail -5"
+
 run_one "admin stats aggregator (Python)" \
     "$PYTHON" tests/unit/test_admin_stats.py
 

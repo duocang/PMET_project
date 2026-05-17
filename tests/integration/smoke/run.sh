@@ -228,7 +228,7 @@ section "real-data strand extraction (TAIR10)"
 
 if [[ -s "$repo_root/data/reference/TAIR10.fasta" && -s "$repo_root/data/reference/TAIR10.gff3" ]]; then
     strand_log="$log_dir/strand_real.log"
-    if bash "$script_dir/../scripts/test_pipeline02_strand_realdata.sh" > "$strand_log" 2>&1; then
+    if bash "$script_dir/../scripts/run_pipeline02_strand_realdata.sh" > "$strand_log" 2>&1; then
         pass "TAIR10 promoter FASTA: + strand unchanged, - strand reverse-complemented by -s"
     else
         fail "real-data strand check failed (see $strand_log)"

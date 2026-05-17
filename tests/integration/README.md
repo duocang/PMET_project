@@ -10,7 +10,7 @@
 
 | | |
 |---|---|
-| [1. Purpose & layout](#en-1) | [6. test_pipeline02_strand_realdata.sh](#en-6) |
+| [1. Purpose & layout](#en-1) | [6. run_pipeline02_strand_realdata.sh](#en-6) |
 | [2. Per-script status](#en-2) | [7. run_pipeline02_one_combo.sh](#en-7) |
 | [3. Quick start](#en-3) | [8. run_pipeline08_ic_sweep.sh](#en-8) |
 | [4. verify_heatmap_consistency.py](#en-4) | [9. verify_baseline.sh](#en-9) |
@@ -33,7 +33,7 @@ tests/integration/
 └── scripts/                              heavy manual scripts (real-data, slow, opt-in)
     ├── run_pipeline02_one_combo.sh       one-cell perf-params run end-to-end (~1 min, needs TAIR10)
     ├── run_pipeline08_ic_sweep.sh        IC-threshold sweep on a built homotypic index (~30 s × N values)
-    ├── test_pipeline02_strand_realdata.sh  TAIR10 strand extraction sanity (~3 s)
+    ├── run_pipeline02_strand_realdata.sh  TAIR10 strand extraction sanity (~3 s)
     └── verify_baseline.sh                generic <results_dir> ↔ <hashes.txt> differ
 ```
 
@@ -47,7 +47,7 @@ Every row below was actually run on this machine and the verdict reflects observ
 |---|---|---|---|
 | `run_smoke.sh` | ~3–10 s | bedtools, samtools, python3, optional Rscript & TAIR10 | ✅ all checks pass; auto-skip the R / TAIR10 sub-checks if either dep is missing |
 | `verify_heatmap_consistency.py` | ~5 s | Rscript + a `motif_output.txt` (PNG render extras: `--render-dir`) | ✅ AGREE on the bundled fixture and on real task outputs |
-| `test_pipeline02_strand_realdata.sh` | ~3 s | TAIR10 (`data/reference/TAIR10.{fasta,gff3}`) | ✅ skips cleanly without TAIR10, passes with it |
+| `run_pipeline02_strand_realdata.sh` | ~3 s | TAIR10 (`data/reference/TAIR10.{fasta,gff3}`) | ✅ skips cleanly without TAIR10, passes with it |
 | `run_pipeline02_one_combo.sh` | ~1 min | TAIR10, full FIMO + PMET stack | ✅ runs end-to-end (verified by source review; rerun whenever `02_perf_params.sh` grid changes) |
 | `run_pipeline08_ic_sweep.sh` | ~15 s × N IC values | a homotypic index dir | ✅ verified end-to-end against `data/demos/promoters/pairing/demo` (2 ICs, ~30 s) |
 | `verify_baseline.sh` | seconds | shasum | ✅ generic differ — diff any results dir against any hashes file you generated |
@@ -61,7 +61,7 @@ Every row below was actually run on this machine and the verdict reflects observ
 make test-integration
 
 # Real-data strand extraction (auto-skips if TAIR10 not yet fetched).
-bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/run_pipeline02_strand_realdata.sh
 
 # Heatmap consistency on your own task output.
 python3 tests/integration/smoke/verify_heatmap_consistency.py \
@@ -178,7 +178,7 @@ Sample stdout tail:
 
 <a id="en-6"></a>
 
-## 6. test_pipeline02_strand_realdata.sh — TAIR10 strand extraction
+## 6. run_pipeline02_strand_realdata.sh — TAIR10 strand extraction
 
 **Why it exists.** Re-checks the bedtools `-s` fix on real TAIR10 data, not just the synthetic fixture in run_smoke.sh — catches regressions where the synthetic case still passes but real promoter sequences would silently flip on `-` strand genes.
 
@@ -189,7 +189,7 @@ Sample stdout tail:
 **Command.**
 
 ```bash
-bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/run_pipeline02_strand_realdata.sh
 ```
 
 **Produces.**
@@ -324,7 +324,7 @@ Exits 0 on match, 1 on diverge, 2 on usage errors. The default exclude pattern d
 
 | | |
 |---|---|
-| [1. 用途与目录](#cn-1) | [6. test_pipeline02_strand_realdata.sh](#cn-6) |
+| [1. 用途与目录](#cn-1) | [6. run_pipeline02_strand_realdata.sh](#cn-6) |
 | [2. 各脚本状态](#cn-2) | [7. run_pipeline02_one_combo.sh](#cn-7) |
 | [3. Quick start](#cn-3) | [8. run_pipeline08_ic_sweep.sh](#cn-8) |
 | [4. verify_heatmap_consistency.py](#cn-4) | [9. verify_baseline.sh](#cn-9) |
@@ -347,7 +347,7 @@ tests/integration/
 └── scripts/                              手动跑的重脚本（真实数据、慢、opt-in）
     ├── run_pipeline02_one_combo.sh       perf-params 一格端到端（~1 分钟，需 TAIR10）
     ├── run_pipeline08_ic_sweep.sh        已建好同型索引上做 IC 阈值 sweep（每 IC ~30 秒）
-    ├── test_pipeline02_strand_realdata.sh  TAIR10 strand 抽取 sanity（~3 秒）
+    ├── run_pipeline02_strand_realdata.sh  TAIR10 strand 抽取 sanity（~3 秒）
     └── verify_baseline.sh                通用 <results_dir> ↔ <hashes.txt> differ
 ```
 
@@ -361,7 +361,7 @@ tests/integration/
 |---|---|---|---|
 | `run_smoke.sh` | ~3–10 秒 | bedtools、samtools、python3，可选 Rscript 与 TAIR10 | ✅ 全过；R / TAIR10 子项缺依赖时干净跳过 |
 | `verify_heatmap_consistency.py` | ~5 秒 | Rscript + 一份 `motif_output.txt`（视觉对比需 `--render-dir`） | ✅ 在 bundled fixture 与真实任务输出上都 AGREE |
-| `test_pipeline02_strand_realdata.sh` | ~3 秒 | TAIR10（`data/reference/TAIR10.{fasta,gff3}`） | ✅ 没 TAIR10 干净跳过，有就过 |
+| `run_pipeline02_strand_realdata.sh` | ~3 秒 | TAIR10（`data/reference/TAIR10.{fasta,gff3}`） | ✅ 没 TAIR10 干净跳过，有就过 |
 | `run_pipeline02_one_combo.sh` | ~1 分钟 | TAIR10、完整 FIMO + PMET 栈 | ✅ 端到端能跑（源码 review 验证；改 `02_perf_params.sh` grid 时建议复跑） |
 | `run_pipeline08_ic_sweep.sh` | ~15 秒 × N | 同型索引目录 | ✅ 已在 `data/demos/promoters/pairing/demo` 上端到端跑过（2 个 IC，~30 秒） |
 | `verify_baseline.sh` | 秒级 | shasum | ✅ 通用 differ —— diff 任意 results 目录对你自己抓的 hashes 文件 |
@@ -375,7 +375,7 @@ tests/integration/
 make test-integration
 
 # 真实数据 strand 抽取（没 TAIR10 自动跳过）。
-bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/run_pipeline02_strand_realdata.sh
 
 # 在自己的任务输出上跑热图一致性检查。
 python3 tests/integration/smoke/verify_heatmap_consistency.py \
@@ -492,7 +492,7 @@ stdout 尾段样例：
 
 <a id="cn-6"></a>
 
-## 6. test_pipeline02_strand_realdata.sh —— TAIR10 strand 抽取
+## 6. run_pipeline02_strand_realdata.sh —— TAIR10 strand 抽取
 
 **为什么有这玩意**：在真实 TAIR10 数据上重新校 bedtools `-s` 修复 —— 不光是 run_smoke.sh 里的合成 fixture。能逮到合成 case 还过、真启动子在负链基因上偷偷反了的回归。
 
@@ -503,7 +503,7 @@ stdout 尾段样例：
 **命令**：
 
 ```bash
-bash tests/integration/scripts/test_pipeline02_strand_realdata.sh
+bash tests/integration/scripts/run_pipeline02_strand_realdata.sh
 ```
 
 **产出**：
