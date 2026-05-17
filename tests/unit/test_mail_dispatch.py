@@ -200,11 +200,82 @@ class BuildPartialLinkTests(unittest.TestCase):
             self.assertEqual(self.fn("pmet_x"), "")
 
 
+# ----------------------------------------------------------------------
+# S3 — Mail header injection.
+#
+# msg["To"] in MailService is constructed from a user-supplied email
+# (gathered through Pydantic's EmailStr at task creation). If EmailStr
+# ever stops rejecting CRLF, an attacker could submit
+# "victim@x.test\r\nBcc: attacker@evil.example" and the resulting SMTP
+# envelope would carry a hidden Bcc — classic header-injection attack.
+#
+# The currently-installed Pydantic / email-validator stack rejects all
+# of these cleanly. This test pins that behaviour so a future
+# dependency bump that loosens validation doesn't quietly open the
+# attack surface.
+# ----------------------------------------------------------------------
+class EmailHeaderInjectionTests(unittest.TestCase):
+    """Verify Pydantic's EmailStr rejects the CRLF shapes that would
+    allow SMTP header injection. The TaskCreate model is the gate
+    every user-supplied email flows through.
+    """
+
+    def test_crlf_in_local_part_rejected(self):
+        from pydantic import ValidationError
+        from pmet_backend.api.models.task import TaskCreate
+        with self.assertRaises(ValidationError):
+            TaskCreate(email="victim\r\n@example.com", mode="promoters_pre")
+
+    def test_crlf_after_address_rejected(self):
+        from pydantic import ValidationError
+        from pmet_backend.api.models.task import TaskCreate
+        with self.assertRaises(ValidationError):
+            TaskCreate(
+                email="victim@example.com\r\nBcc: attacker@evil.example",
+                mode="promoters_pre",
+            )
+
+    def test_bare_lf_after_address_rejected(self):
+        """Some libraries only strip CRLF but accept LF alone; that's
+        still a header-injection vector against SMTP servers that take
+        \\n as a header separator."""
+        from pydantic import ValidationError
+        from pmet_backend.api.models.task import TaskCreate
+        with self.assertRaises(ValidationError):
+            TaskCreate(
+                email="victim@example.com\nBcc: attacker@evil.example",
+                mode="promoters_pre",
+            )
+
+    def test_bare_cr_after_address_rejected(self):
+        from pydantic import ValidationError
+        from pmet_backend.api.models.task import TaskCreate
+        with self.assertRaises(ValidationError):
+            TaskCreate(
+                email="victim@example.com\rBcc: attacker@evil.example",
+                mode="promoters_pre",
+            )
+
+    def test_valid_email_accepted(self):
+        """Sanity check: a well-formed email must still pass — we don't
+        want this test to be passing just because EVERYTHING is
+        rejected for unrelated reasons (e.g. a missing required field).
+        """
+        from pmet_backend.api.models.task import TaskCreate
+        m = TaskCreate(
+            email="user@example.com",
+            mode="promoters_pre",
+            genes_file="results/dummy/upload/genes.txt",
+        )
+        self.assertEqual(m.email, "user@example.com")
+
+
 if __name__ == "__main__":
     loader = unittest.TestLoader()
     suite = unittest.TestSuite([
         loader.loadTestsFromTestCase(MailDispatchTests),
         loader.loadTestsFromTestCase(BuildPartialLinkTests),
+        loader.loadTestsFromTestCase(EmailHeaderInjectionTests),
     ])
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
