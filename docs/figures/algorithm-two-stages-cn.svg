@@ -1,96 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 555" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 555" role="img" aria-labelledby="alg2-title alg2-desc" lang="zh-CN" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif">
+  <title id="alg2-title">PMET 算法两步走：indexing 与 pairing</title>
+  <desc id="alg2-desc">左侧 Step 1 — INDEXING（同型）：基因组 + GFF3 + MEME motif 经 FIMO 全基因组扫描，每 motif 保留 top n、每基因保留 top k，产出可复用的 homotypic index/。右侧 Step 2 — PAIRING（异型）：输入用户基因列表，在 cluster 内对每对 motif 做超几何检验并 BH/Bonferroni 校正，输出 motif_output.txt。两步之间以"同型索引复用"虚线箭头连接。底部说明 Step 1 昂贵但与基因列表无关，Step 2 廉价可反复跑（pair_only.sh）。</desc>
   <defs>
-    <marker id="aBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#1565c0"/>
+    <marker id="arrAccent" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#b7791f"/>
     </marker>
-    <marker id="aGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/>
+    <marker id="arrPrimary" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f766e"/>
     </marker>
-    <marker id="aGrey" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#616161"/>
+    <marker id="arrMuted" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
     </marker>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
   </defs>
 
-  <!-- 白色圆角背景 -->
   <rect x="0" y="0" width="1100" height="555" rx="14" fill="#ffffff"/>
 
-  <!-- 标题 -->
-  <text x="550" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">PMET 算法：两步走</text>
+  <text x="550" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">PMET 算法：两步走</text>
 
-  <!-- ============ Step 1 面板（左，蓝色） ============ -->
-  <rect x="30" y="55" width="475" height="430" rx="10" fill="#e3f2fd" stroke="#90caf9" stroke-width="1.5"/>
-  <text x="267" y="82" text-anchor="middle" font-size="16" font-weight="bold" fill="#0d47a1">Step 1 — INDEXING</text>
-  <text x="267" y="100" text-anchor="middle" font-size="11" font-style="italic" fill="#1565c0">同型 — 建立可复用的 motif 位置索引</text>
+  <g id="step1-indexing" aria-label="Step 1 — INDEXING（同型）">
+  <rect x="30" y="55" width="475" height="430" rx="10" fill="#fdf6e7" stroke="#dbe5e8" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="30" y="55" width="475" height="32" rx="10" fill="#b7791f" opacity="0.15"/>
+  <rect x="30" y="85" width="475" height="2" fill="#b7791f"/>
+  <text x="267" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="#7a4d10">Step 1 — INDEXING</text>
+  <text x="267" y="105" text-anchor="middle" font-size="11" font-style="italic" fill="#7a4d10">同型 — 建立可复用的 motif 位置索引</text>
 
-  <!-- Step 1 input -->
-  <rect x="60" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#1565c0" stroke-width="1"/>
-  <text x="267" y="142" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">基因组 + GFF3 + MEME motifs</text>
-  <text x="267" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#666">如 TAIR10 + Franco-Zorrilla 113 motif 集</text>
+  <rect x="60" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="267" y="142" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">基因组 + GFF3 + MEME motifs</text>
+  <text x="267" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#64748b">如 TAIR10 + Franco-Zorrilla 113 motif 集</text>
 
-  <line x1="267" y1="170" x2="267" y2="190" stroke="#1565c0" stroke-width="2" marker-end="url(#aBlue)"/>
+  <line x1="267" y1="170" x2="267" y2="190" stroke="#b7791f" stroke-width="2" marker-end="url(#arrAccent)"/>
 
-  <!-- Step 1 process -->
-  <rect x="60" y="195" width="415" height="135" rx="6" fill="#bbdefb" stroke="#1565c0" stroke-width="1.5"/>
-  <text x="267" y="215" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">提取目标区域序列</text>
-  <text x="267" y="231" text-anchor="middle" font-size="10" font-style="italic" fill="#1565c0">（promoter / UTR / CDS / intervals / …）</text>
-  <text x="267" y="255" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">FIMO 扫描所有 motif</text>
-  <text x="267" y="277" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">每 motif 全基因组保留 top n</text>
-  <text x="267" y="295" text-anchor="middle" font-size="10" font-style="italic" fill="#1565c0">（per-motif binomial 阈值筛选）</text>
-  <text x="267" y="317" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">每基因保留 top k hit</text>
+  <rect x="60" y="195" width="415" height="135" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="267" y="215" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">提取目标区域序列</text>
+  <text x="267" y="231" text-anchor="middle" font-size="10" font-style="italic" fill="#64748b">（promoter / UTR / CDS / intervals / …）</text>
+  <text x="267" y="255" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">FIMO 扫描所有 motif</text>
+  <text x="267" y="277" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">每 motif 全基因组保留 top n</text>
+  <text x="267" y="295" text-anchor="middle" font-size="10" font-style="italic" fill="#64748b">（per-motif binomial 阈值筛选）</text>
+  <text x="267" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">每基因保留 top k hit</text>
 
-  <line x1="267" y1="332" x2="267" y2="352" stroke="#1565c0" stroke-width="2" marker-end="url(#aBlue)"/>
+  <line x1="267" y1="332" x2="267" y2="352" stroke="#b7791f" stroke-width="2" marker-end="url(#arrAccent)"/>
 
-  <!-- Step 1 output -->
-  <rect x="60" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#1565c0" stroke-width="1.5" stroke-dasharray="5,3"/>
-  <text x="80" y="378" font-size="12" font-weight="bold" fill="#0d47a1">homotypic index/</text>
-  <text x="100" y="396" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ fimohits/*.bin</text>
-  <text x="100" y="411" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ binomial_thresholds.txt</text>
-  <text x="100" y="426" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ IC.txt</text>
-  <text x="100" y="441" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ universe.txt</text>
-  <text x="100" y="456" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">└─ promoter_lengths.txt</text>
+  <rect x="60" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#b7791f" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="80" y="378" font-size="12" font-weight="700" fill="#7a4d10">homotypic index/</text>
+  <g font-size="10" font-family="ui-monospace, SF Mono, Menlo, monospace" fill="#475569">
+    <text x="100" y="396">├─ fimohits/*.bin</text>
+    <text x="100" y="411">├─ binomial_thresholds.txt</text>
+    <text x="100" y="426">├─ IC.txt</text>
+    <text x="100" y="441">├─ universe.txt</text>
+    <text x="100" y="456">└─ promoter_lengths.txt</text>
+  </g>
+  </g>
 
-  <!-- ============ Step 2 面板（右，绿色） ============ -->
-  <rect x="595" y="55" width="475" height="430" rx="10" fill="#e8f5e9" stroke="#a5d6a7" stroke-width="1.5"/>
-  <text x="832" y="82" text-anchor="middle" font-size="16" font-weight="bold" fill="#1b5e20">Step 2 — PAIRING</text>
-  <text x="832" y="100" text-anchor="middle" font-size="11" font-style="italic" fill="#2e7d32">异型 — 找协同富集的 motif pair</text>
+  <g id="step2-pairing" aria-label="Step 2 — PAIRING（异型）">
+  <rect x="595" y="55" width="475" height="430" rx="10" fill="#eef8f6" stroke="#dbe5e8" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="595" y="55" width="475" height="32" rx="10" fill="#0f766e" opacity="0.18"/>
+  <rect x="595" y="85" width="475" height="2" fill="#0f766e"/>
+  <text x="832" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="#134e4a">Step 2 — PAIRING</text>
+  <text x="832" y="105" text-anchor="middle" font-size="11" font-style="italic" fill="#134e4a">异型 — 找协同富集的 motif pair</text>
 
-  <!-- Step 2 input -->
-  <rect x="625" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#2e7d32" stroke-width="1"/>
-  <text x="832" y="142" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">我的基因列表（感兴趣的一群基因）</text>
-  <text x="832" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#666">单个 cluster，或每行带 cluster 标签</text>
+  <rect x="625" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="832" y="142" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">我的基因列表（感兴趣的一群基因）</text>
+  <text x="832" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#64748b">单个 cluster，或每行带 cluster 标签</text>
 
-  <line x1="832" y1="170" x2="832" y2="190" stroke="#2e7d32" stroke-width="2" marker-end="url(#aGreen)"/>
+  <line x1="832" y1="170" x2="832" y2="190" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
-  <!-- Step 2 process -->
-  <rect x="625" y="195" width="415" height="135" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="832" y="220" text-anchor="middle" font-size="12" fill="#1b5e20">在这个 cluster 里，</text>
-  <text x="832" y="240" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">哪一对 motif (m₁, m₂)</text>
-  <text x="832" y="258" text-anchor="middle" font-size="12" fill="#1b5e20">共同出现的次数比预期显著偏高？</text>
-  <text x="832" y="288" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">超几何检验</text>
-  <text x="832" y="308" text-anchor="middle" font-size="11" font-style="italic" fill="#2e7d32">+ BH / Bonferroni 校正</text>
+  <rect x="625" y="195" width="415" height="135" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="832" y="220" text-anchor="middle" font-size="12" fill="#334155">在这个 cluster 里，</text>
+  <text x="832" y="240" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">哪一对 motif (m₁, m₂)</text>
+  <text x="832" y="258" text-anchor="middle" font-size="12" fill="#334155">共同出现的次数比预期显著偏高？</text>
+  <text x="832" y="288" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">超几何检验</text>
+  <text x="832" y="308" text-anchor="middle" font-size="11" font-style="italic" fill="#0f766e">+ BH / Bonferroni 校正</text>
 
-  <line x1="832" y1="332" x2="832" y2="352" stroke="#2e7d32" stroke-width="2" marker-end="url(#aGreen)"/>
+  <line x1="832" y1="332" x2="832" y2="352" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
-  <!-- Step 2 output -->
-  <rect x="625" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="645" y="378" font-size="12" font-weight="bold" fill="#1b5e20">motif_output.txt</text>
-  <text x="660" y="397" font-size="10" font-family="Menlo, Consolas, monospace" fill="#1b5e20">cluster | m1 | m2 | p_raw | adj_p_BH | …</text>
-  <text x="645" y="420" font-size="10" fill="#555">共 11 列，按 <tspan font-family="Menlo, Consolas, monospace">adj_p_BH</tspan> 排序</text>
-  <text x="645" y="438" font-size="10" fill="#555">每行 = 一次 (cluster, m₁, m₂) 协同性</text>
-  <text x="645" y="453" font-size="10" fill="#555">检验结果</text>
+  <rect x="625" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="645" y="378" font-size="12" font-weight="700" fill="#0f172a" font-family="ui-monospace, SF Mono, Menlo, monospace">motif_output.txt</text>
+  <text x="660" y="397" font-size="10" font-family="ui-monospace, SF Mono, Menlo, monospace" fill="#0f766e">cluster | m1 | m2 | p_raw | adj_p_BH | …</text>
+  <text x="645" y="420" font-size="10" fill="#475569">共 11 列，按 <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">adj_p_BH</tspan> 排序</text>
+  <text x="645" y="438" font-size="10" fill="#475569">每行 = 一次 (cluster, m₁, m₂) 协同性</text>
+  <text x="645" y="453" font-size="10" fill="#475569">检验结果</text>
+  </g>
 
-  <!-- ============ Step 1 output → Step 2 process 的跨阶段箭头 ============ -->
-  <path d="M 480 415 L 555 415 L 555 262 L 620 262" fill="none" stroke="#616161" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#aGrey)"/>
-  <rect x="510" y="328" width="90" height="32" rx="4" fill="#ffffff" stroke="#9e9e9e" stroke-width="1"/>
-  <text x="555" y="343" text-anchor="middle" font-size="10" font-weight="bold" fill="#424242">同型索引</text>
-  <text x="555" y="355" text-anchor="middle" font-size="10" font-style="italic" fill="#616161">复用</text>
+  <g id="reuse-link" aria-label="同型索引复用：Step 1 → Step 2">
+  <path d="M 480 415 L 555 415 L 555 262 L 620 262" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrMuted)"/>
+  <rect x="510" y="328" width="90" height="32" rx="4" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="555" y="343" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">同型索引</text>
+  <text x="555" y="355" text-anchor="middle" font-size="10" font-style="italic" fill="#64748b">复用</text>
+  </g>
 
-  <!-- 底部 info-box -->
-  <rect x="20" y="500" width="1060" height="42" rx="6" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"/>
-  <text x="40" y="520" font-size="10" fill="#0d47a1">
-    <tspan font-weight="bold">为什么分两步：</tspan>Step 1 昂贵（在整个 universe 上跑 FIMO，TAIR10 ~分钟级），但它的产物与基因列表无关。
+  <g id="footnote" aria-label="脚注：为什么分两步">
+  <rect x="20" y="500" width="1060" height="42" rx="6" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="40" y="520" font-size="10" fill="#475569">
+    <tspan font-weight="700" fill="#0f172a">为什么分两步：</tspan>Step 1 昂贵（在整个 universe 上跑 FIMO，TAIR10 ~分钟级），但它的产物与基因列表无关。
   </text>
-  <text x="40" y="535" font-size="10" fill="#0d47a1">
-    Step 2 廉价，对同一索引可以反复换基因列表跑 — 见 <tspan font-family="Menlo, Consolas, monospace">pair_only.sh</tspan>。
+  <text x="40" y="535" font-size="10" fill="#475569">
+    Step 2 廉价，对同一索引可以反复换基因列表跑 — 见 <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">pair_only.sh</tspan>。
   </text>
+  </g>
 </svg>

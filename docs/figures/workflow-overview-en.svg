@@ -1,141 +1,175 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 770" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 770" role="img" aria-labelledby="wfen-title wfen-desc" lang="en" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">
+  <title id="wfen-title">PMET — four workflows, one shared index schema</title>
+  <desc id="wfen-desc">Top row, four entry points: promoter.sh (promoter mode, web /promoters), intervals.sh (peaks / intervals, web /intervals), elements.sh (GFF3 elements, CLI only), and pair_only.sh (dashed, skips indexing, web /promoters_pre). The first three converge on the central homotypic index — a shared on-disk schema with fimohits/*.bin, binomial_thresholds.txt, IC.txt, universe.txt, promoter_lengths.txt — verified by check_homotypic_contract.py; pair_only.sh reads an existing index from disk. The index plus a user gene list feed the heterotypic pair test (build/pair_parallel, hypergeometric + BH/Bonferroni), producing motif_output.txt (11 columns, sorted by adj_p_BH; plus optional R heatmaps). Footer: the web backend SCRIPT_MAP dispatches submissions to the corresponding .sh.</desc>
   <defs>
-    <marker id="aGrey" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#616161"/>
+    <marker id="arrSlate" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
     </marker>
-    <marker id="aAmber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#e65100"/>
+    <marker id="arrAccent" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#b7791f"/>
     </marker>
-    <marker id="aGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/>
+    <marker id="arrPrimary" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f766e"/>
     </marker>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
   </defs>
 
-  <!-- White rounded background -->
   <rect x="0" y="0" width="1100" height="770" rx="14" fill="#ffffff"/>
 
-  <!-- Title -->
-  <text x="550" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">PMET — four workflows, one shared index schema</text>
-  <text x="550" y="52" text-anchor="middle" font-size="11" font-style="italic" fill="#666">how each entry point feeds the same downstream engine</text>
+  <text x="550" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">PMET — four workflows, one shared index schema</text>
+  <text x="550" y="56" text-anchor="middle" font-size="12" fill="#64748b">how each entry point feeds the same downstream engine</text>
 
   <!-- ============ TOP ROW: 4 entry-point boxes ============ -->
-  <!-- promoter.sh -->
-  <rect x="30" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#1565c0" stroke-width="1.5"/>
-  <rect x="30" y="70" width="248" height="32" rx="8" fill="#bbdefb"/>
-  <text x="154" y="91" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d47a1" font-family="Menlo, Consolas, monospace">promoter.sh</text>
-  <text x="50" y="120" font-size="10" font-weight="bold" fill="#0d47a1">inputs:</text>
-  <text x="50" y="135" font-size="9" fill="#444">· genome FASTA</text>
-  <text x="50" y="148" font-size="9" fill="#444">· GFF3 annotation</text>
-  <text x="50" y="161" font-size="9" fill="#444">· MEME motifs</text>
-  <text x="50" y="180" font-size="10" font-weight="bold" fill="#0d47a1">indexing:</text>
-  <text x="50" y="195" font-size="9" fill="#444">· promoter extraction (~1 kb)</text>
-  <text x="50" y="208" font-size="9" fill="#444">· FIMO + binomial cutoff</text>
-  <text x="50" y="221" font-size="9" fill="#444">· per-gene top-k</text>
-  <rect x="50" y="232" width="120" height="18" rx="3" fill="#e3f2fd" stroke="#90caf9"/>
-  <text x="110" y="245" text-anchor="middle" font-size="9" fill="#0d47a1">web: <tspan font-family="Menlo, Consolas, monospace">/promoters</tspan></text>
+  <!-- promoter.sh (mode-promoter) -->
+  <g aria-label="Entry point 1: promoter.sh — promoter mode (web /promoters)">
+    <rect x="30" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+    <rect x="30" y="70" width="248" height="32" rx="8" fill="#bdded8"/>
+    <rect x="30" y="98" width="248" height="2" fill="#0f766e"/>
+    <text x="154" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#134e4a" font-family="ui-monospace, SF Mono, Menlo, monospace">promoter.sh</text>
+    <text x="50" y="120" font-size="10" font-weight="700" fill="#0f766e">inputs</text>
+    <g font-size="9" fill="#334155">
+      <text x="50" y="135">· genome FASTA</text>
+      <text x="50" y="148">· GFF3 annotation</text>
+      <text x="50" y="161">· MEME motifs</text>
+    </g>
+    <text x="50" y="180" font-size="10" font-weight="700" fill="#0f766e">indexing</text>
+    <g font-size="9" fill="#334155">
+      <text x="50" y="195">· promoter extraction (~1 kb)</text>
+      <text x="50" y="208">· FIMO + binomial cutoff</text>
+      <text x="50" y="221">· per-gene top-k</text>
+    </g>
+    <rect x="50" y="232" width="120" height="18" rx="3" fill="#eef8f6" stroke="#dbe5e8"/>
+    <text x="110" y="245" text-anchor="middle" font-size="9" fill="#0f766e">web: <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">/promoters</tspan></text>
+  </g>
 
-  <!-- intervals.sh -->
-  <rect x="293" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#00838f" stroke-width="1.5"/>
-  <rect x="293" y="70" width="248" height="32" rx="8" fill="#b2ebf2"/>
-  <text x="417" y="91" text-anchor="middle" font-size="13" font-weight="bold" fill="#006064" font-family="Menlo, Consolas, monospace">intervals.sh</text>
-  <text x="313" y="120" font-size="10" font-weight="bold" fill="#006064">inputs:</text>
-  <text x="313" y="135" font-size="9" fill="#444">· interval FASTA (peaks etc.)</text>
-  <text x="313" y="148" font-size="9" fill="#444">· MEME motifs</text>
-  <text x="313" y="161" font-size="9" fill="#444">· peak/interval list</text>
-  <text x="313" y="180" font-size="10" font-weight="bold" fill="#006064">indexing:</text>
-  <text x="313" y="195" font-size="9" fill="#444">· colon-sanitise headers</text>
-  <text x="313" y="208" font-size="9" fill="#444">· FIMO + binomial cutoff</text>
-  <text x="313" y="221" font-size="9" fill="#444">· per-interval top-k</text>
-  <rect x="313" y="232" width="120" height="18" rx="3" fill="#e0f7fa" stroke="#80deea"/>
-  <text x="373" y="245" text-anchor="middle" font-size="9" fill="#006064">web: <tspan font-family="Menlo, Consolas, monospace">/intervals</tspan></text>
+  <!-- intervals.sh (mode-intervals) -->
+  <g aria-label="Entry point 2: intervals.sh — peaks/intervals mode (web /intervals)">
+    <rect x="293" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+    <rect x="293" y="70" width="248" height="32" rx="8" fill="#d4e3fc"/>
+    <rect x="293" y="98" width="248" height="2" fill="#1f6feb"/>
+    <text x="417" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#0d3a8c" font-family="ui-monospace, SF Mono, Menlo, monospace">intervals.sh</text>
+    <text x="313" y="120" font-size="10" font-weight="700" fill="#1f6feb">inputs</text>
+    <g font-size="9" fill="#334155">
+      <text x="313" y="135">· interval FASTA (peaks etc.)</text>
+      <text x="313" y="148">· MEME motifs</text>
+      <text x="313" y="161">· peak/interval list</text>
+    </g>
+    <text x="313" y="180" font-size="10" font-weight="700" fill="#1f6feb">indexing</text>
+    <g font-size="9" fill="#334155">
+      <text x="313" y="195">· colon-sanitise headers</text>
+      <text x="313" y="208">· FIMO + binomial cutoff</text>
+      <text x="313" y="221">· per-interval top-k</text>
+    </g>
+    <rect x="313" y="232" width="120" height="18" rx="3" fill="#eef3fd" stroke="#dbe5e8"/>
+    <text x="373" y="245" text-anchor="middle" font-size="9" fill="#1f6feb">web: <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">/intervals</tspan></text>
+  </g>
 
-  <!-- elements.sh -->
-  <rect x="556" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#4527a0" stroke-width="1.5"/>
-  <rect x="556" y="70" width="248" height="32" rx="8" fill="#d1c4e9"/>
-  <text x="680" y="91" text-anchor="middle" font-size="13" font-weight="bold" fill="#311b92" font-family="Menlo, Consolas, monospace">elements.sh</text>
-  <text x="576" y="120" font-size="10" font-weight="bold" fill="#311b92">inputs:</text>
-  <text x="576" y="135" font-size="9" fill="#444">· genome FASTA + GFF3</text>
-  <text x="576" y="148" font-size="9" fill="#444">· MEME motifs</text>
-  <text x="576" y="161" font-size="9" fill="#444">· <tspan font-family="Menlo, Consolas, monospace">-e</tspan> element type, <tspan font-family="Menlo, Consolas, monospace">-s</tspan> strategy</text>
-  <text x="576" y="180" font-size="10" font-weight="bold" fill="#311b92">indexing:</text>
-  <text x="576" y="195" font-size="9" fill="#444">· per-element fragment tagging</text>
-  <text x="576" y="208" font-size="9" fill="#444">· FIMO scan fragments</text>
-  <text x="576" y="221" font-size="9" fill="#444">· collapse back to gene level</text>
-  <rect x="576" y="232" width="100" height="18" rx="3" fill="#ede7f6" stroke="#b39ddb"/>
-  <text x="626" y="245" text-anchor="middle" font-size="9" fill="#311b92">CLI only</text>
+  <!-- elements.sh (mode-elements) -->
+  <g aria-label="Entry point 3: elements.sh — GFF3 elements (CLI only)">
+    <rect x="556" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+    <rect x="556" y="70" width="248" height="32" rx="8" fill="#e0d4f0"/>
+    <rect x="556" y="98" width="248" height="2" fill="#8a4cbe"/>
+    <text x="680" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#5e2d8c" font-family="ui-monospace, SF Mono, Menlo, monospace">elements.sh</text>
+    <text x="576" y="120" font-size="10" font-weight="700" fill="#8a4cbe">inputs</text>
+    <g font-size="9" fill="#334155">
+      <text x="576" y="135">· genome FASTA + GFF3</text>
+      <text x="576" y="148">· MEME motifs</text>
+      <text x="576" y="161">· <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">-e</tspan> element type, <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">-s</tspan> strategy</text>
+    </g>
+    <text x="576" y="180" font-size="10" font-weight="700" fill="#8a4cbe">indexing</text>
+    <g font-size="9" fill="#334155">
+      <text x="576" y="195">· per-element fragment tagging</text>
+      <text x="576" y="208">· FIMO scan fragments</text>
+      <text x="576" y="221">· collapse back to gene level</text>
+    </g>
+    <rect x="576" y="232" width="100" height="18" rx="3" fill="#f6f1fb" stroke="#dbe5e8"/>
+    <text x="626" y="245" text-anchor="middle" font-size="9" fill="#8a4cbe">CLI only</text>
+  </g>
 
-  <!-- pair_only.sh -->
-  <rect x="819" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#37474f" stroke-width="1.5" stroke-dasharray="6,3"/>
-  <rect x="819" y="70" width="248" height="32" rx="8" fill="#cfd8dc"/>
-  <text x="943" y="91" text-anchor="middle" font-size="13" font-weight="bold" fill="#263238" font-family="Menlo, Consolas, monospace">pair_only.sh</text>
-  <text x="839" y="120" font-size="10" font-weight="bold" fill="#263238">inputs:</text>
-  <text x="839" y="135" font-size="9" fill="#444">· existing homotypic index</text>
-  <text x="839" y="148" font-size="9" fill="#444">  (<tspan font-style="italic">made by any of the 3 left</tspan>)</text>
-  <text x="839" y="161" font-size="9" fill="#444">· user gene list</text>
-  <text x="839" y="180" font-size="10" font-weight="bold" fill="#d32f2f">indexing:</text>
-  <text x="839" y="195" font-size="9" font-style="italic" fill="#d32f2f">SKIPPED — re-uses an index</text>
-  <text x="839" y="208" font-size="9" font-style="italic" fill="#d32f2f">already on disk</text>
-  <rect x="839" y="232" width="160" height="18" rx="3" fill="#eceff1" stroke="#b0bec5"/>
-  <text x="919" y="245" text-anchor="middle" font-size="9" fill="#263238">web: <tspan font-family="Menlo, Consolas, monospace">/promoters_pre</tspan></text>
+  <!-- pair_only.sh (mode-pair, dashed = skip-indexing semantic) -->
+  <g aria-label="Entry point 4: pair_only.sh — re-uses an existing index from disk (web /promoters_pre)">
+    <rect x="819" y="70" width="248" height="190" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1" stroke-dasharray="6,3"/>
+    <rect x="819" y="70" width="248" height="32" rx="8" fill="#e2e8f0"/>
+    <rect x="819" y="98" width="248" height="2" fill="#64748b"/>
+    <text x="943" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#334155" font-family="ui-monospace, SF Mono, Menlo, monospace">pair_only.sh</text>
+    <text x="839" y="120" font-size="10" font-weight="700" fill="#64748b">inputs</text>
+    <g font-size="9" fill="#334155">
+      <text x="839" y="135">· existing homotypic index</text>
+      <text x="839" y="148">  (<tspan font-style="italic">made by any of the 3 left</tspan>)</text>
+      <text x="839" y="161">· user gene list</text>
+    </g>
+    <text x="839" y="180" font-size="10" font-weight="700" fill="#b7791f">indexing</text>
+    <g font-size="9" font-style="italic" fill="#7a4d10">
+      <text x="839" y="195">SKIPPED — re-uses an index</text>
+      <text x="839" y="208">already on disk</text>
+    </g>
+    <rect x="839" y="232" width="160" height="18" rx="3" fill="#f1f5f9" stroke="#dbe5e8"/>
+    <text x="919" y="245" text-anchor="middle" font-size="9" fill="#334155">web: <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">/promoters_pre</tspan></text>
+  </g>
 
-  <!-- ============ Convergence arrows from top boxes to the central index ============ -->
-  <!-- 3 indexing entries arrows down to index box at y=320 -->
-  <line x1="154" y1="265" x2="154" y2="285" stroke="#616161" stroke-width="1.5"/>
-  <line x1="154" y1="285" x2="350" y2="285" stroke="#616161" stroke-width="1.5"/>
-  <line x1="350" y1="285" x2="350" y2="320" stroke="#616161" stroke-width="1.5" marker-end="url(#aGrey)"/>
+  <!-- ============ Convergence arrows from top boxes to central index ============ -->
+  <g stroke="#94a3b8" stroke-width="1.5" fill="none">
+    <line x1="154" y1="265" x2="154" y2="285"/>
+    <line x1="154" y1="285" x2="350" y2="285"/>
+    <line x1="350" y1="285" x2="350" y2="320" marker-end="url(#arrSlate)"/>
 
-  <line x1="417" y1="265" x2="417" y2="285" stroke="#616161" stroke-width="1.5"/>
-  <line x1="417" y1="285" x2="450" y2="285" stroke="#616161" stroke-width="1.5"/>
-  <line x1="450" y1="285" x2="450" y2="320" stroke="#616161" stroke-width="1.5" marker-end="url(#aGrey)"/>
+    <line x1="417" y1="265" x2="417" y2="285"/>
+    <line x1="417" y1="285" x2="450" y2="285"/>
+    <line x1="450" y1="285" x2="450" y2="320" marker-end="url(#arrSlate)"/>
 
-  <line x1="680" y1="265" x2="680" y2="285" stroke="#616161" stroke-width="1.5"/>
-  <line x1="680" y1="285" x2="550" y2="285" stroke="#616161" stroke-width="1.5"/>
-  <line x1="550" y1="285" x2="550" y2="320" stroke="#616161" stroke-width="1.5" marker-end="url(#aGrey)"/>
+    <line x1="680" y1="265" x2="680" y2="285"/>
+    <line x1="680" y1="285" x2="550" y2="285"/>
+    <line x1="550" y1="285" x2="550" y2="320" marker-end="url(#arrSlate)"/>
+  </g>
 
-  <!-- pair_only path: arrow from box → straight down → curls left to enter the index box from the right side -->
-  <path d="M 943 265 L 943 360 L 870 360" fill="none" stroke="#37474f" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#aGrey)"/>
-  <text x="950" y="318" font-size="9" font-style="italic" fill="#37474f">consumes existing</text>
-  <text x="950" y="332" font-size="9" font-style="italic" fill="#37474f">index from disk</text>
+  <!-- pair_only path: dashed, curls in from right -->
+  <path d="M 943 265 L 943 360 L 870 360" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrSlate)"/>
+  <text x="950" y="318" font-size="9" font-style="italic" fill="#64748b">consumes existing</text>
+  <text x="950" y="332" font-size="9" font-style="italic" fill="#64748b">index from disk</text>
 
-  <!-- ============ Central homotypic index box ============ -->
-  <rect x="230" y="325" width="640" height="160" rx="10" fill="#fff8e1" stroke="#f57f17" stroke-width="1.5"/>
-  <rect x="230" y="325" width="640" height="32" rx="10" fill="#ffe082"/>
-  <text x="550" y="346" text-anchor="middle" font-size="13" font-weight="bold" fill="#e65100">homotypic index — shared on-disk schema</text>
-  <text x="250" y="372" font-size="10" font-style="italic" fill="#bf360c">contract: <tspan font-family="Menlo, Consolas, monospace">docs/methods/homotypic-contract.md</tspan></text>
-  <text x="270" y="392" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444">├─ fimohits/&lt;MOTIF&gt;.bin       <tspan fill="#888" font-style="italic" font-family="Arial">— per-motif binary hit list (PMETBN01)</tspan></text>
-  <text x="270" y="408" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444">├─ binomial_thresholds.txt   <tspan fill="#888" font-style="italic" font-family="Arial">— per-motif p-value cutoff</tspan></text>
-  <text x="270" y="424" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444">├─ IC.txt                    <tspan fill="#888" font-style="italic" font-family="Arial">— per-motif positional info-content</tspan></text>
-  <text x="270" y="440" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444">├─ universe.txt              <tspan fill="#888" font-style="italic" font-family="Arial">— gene/interval names</tspan></text>
-  <text x="270" y="456" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444">└─ promoter_lengths.txt      <tspan fill="#888" font-style="italic" font-family="Arial">— per-gene/interval length</tspan></text>
-  <text x="550" y="476" text-anchor="middle" font-size="9" font-style="italic" fill="#888">all four workflows agree on this layout — verified by check_homotypic_contract.py</text>
+  <!-- ============ Central homotypic index box (accent = convergence anchor) ============ -->
+  <rect x="230" y="325" width="640" height="160" rx="10" fill="#fdf6e7" stroke="#b7791f" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="230" y="325" width="640" height="32" rx="10" fill="#b7791f" opacity="0.15"/>
+  <rect x="230" y="355" width="640" height="2" fill="#b7791f"/>
+  <text x="550" y="346" text-anchor="middle" font-size="13" font-weight="700" fill="#7a4d10">homotypic index — shared on-disk schema</text>
+  <text x="250" y="372" font-size="10" font-style="italic" fill="#7a4d10">contract: <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">docs/methods/homotypic-contract.md</tspan></text>
+  <g font-size="11" font-family="ui-monospace, SF Mono, Menlo, monospace" fill="#334155">
+    <text x="270" y="392">├─ fimohits/&lt;MOTIF&gt;.bin       <tspan fill="#94a3b8" font-style="italic" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">— per-motif binary hit list (PMETBN01)</tspan></text>
+    <text x="270" y="408">├─ binomial_thresholds.txt   <tspan fill="#94a3b8" font-style="italic" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">— per-motif p-value cutoff</tspan></text>
+    <text x="270" y="424">├─ IC.txt                    <tspan fill="#94a3b8" font-style="italic" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">— per-motif positional info-content</tspan></text>
+    <text x="270" y="440">├─ universe.txt              <tspan fill="#94a3b8" font-style="italic" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">— gene/interval names</tspan></text>
+    <text x="270" y="456">└─ promoter_lengths.txt      <tspan fill="#94a3b8" font-style="italic" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">— per-gene/interval length</tspan></text>
+  </g>
+  <text x="550" y="476" text-anchor="middle" font-size="9" font-style="italic" fill="#94a3b8">all four workflows agree on this layout — verified by check_homotypic_contract.py</text>
 
   <!-- arrow down + "+ gene list" annotation -->
-  <line x1="550" y1="490" x2="550" y2="525" stroke="#e65100" stroke-width="2" marker-end="url(#aAmber)"/>
-  <rect x="585" y="497" width="170" height="20" rx="4" fill="#ffffff" stroke="#bbb"/>
-  <text x="670" y="511" text-anchor="middle" font-size="10" fill="#444">+ user gene list (cluster of interest)</text>
+  <line x1="550" y1="490" x2="550" y2="525" stroke="#b7791f" stroke-width="2" marker-end="url(#arrAccent)"/>
+  <rect x="585" y="497" width="170" height="20" rx="4" fill="#ffffff" stroke="#dbe5e8"/>
+  <text x="670" y="511" text-anchor="middle" font-size="10" fill="#475569">+ user gene list (cluster of interest)</text>
 
-  <!-- ============ Heterotypic pair test (shared engine) ============ -->
-  <rect x="230" y="530" width="640" height="100" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
-  <rect x="230" y="530" width="640" height="32" rx="10" fill="#a5d6a7"/>
-  <text x="550" y="551" text-anchor="middle" font-size="13" font-weight="bold" fill="#1b5e20">Heterotypic pair test (shared engine)</text>
-  <text x="550" y="580" text-anchor="middle" font-size="11" fill="#1b5e20">all four workflows shell out to <tspan font-family="Menlo, Consolas, monospace" font-weight="bold">build/pair_parallel</tspan></text>
-  <text x="550" y="600" text-anchor="middle" font-size="11" fill="#1b5e20">per-cluster <tspan font-weight="bold">hypergeometric test</tspan>, gated by binomial pre-filter</text>
-  <text x="550" y="617" text-anchor="middle" font-size="10" font-style="italic" fill="#2e7d32">+ Benjamini–Hochberg / Bonferroni multiple-testing correction</text>
+  <!-- ============ Heterotypic pair test (primary engine) ============ -->
+  <rect x="230" y="530" width="640" height="100" rx="10" fill="#eef8f6" stroke="#0f766e" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="230" y="530" width="640" height="32" rx="10" fill="#0f766e" opacity="0.18"/>
+  <rect x="230" y="560" width="640" height="2" fill="#0f766e"/>
+  <text x="550" y="551" text-anchor="middle" font-size="13" font-weight="700" fill="#134e4a">Heterotypic pair test (shared engine)</text>
+  <text x="550" y="580" text-anchor="middle" font-size="11" fill="#134e4a">all four workflows shell out to <tspan font-family="ui-monospace, SF Mono, Menlo, monospace" font-weight="700">build/pair_parallel</tspan></text>
+  <text x="550" y="600" text-anchor="middle" font-size="11" fill="#134e4a">per-cluster <tspan font-weight="700">hypergeometric test</tspan>, gated by binomial pre-filter</text>
+  <text x="550" y="617" text-anchor="middle" font-size="10" font-style="italic" fill="#0f766e">+ Benjamini–Hochberg / Bonferroni multiple-testing correction</text>
 
-  <!-- arrow down to output -->
-  <line x1="550" y1="635" x2="550" y2="665" stroke="#2e7d32" stroke-width="2" marker-end="url(#aGreen)"/>
+  <line x1="550" y1="635" x2="550" y2="665" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
   <!-- ============ Output ============ -->
-  <rect x="230" y="670" width="640" height="42" rx="8" fill="#ffffff" stroke="#37474f" stroke-width="1.5"/>
-  <text x="550" y="689" text-anchor="middle" font-size="13" font-weight="bold" fill="#263238" font-family="Menlo, Consolas, monospace">motif_output.txt</text>
-  <text x="550" y="705" text-anchor="middle" font-size="10" fill="#555">11 columns, sorted by <tspan font-family="Menlo, Consolas, monospace">adj_p_BH</tspan></text>
+  <rect x="230" y="670" width="640" height="42" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="550" y="689" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a" font-family="ui-monospace, SF Mono, Menlo, monospace">motif_output.txt</text>
+  <text x="550" y="705" text-anchor="middle" font-size="10" fill="#64748b">11 columns, sorted by <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">adj_p_BH</tspan></text>
 
-  <!-- Heatmap line as standalone footnote (outside output box) -->
-  <text x="550" y="729" text-anchor="middle" font-size="9" font-style="italic" fill="#888">+ optional 3 heatmap PNGs — requires Rscript and the packages in <tspan font-family="Menlo, Consolas, monospace">pipeline/r/install_packages.R</tspan></text>
+  <text x="550" y="729" text-anchor="middle" font-size="9" font-style="italic" fill="#94a3b8">+ optional 3 heatmap PNGs — requires Rscript and the packages in <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">pipeline/r/install_packages.R</tspan></text>
 
   <!-- Footer info-box -->
-  <rect x="20" y="740" width="1060" height="22" rx="6" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"/>
-  <text x="40" y="755" font-size="10" fill="#0d47a1">
-    <tspan font-weight="bold">Web app SCRIPT_MAP</tspan> (<tspan font-family="Menlo, Consolas, monospace">apps/pmet_backend/services/executor.py</tspan>): the backend dispatches user submissions to the right .sh based on the selected mode.
+  <rect x="20" y="740" width="1060" height="22" rx="6" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="40" y="755" font-size="10" fill="#475569">
+    <tspan font-weight="700" fill="#0f172a">Web app SCRIPT_MAP</tspan> (<tspan font-family="ui-monospace, SF Mono, Menlo, monospace">apps/pmet_backend/services/executor.py</tspan>): the backend dispatches user submissions to the right .sh based on the selected mode.
   </text>
 </svg>

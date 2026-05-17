@@ -1,132 +1,125 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 780" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 780" role="img" aria-labelledby="fragtag-title fragtag-desc" lang="zh-CN" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif">
+  <title id="fragtag-title">Fragment tagging、FIMO 扫描与 gene-level collapse</title>
+  <desc id="fragtag-desc">以 AT1G01010 的 3 个 exon fragment 为例的元件索引流程。Step 2 输出 BED（3 个 exon 用同一 col4=AT1G01010）→ Step 3 fragment 标记：第 2、3 个改为 __AT1G01010__2 / __3，让 FIMO 独立扫描 → Step 5 bedtools getfasta -s → 三个 fragment 各自 FIMO 扫描（每个 fragment 自带 top-k 预算，含 MYB1/WRKY/ERF1/NAC/bHLH/bZIP 等 hit）→ Step 9 collapse 回基因级别：去除 __N 后缀，长度求和（200+150+300=650 bp），按 p-value 升序保留 top-k。核心思想：拆分扫描避免跨 intron 虚假匹配，合并时全局竞争确保最优 hit。</desc>
   <defs>
-    <marker id="arrowD" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
-    </marker>
-    <marker id="arrowDG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/>
+    <marker id="arrSlate" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
     </marker>
     <symbol id="motif" viewBox="0 0 20 16">
-      <polygon points="10,0 20,16 0,16" fill="#e53935" opacity="0.85"/>
+      <polygon points="10,0 20,16 0,16" fill="#0f766e" opacity="0.85"/>
     </symbol>
   </defs>
 
-  <!-- Title -->
-  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">Fragment Tagging、FIMO 扫描与 Gene-level Collapse</text>
+  <rect x="0" y="0" width="1100" height="780" rx="14" fill="#ffffff"/>
 
-  <!-- ================================================================ -->
-  <!-- Step A: Original multi-fragment element -->
-  <!-- ================================================================ -->
-  <rect x="30" y="55" width="1040" height="120" rx="10" fill="#f9f9f9" stroke="#ddd"/>
-  <text x="550" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#1565c0">Step 2 输出：基因 AT1G01010 的 3 个 exon fragment（已选最长 isoform）</text>
+  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">Fragment Tagging、FIMO 扫描与 Gene-level Collapse</text>
 
-  <text x="80" y="115" font-size="10" fill="#666">BED:</text>
-  <rect x="130" y="98" width="200" height="30" rx="4" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="230" y="117" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 1 (200bp)</text>
-  <rect x="400" y="98" width="180" height="30" rx="4" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="490" y="117" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 2 (150bp)</text>
-  <rect x="650" y="98" width="250" height="30" rx="4" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="775" y="117" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 3 (300bp)</text>
+  <!-- Step A: Original multi-fragment element (mode-elements violet for fragment boxes) -->
+  <rect x="30" y="55" width="1040" height="120" rx="10" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="550" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#5e2d8c">Step 2 输出：基因 AT1G01010 的 3 个 exon fragment（已选最长 isoform）</text>
 
-  <text x="130" y="148" font-size="9" fill="#888">col4: AT1G01010</text>
-  <text x="400" y="148" font-size="9" fill="#888">col4: AT1G01010</text>
-  <text x="650" y="148" font-size="9" fill="#888">col4: AT1G01010</text>
+  <text x="80" y="115" font-size="10" fill="#64748b" font-family="ui-monospace, SF Mono, Menlo, monospace">BED:</text>
+  <rect x="130" y="98" width="200" height="30" rx="4" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1"/>
+  <text x="230" y="117" text-anchor="middle" font-size="10" font-weight="700" fill="#5e2d8c">Exon 1 (200bp)</text>
+  <rect x="400" y="98" width="180" height="30" rx="4" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1"/>
+  <text x="490" y="117" text-anchor="middle" font-size="10" font-weight="700" fill="#5e2d8c">Exon 2 (150bp)</text>
+  <rect x="650" y="98" width="250" height="30" rx="4" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1"/>
+  <text x="775" y="117" text-anchor="middle" font-size="10" font-weight="700" fill="#5e2d8c">Exon 3 (300bp)</text>
 
-  <!-- Arrow -->
-  <line x1="550" y1="175" x2="550" y2="205" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
-  <text x="620" y="195" font-size="11" font-weight="bold" fill="#e65100">Step 3: Fragment 标记</text>
+  <g font-size="9" fill="#64748b" font-family="ui-monospace, SF Mono, Menlo, monospace">
+    <text x="130" y="148">col4: AT1G01010</text>
+    <text x="400" y="148">col4: AT1G01010</text>
+    <text x="650" y="148">col4: AT1G01010</text>
+  </g>
 
-  <!-- ================================================================ -->
-  <!-- Step B: After tagging -->
-  <!-- ================================================================ -->
-  <rect x="30" y="210" width="1040" height="110" rx="10" fill="#fff8e1" stroke="#ffb300"/>
-  <text x="550" y="235" text-anchor="middle" font-size="14" font-weight="bold" fill="#e65100">标记后：每个 fragment 获得唯一 ID（FIMO 视为独立序列）</text>
+  <line x1="550" y1="175" x2="550" y2="205" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
+  <text x="620" y="195" font-size="11" font-weight="700" fill="#b7791f">Step 3: Fragment 标记</text>
 
-  <rect x="130" y="250" width="200" height="30" rx="4" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="230" y="269" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Exon 1 (200bp)</text>
-  <rect x="400" y="250" width="180" height="30" rx="4" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="490" y="269" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Exon 2 (150bp)</text>
-  <rect x="650" y="250" width="250" height="30" rx="4" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="775" y="269" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Exon 3 (300bp)</text>
+  <!-- Step B: After tagging (accent wash, fragment ID hash) -->
+  <rect x="30" y="210" width="1040" height="110" rx="10" fill="#fdf6e7" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="30" y="210" width="1040" height="2" fill="#b7791f"/>
+  <text x="550" y="235" text-anchor="middle" font-size="14" font-weight="700" fill="#7a4d10">标记后：每个 fragment 获得唯一 ID（FIMO 视为独立序列）</text>
 
-  <text x="130" y="300" font-size="10" font-weight="bold" fill="#d84315">col4: AT1G01010</text>
-  <text x="400" y="300" font-size="10" font-weight="bold" fill="#d84315">col4: __AT1G01010__2</text>
-  <text x="650" y="300" font-size="10" font-weight="bold" fill="#d84315">col4: __AT1G01010__3</text>
-  <text x="920" y="290" font-size="9" fill="#888">第1个保持原名</text>
-  <text x="920" y="305" font-size="9" fill="#888">第2,3个加 __N 后缀</text>
+  <rect x="130" y="250" width="200" height="30" rx="4" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1"/>
+  <text x="230" y="269" text-anchor="middle" font-size="9" font-weight="700" fill="#5e2d8c">Exon 1 (200bp)</text>
+  <rect x="400" y="250" width="180" height="30" rx="4" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1"/>
+  <text x="490" y="269" text-anchor="middle" font-size="9" font-weight="700" fill="#5e2d8c">Exon 2 (150bp)</text>
+  <rect x="650" y="250" width="250" height="30" rx="4" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1"/>
+  <text x="775" y="269" text-anchor="middle" font-size="9" font-weight="700" fill="#5e2d8c">Exon 3 (300bp)</text>
 
-  <!-- Arrow -->
-  <line x1="550" y1="320" x2="550" y2="350" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
-  <text x="620" y="340" font-size="11" font-weight="bold" fill="#2e7d32">Step 5: bedtools getfasta -s</text>
+  <g font-size="10" font-weight="700" fill="#7a4d10" font-family="ui-monospace, SF Mono, Menlo, monospace">
+    <text x="130" y="300">col4: AT1G01010</text>
+    <text x="400" y="300">col4: __AT1G01010__2</text>
+    <text x="650" y="300">col4: __AT1G01010__3</text>
+  </g>
+  <text x="920" y="290" font-size="9" fill="#64748b">第 1 个保持原名</text>
+  <text x="920" y="305" font-size="9" fill="#64748b">第 2,3 个加 __N 后缀</text>
 
-  <!-- ================================================================ -->
-  <!-- Step C: FIMO scans each independently -->
-  <!-- ================================================================ -->
-  <rect x="30" y="355" width="1040" height="170" rx="10" fill="#e8f5e9" stroke="#4caf50"/>
-  <text x="550" y="380" text-anchor="middle" font-size="14" font-weight="bold" fill="#2e7d32">FIMO 独立扫描每个 fragment（每个 fragment 有自己的 top-k 预算）</text>
+  <line x1="550" y1="320" x2="550" y2="350" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
+  <text x="620" y="340" font-size="11" font-weight="700" fill="#0f766e">Step 5: bedtools getfasta -s</text>
+
+  <!-- Step C: FIMO scans (primary teal wash) -->
+  <rect x="30" y="355" width="1040" height="170" rx="10" fill="#eef8f6" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="30" y="355" width="1040" height="2" fill="#0f766e"/>
+  <text x="550" y="380" text-anchor="middle" font-size="14" font-weight="700" fill="#134e4a">FIMO 独立扫描每个 fragment（每个 fragment 有自己的 top-k 预算）</text>
 
   <!-- Fragment 1 scan -->
-  <rect x="60" y="395" width="280" height="100" rx="6" fill="#fff" stroke="#c8e6c9"/>
-  <text x="200" y="415" text-anchor="middle" font-size="11" font-weight="bold" fill="#d84315">AT1G01010 (200bp)</text>
-  <rect x="80" y="425" width="240" height="22" rx="3" fill="#ffccbc" stroke="#d84315"/>
+  <rect x="60" y="395" width="280" height="100" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="200" y="415" text-anchor="middle" font-size="11" font-weight="700" fill="#5e2d8c" font-family="ui-monospace, SF Mono, Menlo, monospace">AT1G01010 (200bp)</text>
+  <rect x="80" y="425" width="240" height="22" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
   <use href="#motif" x="100" y="422" width="14" height="11"/>
-  <text x="120" y="438" font-size="8" fill="#333">MYB1 p=2e-05</text>
+  <text x="120" y="438" font-size="8" fill="#134e4a">MYB1 p=2e-05</text>
   <use href="#motif" x="200" y="422" width="14" height="11"/>
-  <text x="220" y="438" font-size="8" fill="#333">WRKY p=8e-04</text>
-  <rect x="80" y="455" width="240" height="22" rx="3" fill="#ffccbc" stroke="#d84315"/>
+  <text x="220" y="438" font-size="8" fill="#134e4a">WRKY p=8e-04</text>
+  <rect x="80" y="455" width="240" height="22" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
   <use href="#motif" x="140" y="452" width="14" height="11"/>
-  <text x="160" y="468" font-size="8" fill="#333">ERF1 p=3e-03</text>
-  <text x="200" y="487" text-anchor="middle" font-size="9" fill="#888">top-k = 5 per fragment</text>
+  <text x="160" y="468" font-size="8" fill="#134e4a">ERF1 p=3e-03</text>
+  <text x="200" y="487" text-anchor="middle" font-size="9" fill="#64748b">top-k = 5 per fragment</text>
 
   <!-- Fragment 2 scan -->
-  <rect x="380" y="395" width="280" height="100" rx="6" fill="#fff" stroke="#c8e6c9"/>
-  <text x="520" y="415" text-anchor="middle" font-size="11" font-weight="bold" fill="#d84315">__AT1G01010__2 (150bp)</text>
-  <rect x="400" y="425" width="240" height="22" rx="3" fill="#ffccbc" stroke="#d84315"/>
+  <rect x="380" y="395" width="280" height="100" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="520" y="415" text-anchor="middle" font-size="11" font-weight="700" fill="#5e2d8c" font-family="ui-monospace, SF Mono, Menlo, monospace">__AT1G01010__2 (150bp)</text>
+  <rect x="400" y="425" width="240" height="22" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
   <use href="#motif" x="420" y="422" width="14" height="11"/>
-  <text x="440" y="438" font-size="8" fill="#333">MYB1 p=1e-06</text>
+  <text x="440" y="438" font-size="8" fill="#134e4a">MYB1 p=1e-06</text>
   <use href="#motif" x="530" y="422" width="14" height="11"/>
-  <text x="550" y="438" font-size="8" fill="#333">NAC p=5e-04</text>
-  <rect x="400" y="455" width="240" height="22" rx="3" fill="#ffccbc" stroke="#d84315"/>
+  <text x="550" y="438" font-size="8" fill="#134e4a">NAC p=5e-04</text>
+  <rect x="400" y="455" width="240" height="22" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
   <use href="#motif" x="450" y="452" width="14" height="11"/>
-  <text x="470" y="468" font-size="8" fill="#333">bHLH p=2e-03</text>
-  <text x="520" y="487" text-anchor="middle" font-size="9" fill="#888">top-k = 5 per fragment</text>
+  <text x="470" y="468" font-size="8" fill="#134e4a">bHLH p=2e-03</text>
+  <text x="520" y="487" text-anchor="middle" font-size="9" fill="#64748b">top-k = 5 per fragment</text>
 
   <!-- Fragment 3 scan -->
-  <rect x="700" y="395" width="340" height="100" rx="6" fill="#fff" stroke="#c8e6c9"/>
-  <text x="870" y="415" text-anchor="middle" font-size="11" font-weight="bold" fill="#d84315">__AT1G01010__3 (300bp)</text>
-  <rect x="720" y="425" width="300" height="22" rx="3" fill="#ffccbc" stroke="#d84315"/>
+  <rect x="700" y="395" width="340" height="100" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="870" y="415" text-anchor="middle" font-size="11" font-weight="700" fill="#5e2d8c" font-family="ui-monospace, SF Mono, Menlo, monospace">__AT1G01010__3 (300bp)</text>
+  <rect x="720" y="425" width="300" height="22" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
   <use href="#motif" x="740" y="422" width="14" height="11"/>
-  <text x="760" y="438" font-size="8" fill="#333">MYB1 p=4e-05</text>
+  <text x="760" y="438" font-size="8" fill="#134e4a">MYB1 p=4e-05</text>
   <use href="#motif" x="850" y="422" width="14" height="11"/>
-  <text x="870" y="438" font-size="8" fill="#333">WRKY p=1e-05</text>
+  <text x="870" y="438" font-size="8" fill="#134e4a">WRKY p=1e-05</text>
   <use href="#motif" x="950" y="422" width="14" height="11"/>
-  <text x="970" y="438" font-size="8" fill="#333">ERF1 p=7e-04</text>
-  <rect x="720" y="455" width="300" height="22" rx="3" fill="#ffccbc" stroke="#d84315"/>
+  <text x="970" y="438" font-size="8" fill="#134e4a">ERF1 p=7e-04</text>
+  <rect x="720" y="455" width="300" height="22" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
   <use href="#motif" x="780" y="452" width="14" height="11"/>
-  <text x="800" y="468" font-size="8" fill="#333">bZIP p=9e-04</text>
-  <text x="870" y="487" text-anchor="middle" font-size="9" fill="#888">top-k = 5 per fragment</text>
+  <text x="800" y="468" font-size="8" fill="#134e4a">bZIP p=9e-04</text>
+  <text x="870" y="487" text-anchor="middle" font-size="9" fill="#64748b">top-k = 5 per fragment</text>
 
-  <!-- Arrow -->
-  <line x1="550" y1="525" x2="550" y2="560" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
-  <text x="620" y="548" font-size="11" font-weight="bold" fill="#6a1b9a">Step 9: Collapse 回基因级别</text>
+  <line x1="550" y1="525" x2="550" y2="560" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
+  <text x="620" y="548" font-size="11" font-weight="700" fill="#8a4cbe">Step 9: Collapse 回基因级别</text>
 
-  <!-- ================================================================ -->
-  <!-- Step D: Collapsed results -->
-  <!-- ================================================================ -->
-  <rect x="30" y="565" width="1040" height="195" rx="10" fill="#f3e5f5" stroke="#ab47bc"/>
-  <text x="550" y="590" text-anchor="middle" font-size="14" font-weight="bold" fill="#6a1b9a">合并结果：去除 __N 后缀 → 按 p-value 排序 → 每基因保留 top-k</text>
+  <!-- Step D: Collapsed (mode-elements wash) -->
+  <rect x="30" y="565" width="1040" height="195" rx="10" fill="#f6f1fb" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="30" y="565" width="1040" height="2" fill="#8a4cbe"/>
+  <text x="550" y="590" text-anchor="middle" font-size="14" font-weight="700" fill="#5e2d8c">合并结果：去除 __N 后缀 → 按 p-value 排序 → 每基因保留 top-k</text>
 
-  <!-- promoter_lengths collapse -->
-  <rect x="60" y="605" width="450" height="65" rx="5" fill="#fff" stroke="#ce93d8"/>
-  <text x="80" y="625" font-size="11" font-weight="bold" fill="#6a1b9a">promoter_lengths.txt（合并前 → 后）</text>
-  <text x="80" y="645" font-size="10" fill="#555" font-style="italic">AT1G01010  200bp  +  __AT1G01010__2  150bp  +  __AT1G01010__3  300bp</text>
-  <text x="80" y="660" font-size="10" font-weight="bold" fill="#2e7d32">→  AT1G01010    650bp</text>
+  <rect x="60" y="605" width="450" height="65" rx="5" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="80" y="625" font-size="11" font-weight="700" fill="#5e2d8c">promoter_lengths.txt（合并前 → 后）</text>
+  <text x="80" y="645" font-size="10" fill="#475569" font-style="italic">AT1G01010  200bp  +  __AT1G01010__2  150bp  +  __AT1G01010__3  300bp</text>
+  <text x="80" y="660" font-size="10" font-weight="700" fill="#0f766e">→  AT1G01010    650bp</text>
 
-  <!-- fimohits collapse -->
-  <rect x="60" y="680" width="980" height="60" rx="5" fill="#fff" stroke="#ce93d8"/>
-  <text x="80" y="700" font-size="11" font-weight="bold" fill="#6a1b9a">fimohits/MYB1.txt（合并后，按 p-value 升序，保留 top-5）</text>
-  <text x="80" y="720" font-size="10" fill="#555">MYB1  AT1G01010  ...  p=1e-06 (来自 exon2)  |  MYB1  AT1G01010  ...  p=2e-05 (来自 exon1)  |  MYB1  AT1G01010  ...  p=4e-05 (来自 exon3)  ...</text>
+  <rect x="60" y="680" width="980" height="60" rx="5" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="80" y="700" font-size="11" font-weight="700" fill="#5e2d8c">fimohits/MYB1.txt（合并后，按 p-value 升序，保留 top-5）</text>
+  <text x="80" y="720" font-size="10" fill="#475569">MYB1  AT1G01010  ...  p=1e-06 (来自 exon2)  |  MYB1  AT1G01010  ...  p=2e-05 (来自 exon1)  |  MYB1  AT1G01010  ...  p=4e-05 (来自 exon3)  ...</text>
 
-  <!-- Summary -->
-  <text x="550" y="760" text-anchor="middle" font-size="11" fill="#555">核心思想：多 fragment 元件拆分扫描避免跨 intron 的虚假匹配，合并时全局竞争确保最优 hit</text>
+  <text x="550" y="760" text-anchor="middle" font-size="11" fill="#64748b">核心思想：多 fragment 元件拆分扫描避免跨 intron 的虚假匹配，合并时全局竞争确保最优 hit</text>
 </svg>

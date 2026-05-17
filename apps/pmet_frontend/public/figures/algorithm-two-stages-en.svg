@@ -1,96 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 555" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 555" role="img" aria-labelledby="alg2en-title alg2en-desc" lang="en" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">
+  <title id="alg2en-title">PMET algorithm in two stages: indexing and pairing</title>
+  <desc id="alg2en-desc">Left panel — Step 1 INDEXING (homotypic): genome + GFF3 + MEME motifs are scanned genome-wide by FIMO, keeping top-n hits per motif and top-k per gene; produces the reusable homotypic index/. Right panel — Step 2 PAIRING (heterotypic): with a user gene list, every motif pair is tested by a hypergeometric test with BH/Bonferroni correction, producing motif_output.txt. A dashed "homotypic index reused" arrow links Step 1 to Step 2. Footnote: Step 1 is expensive but gene-list-independent; Step 2 is cheap and re-runs against any gene list via pair_only.sh.</desc>
   <defs>
-    <marker id="aBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#1565c0"/>
+    <marker id="arrAccent" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#b7791f"/>
     </marker>
-    <marker id="aGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/>
+    <marker id="arrPrimary" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f766e"/>
     </marker>
-    <marker id="aGrey" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#616161"/>
+    <marker id="arrMuted" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
     </marker>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
   </defs>
 
-  <!-- White rounded background -->
   <rect x="0" y="0" width="1100" height="555" rx="14" fill="#ffffff"/>
 
-  <!-- Title -->
-  <text x="550" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">PMET algorithm: two stages</text>
+  <text x="550" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">PMET algorithm: two stages</text>
 
-  <!-- ============ Step 1 panel (LEFT, blue) ============ -->
-  <rect x="30" y="55" width="475" height="430" rx="10" fill="#e3f2fd" stroke="#90caf9" stroke-width="1.5"/>
-  <text x="267" y="82" text-anchor="middle" font-size="16" font-weight="bold" fill="#0d47a1">Step 1 — INDEXING</text>
-  <text x="267" y="100" text-anchor="middle" font-size="11" font-style="italic" fill="#1565c0">homotypic — build a reusable motif-position index</text>
+  <g id="step1-indexing" aria-label="Step 1 — INDEXING (homotypic)">
+  <rect x="30" y="55" width="475" height="430" rx="10" fill="#fdf6e7" stroke="#dbe5e8" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="30" y="55" width="475" height="32" rx="10" fill="#b7791f" opacity="0.15"/>
+  <rect x="30" y="85" width="475" height="2" fill="#b7791f"/>
+  <text x="267" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="#7a4d10">Step 1 — INDEXING</text>
+  <text x="267" y="105" text-anchor="middle" font-size="11" font-style="italic" fill="#7a4d10">homotypic — build a reusable motif-position index</text>
 
-  <!-- Step 1 input -->
-  <rect x="60" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#1565c0" stroke-width="1"/>
-  <text x="267" y="142" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">genome + GFF3 + MEME motifs</text>
-  <text x="267" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#666">e.g. TAIR10 + Franco-Zorrilla 113 motifs</text>
+  <rect x="60" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="267" y="142" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">genome + GFF3 + MEME motifs</text>
+  <text x="267" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#64748b">e.g. TAIR10 + Franco-Zorrilla 113 motifs</text>
 
-  <line x1="267" y1="170" x2="267" y2="190" stroke="#1565c0" stroke-width="2" marker-end="url(#aBlue)"/>
+  <line x1="267" y1="170" x2="267" y2="190" stroke="#b7791f" stroke-width="2" marker-end="url(#arrAccent)"/>
 
-  <!-- Step 1 process -->
-  <rect x="60" y="195" width="415" height="135" rx="6" fill="#bbdefb" stroke="#1565c0" stroke-width="1.5"/>
-  <text x="267" y="215" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">extract regions of interest</text>
-  <text x="267" y="231" text-anchor="middle" font-size="10" font-style="italic" fill="#1565c0">(promoter / UTR / CDS / intervals / …)</text>
-  <text x="267" y="255" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">scan all motifs with FIMO</text>
-  <text x="267" y="277" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">keep top n hits genome-wide</text>
-  <text x="267" y="295" text-anchor="middle" font-size="10" font-style="italic" fill="#1565c0">(per-motif binomial threshold)</text>
-  <text x="267" y="317" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d47a1">retain top k hits per gene</text>
+  <rect x="60" y="195" width="415" height="135" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="267" y="215" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">extract regions of interest</text>
+  <text x="267" y="231" text-anchor="middle" font-size="10" font-style="italic" fill="#64748b">(promoter / UTR / CDS / intervals / …)</text>
+  <text x="267" y="255" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">scan all motifs with FIMO</text>
+  <text x="267" y="277" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">keep top n hits genome-wide</text>
+  <text x="267" y="295" text-anchor="middle" font-size="10" font-style="italic" fill="#64748b">(per-motif binomial threshold)</text>
+  <text x="267" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">retain top k hits per gene</text>
 
-  <line x1="267" y1="332" x2="267" y2="352" stroke="#1565c0" stroke-width="2" marker-end="url(#aBlue)"/>
+  <line x1="267" y1="332" x2="267" y2="352" stroke="#b7791f" stroke-width="2" marker-end="url(#arrAccent)"/>
 
-  <!-- Step 1 output -->
-  <rect x="60" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#1565c0" stroke-width="1.5" stroke-dasharray="5,3"/>
-  <text x="80" y="378" font-size="12" font-weight="bold" fill="#0d47a1">homotypic index/</text>
-  <text x="100" y="396" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ fimohits/*.bin</text>
-  <text x="100" y="411" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ binomial_thresholds.txt</text>
-  <text x="100" y="426" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ IC.txt</text>
-  <text x="100" y="441" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">├─ universe.txt</text>
-  <text x="100" y="456" font-size="10" font-family="Menlo, Consolas, monospace" fill="#0d47a1">└─ promoter_lengths.txt</text>
+  <rect x="60" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#b7791f" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="80" y="378" font-size="12" font-weight="700" fill="#7a4d10">homotypic index/</text>
+  <g font-size="10" font-family="ui-monospace, SF Mono, Menlo, monospace" fill="#475569">
+    <text x="100" y="396">├─ fimohits/*.bin</text>
+    <text x="100" y="411">├─ binomial_thresholds.txt</text>
+    <text x="100" y="426">├─ IC.txt</text>
+    <text x="100" y="441">├─ universe.txt</text>
+    <text x="100" y="456">└─ promoter_lengths.txt</text>
+  </g>
+  </g>
 
-  <!-- ============ Step 2 panel (RIGHT, green) ============ -->
-  <rect x="595" y="55" width="475" height="430" rx="10" fill="#e8f5e9" stroke="#a5d6a7" stroke-width="1.5"/>
-  <text x="832" y="82" text-anchor="middle" font-size="16" font-weight="bold" fill="#1b5e20">Step 2 — PAIRING</text>
-  <text x="832" y="100" text-anchor="middle" font-size="11" font-style="italic" fill="#2e7d32">heterotypic — find cooperatively enriched motif pairs</text>
+  <g id="step2-pairing" aria-label="Step 2 — PAIRING (heterotypic)">
+  <rect x="595" y="55" width="475" height="430" rx="10" fill="#eef8f6" stroke="#dbe5e8" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="595" y="55" width="475" height="32" rx="10" fill="#0f766e" opacity="0.18"/>
+  <rect x="595" y="85" width="475" height="2" fill="#0f766e"/>
+  <text x="832" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="#134e4a">Step 2 — PAIRING</text>
+  <text x="832" y="105" text-anchor="middle" font-size="11" font-style="italic" fill="#134e4a">heterotypic — find cooperatively enriched motif pairs</text>
 
-  <!-- Step 2 input -->
-  <rect x="625" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#2e7d32" stroke-width="1"/>
-  <text x="832" y="142" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">my gene list (cluster of interest)</text>
-  <text x="832" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#666">a single cluster, or multiple clusters labelled per row</text>
+  <rect x="625" y="120" width="415" height="48" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="832" y="142" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">my gene list (cluster of interest)</text>
+  <text x="832" y="158" text-anchor="middle" font-size="9" font-style="italic" fill="#64748b">a single cluster, or multiple clusters labelled per row</text>
 
-  <line x1="832" y1="170" x2="832" y2="190" stroke="#2e7d32" stroke-width="2" marker-end="url(#aGreen)"/>
+  <line x1="832" y1="170" x2="832" y2="190" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
-  <!-- Step 2 process -->
-  <rect x="625" y="195" width="415" height="135" rx="6" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="832" y="220" text-anchor="middle" font-size="12" fill="#1b5e20">in this cluster,</text>
-  <text x="832" y="240" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">which motif pair (m₁, m₂)</text>
-  <text x="832" y="258" text-anchor="middle" font-size="12" fill="#1b5e20">co-occurs more often than expected?</text>
-  <text x="832" y="288" text-anchor="middle" font-size="12" font-weight="bold" fill="#1b5e20">hypergeometric test</text>
-  <text x="832" y="308" text-anchor="middle" font-size="11" font-style="italic" fill="#2e7d32">+ BH / Bonferroni correction</text>
+  <rect x="625" y="195" width="415" height="135" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="832" y="220" text-anchor="middle" font-size="12" fill="#334155">in this cluster,</text>
+  <text x="832" y="240" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">which motif pair (m₁, m₂)</text>
+  <text x="832" y="258" text-anchor="middle" font-size="12" fill="#334155">co-occurs more often than expected?</text>
+  <text x="832" y="288" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">hypergeometric test</text>
+  <text x="832" y="308" text-anchor="middle" font-size="11" font-style="italic" fill="#0f766e">+ BH / Bonferroni correction</text>
 
-  <line x1="832" y1="332" x2="832" y2="352" stroke="#2e7d32" stroke-width="2" marker-end="url(#aGreen)"/>
+  <line x1="832" y1="332" x2="832" y2="352" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
-  <!-- Step 2 output -->
-  <rect x="625" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="645" y="378" font-size="12" font-weight="bold" fill="#1b5e20">motif_output.txt</text>
-  <text x="660" y="397" font-size="10" font-family="Menlo, Consolas, monospace" fill="#1b5e20">cluster | m1 | m2 | p_raw | adj_p_BH | …</text>
-  <text x="645" y="420" font-size="10" fill="#555">11 columns, sorted by <tspan font-family="Menlo, Consolas, monospace">adj_p_BH</tspan></text>
-  <text x="645" y="438" font-size="10" fill="#555">each row = one (cluster, m₁, m₂)</text>
-  <text x="645" y="453" font-size="10" fill="#555">cooperativity test result</text>
+  <rect x="625" y="357" width="415" height="118" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="645" y="378" font-size="12" font-weight="700" fill="#0f172a" font-family="ui-monospace, SF Mono, Menlo, monospace">motif_output.txt</text>
+  <text x="660" y="397" font-size="10" font-family="ui-monospace, SF Mono, Menlo, monospace" fill="#0f766e">cluster | m1 | m2 | p_raw | adj_p_BH | …</text>
+  <text x="645" y="420" font-size="10" fill="#475569">11 columns, sorted by <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">adj_p_BH</tspan></text>
+  <text x="645" y="438" font-size="10" fill="#475569">each row = one (cluster, m₁, m₂)</text>
+  <text x="645" y="453" font-size="10" fill="#475569">cooperativity test result</text>
+  </g>
 
-  <!-- ============ Inter-stage arrow: Step 1 output → Step 2 process ============ -->
-  <path d="M 480 415 L 555 415 L 555 262 L 620 262" fill="none" stroke="#616161" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#aGrey)"/>
-  <rect x="510" y="328" width="90" height="32" rx="4" fill="#ffffff" stroke="#9e9e9e" stroke-width="1"/>
-  <text x="555" y="343" text-anchor="middle" font-size="10" font-weight="bold" fill="#424242">homotypic</text>
-  <text x="555" y="355" text-anchor="middle" font-size="10" font-style="italic" fill="#616161">index reused</text>
+  <g id="reuse-link" aria-label="Homotypic index reused: Step 1 → Step 2">
+  <path d="M 480 415 L 555 415 L 555 262 L 620 262" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrMuted)"/>
+  <rect x="510" y="328" width="90" height="32" rx="4" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="555" y="343" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">homotypic</text>
+  <text x="555" y="355" text-anchor="middle" font-size="10" font-style="italic" fill="#64748b">index reused</text>
+  </g>
 
-  <!-- Footer info box -->
-  <rect x="20" y="500" width="1060" height="42" rx="6" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"/>
-  <text x="40" y="520" font-size="10" fill="#0d47a1">
-    <tspan font-weight="bold">Why two stages:</tspan> Step 1 is the expensive one (FIMO scan over the whole universe, ~minutes for TAIR10), but its output is gene-list-independent.
+  <g id="footnote" aria-label="Footnote: why two stages">
+  <rect x="20" y="500" width="1060" height="42" rx="6" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="40" y="520" font-size="10" fill="#475569">
+    <tspan font-weight="700" fill="#0f172a">Why two stages:</tspan> Step 1 is the expensive one (FIMO scan over the whole universe, ~minutes for TAIR10), but its output is gene-list-independent.
   </text>
-  <text x="40" y="535" font-size="10" fill="#0d47a1">
-    Step 2 is cheap and re-runs against any new gene list against the same index — see <tspan font-family="Menlo, Consolas, monospace">pair_only.sh</tspan>.
+  <text x="40" y="535" font-size="10" fill="#475569">
+    Step 2 is cheap and re-runs against any new gene list against the same index — see <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">pair_only.sh</tspan>.
   </text>
+  </g>
 </svg>

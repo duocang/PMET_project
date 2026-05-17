@@ -1,237 +1,209 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 920" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 920" role="img" aria-labelledby="eltstr-title eltstr-desc" lang="zh-CN" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif">
+  <title id="eltstr-title">基因组元件结构与 Isoform 聚合策略</title>
+  <desc id="eltstr-desc">Part A 基因结构：以 AT1G01010 为例，两个转录本 isoform（Isoform 1：4 exon，370 bp；Isoform 2：5 exon，490 bp）。Part B Longest 策略：按总元件长度选最长 isoform，保留其全部 fragment，转录本 ID 替换为基因 ID；mRNA 模式下 -m No 可减 UTR。Part C Merged 策略：所有 isoform 的元件取并集，重叠区间用 bedtools merge 合并，覆盖最全但丢失 isoform 特异性。Part D 表格：mRNA / exon / CDS / five_prime_UTR / three_prime_UTR 五种 -e 选项对应的 GFF3 attribute key、fragment 数和生物学意义。多 fragment 元件在 Step 3 标记为 __GENE__N，FIMO 分别扫描后在 Step 9 合并回基因级别。</desc>
   <defs>
-    <marker id="arrowG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/>
+    <marker id="arrSlate" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
     </marker>
-    <marker id="arrowDown" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
+    <marker id="arrPrimary" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f766e"/>
     </marker>
   </defs>
 
-  <!-- Title -->
-  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">基因组元件结构与 Isoform 聚合策略</text>
+  <rect x="0" y="0" width="1100" height="920" rx="14" fill="#ffffff"/>
 
-  <!-- ================================================================ -->
-  <!-- PART A: Gene structure with two isoforms -->
-  <!-- ================================================================ -->
-  <rect x="30" y="50" width="1040" height="310" rx="10" fill="#f9f9f9" stroke="#ddd"/>
-  <text x="550" y="78" text-anchor="middle" font-size="15" font-weight="bold" fill="#1565c0">A. 基因结构 — 两个转录本 isoform（以 exon 为例）</text>
+  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">基因组元件结构与 Isoform 聚合策略</text>
 
-  <!-- Gene bar -->
-  <text x="50" y="108" font-size="12" font-weight="bold" fill="#333">Gene: AT1G01010</text>
-  <text x="50" y="124" font-size="10" fill="#2e7d32">转录方向</text>
-  <line x1="120" y1="120" x2="190" y2="120" stroke="#2e7d32" stroke-width="2" marker-end="url(#arrowG)"/>
+  <!-- PART A: gene structure (mode-elements violet) -->
+  <rect x="30" y="50" width="1040" height="310" rx="10" fill="#f6f1fb" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="30" y="50" width="1040" height="2" fill="#8a4cbe"/>
+  <text x="550" y="78" text-anchor="middle" font-size="15" font-weight="700" fill="#5e2d8c">A. 基因结构 — 两个转录本 isoform（以 exon 为例）</text>
 
-  <!-- Isoform 1 -->
-  <text x="50" y="158" font-size="12" font-weight="bold" fill="#6a1b9a">Isoform 1 (AT1G01010.1)</text>
-  <!-- mRNA line -->
-  <line x1="100" y1="180" x2="850" y2="180" stroke="#ce93d8" stroke-width="2"/>
-  <!-- 5'UTR -->
-  <rect x="100" y="168" width="60" height="24" rx="3" fill="#81d4fa" stroke="#0288d1" stroke-width="1"/>
-  <text x="130" y="184" text-anchor="middle" font-size="9" font-weight="bold" fill="#01579b">5'UTR</text>
-  <!-- Exon 1 -->
-  <rect x="160" y="165" width="120" height="30" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="220" y="184" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 1</text>
-  <!-- Intron -->
-  <line x1="280" y1="180" x2="310" y2="168" stroke="#999" stroke-width="1"/>
-  <line x1="310" y1="168" x2="340" y2="180" stroke="#999" stroke-width="1"/>
-  <!-- Exon 2 -->
-  <rect x="340" y="165" width="150" height="30" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="415" y="184" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 2</text>
-  <!-- Intron -->
-  <line x1="490" y1="180" x2="520" y2="168" stroke="#999" stroke-width="1"/>
-  <line x1="520" y1="168" x2="550" y2="180" stroke="#999" stroke-width="1"/>
-  <!-- Exon 3 -->
-  <rect x="550" y="165" width="100" height="30" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="600" y="184" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 3</text>
-  <!-- 3'UTR -->
-  <rect x="650" y="168" width="60" height="24" rx="3" fill="#ffcc80" stroke="#ef6c00" stroke-width="1"/>
-  <text x="680" y="184" text-anchor="middle" font-size="9" font-weight="bold" fill="#bf360c">3'UTR</text>
-  <!-- Length label -->
-  <text x="870" y="184" font-size="10" fill="#666">总 exon 长度: 370 bp</text>
+  <text x="50" y="108" font-size="12" font-weight="700" fill="#0f172a">Gene: AT1G01010</text>
+  <text x="50" y="124" font-size="10" fill="#0f766e">转录方向</text>
+  <line x1="120" y1="120" x2="190" y2="120" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
-  <!-- Isoform 2 -->
-  <text x="50" y="225" font-size="12" font-weight="bold" fill="#e65100">Isoform 2 (AT1G01010.2) — 更长</text>
-  <!-- mRNA line -->
-  <line x1="100" y1="247" x2="950" y2="247" stroke="#ffcc80" stroke-width="2"/>
-  <!-- 5'UTR -->
-  <rect x="100" y="235" width="50" height="24" rx="3" fill="#81d4fa" stroke="#0288d1" stroke-width="1"/>
-  <text x="125" y="251" text-anchor="middle" font-size="9" font-weight="bold" fill="#01579b">5'UTR</text>
-  <!-- Exon 1 -->
-  <rect x="150" y="232" width="140" height="30" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="220" y="251" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 1</text>
-  <!-- Intron -->
-  <line x1="290" y1="247" x2="320" y2="235" stroke="#999" stroke-width="1"/>
-  <line x1="320" y1="235" x2="350" y2="247" stroke="#999" stroke-width="1"/>
-  <!-- Exon 2 -->
-  <rect x="350" y="232" width="130" height="30" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="415" y="251" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 2</text>
-  <!-- Intron -->
-  <line x1="480" y1="247" x2="510" y2="235" stroke="#999" stroke-width="1"/>
-  <line x1="510" y1="235" x2="540" y2="247" stroke="#999" stroke-width="1"/>
-  <!-- Exon 3 -->
-  <rect x="540" y="232" width="120" height="30" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="600" y="251" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 3</text>
-  <!-- Intron -->
-  <line x1="660" y1="247" x2="690" y2="235" stroke="#999" stroke-width="1"/>
-  <line x1="690" y1="235" x2="720" y2="247" stroke="#999" stroke-width="1"/>
-  <!-- Exon 4 -->
-  <rect x="720" y="232" width="100" height="30" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="770" y="251" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">Exon 4</text>
-  <!-- 3'UTR -->
-  <rect x="820" y="235" width="60" height="24" rx="3" fill="#ffcc80" stroke="#ef6c00" stroke-width="1"/>
-  <text x="850" y="251" text-anchor="middle" font-size="9" font-weight="bold" fill="#bf360c">3'UTR</text>
-  <!-- Length label -->
-  <text x="900" y="251" font-size="10" fill="#666">总 exon 长度: 490 bp</text>
+  <!-- Isoform 1 (primary teal, the comparator) -->
+  <text x="50" y="158" font-size="12" font-weight="700" fill="#134e4a">Isoform 1 (AT1G01010.1)</text>
+  <line x1="100" y1="180" x2="850" y2="180" stroke="#bdded8" stroke-width="2"/>
+  <rect x="100" y="168" width="60" height="24" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="130" y="184" text-anchor="middle" font-size="9" font-weight="700" fill="#0d3a8c">5'UTR</text>
+  <rect x="160" y="165" width="120" height="30" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="220" y="184" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">Exon 1</text>
+  <line x1="280" y1="180" x2="310" y2="168" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="310" y1="168" x2="340" y2="180" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="340" y="165" width="150" height="30" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="415" y="184" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">Exon 2</text>
+  <line x1="490" y1="180" x2="520" y2="168" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="520" y1="168" x2="550" y2="180" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="550" y="165" width="100" height="30" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="600" y="184" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">Exon 3</text>
+  <rect x="650" y="168" width="60" height="24" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="680" y="184" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10">3'UTR</text>
+  <text x="870" y="184" font-size="10" fill="#64748b">总 exon 长度: 370 bp</text>
 
-  <!-- Annotation -->
-  <rect x="60" y="280" width="960" height="60" rx="5" fill="#e3f2fd" stroke="#90caf9"/>
-  <text x="80" y="300" font-size="11" fill="#1565c0" font-weight="bold">GFF3 中的层级关系：</text>
-  <text x="80" y="320" font-size="10" fill="#555">gene → mRNA (转录本/isoform) → exon / CDS / five_prime_UTR / three_prime_UTR</text>
-  <text x="600" y="320" font-size="10" fill="#555">每个 mRNA 包含多个子元件，不同 isoform 的子元件可能不同</text>
+  <!-- Isoform 2 (accent ochre, marked as longest/selected) -->
+  <text x="50" y="225" font-size="12" font-weight="700" fill="#7a4d10">Isoform 2 (AT1G01010.2) — 更长</text>
+  <line x1="100" y1="247" x2="950" y2="247" stroke="#fde9c6" stroke-width="2"/>
+  <rect x="100" y="235" width="50" height="24" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="125" y="251" text-anchor="middle" font-size="9" font-weight="700" fill="#0d3a8c">5'UTR</text>
+  <rect x="150" y="232" width="140" height="30" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="220" y="251" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">Exon 1</text>
+  <line x1="290" y1="247" x2="320" y2="235" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="320" y1="235" x2="350" y2="247" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="350" y="232" width="130" height="30" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="415" y="251" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">Exon 2</text>
+  <line x1="480" y1="247" x2="510" y2="235" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="510" y1="235" x2="540" y2="247" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="540" y="232" width="120" height="30" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="600" y="251" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">Exon 3</text>
+  <line x1="660" y1="247" x2="690" y2="235" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="690" y1="235" x2="720" y2="247" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="720" y="232" width="100" height="30" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="770" y="251" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">Exon 4</text>
+  <rect x="820" y="235" width="60" height="24" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="850" y="251" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10">3'UTR</text>
+  <text x="900" y="251" font-size="10" fill="#64748b">总 exon 长度: 490 bp</text>
 
-  <!-- ================================================================ -->
-  <!-- PART B: Longest strategy -->
-  <!-- ================================================================ -->
-  <rect x="30" y="380" width="505" height="260" rx="10" fill="#f9f9f9" stroke="#ddd"/>
-  <text x="282" y="408" text-anchor="middle" font-size="15" font-weight="bold" fill="#2e7d32">B. Longest 策略</text>
-  <text x="282" y="428" text-anchor="middle" font-size="11" fill="#555">选择总元件长度最大的 isoform</text>
+  <rect x="60" y="280" width="960" height="60" rx="5" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="80" y="300" font-size="11" fill="#0f172a" font-weight="700">GFF3 中的层级关系：</text>
+  <text x="80" y="320" font-size="10" fill="#475569">gene → mRNA (转录本/isoform) → exon / CDS / five_prime_UTR / three_prime_UTR</text>
+  <text x="600" y="320" font-size="10" fill="#475569">每个 mRNA 包含多个子元件，不同 isoform 的子元件可能不同</text>
 
-  <!-- Arrow from A -->
-  <line x1="282" y1="360" x2="282" y2="380" stroke="#555" stroke-width="2" marker-end="url(#arrowDown)"/>
+  <!-- PART B: Longest (primary teal) -->
+  <rect x="30" y="380" width="505" height="260" rx="10" fill="#eef8f6" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="30" y="380" width="505" height="2" fill="#0f766e"/>
+  <text x="282" y="408" text-anchor="middle" font-size="15" font-weight="700" fill="#134e4a">B. Longest 策略</text>
+  <text x="282" y="428" text-anchor="middle" font-size="11" fill="#475569">选择总元件长度最大的 isoform</text>
 
-  <!-- Selected isoform 2 -->
-  <text x="50" y="458" font-size="11" font-weight="bold" fill="#e65100">选中: Isoform 2 (490bp > 370bp)</text>
+  <line x1="282" y1="360" x2="282" y2="380" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <!-- Result: 4 exon fragments with gene ID -->
-  <rect x="60" y="470" width="100" height="26" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="110" y="487" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Exon 1</text>
-  <rect x="175" y="470" width="90" height="26" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="220" y="487" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Exon 2</text>
-  <rect x="280" y="470" width="85" height="26" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="322" y="487" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Exon 3</text>
-  <rect x="380" y="470" width="70" height="26" rx="3" fill="#ff8a65" stroke="#d84315" stroke-width="1.5"/>
-  <text x="415" y="487" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Exon 4</text>
+  <text x="50" y="458" font-size="11" font-weight="700" fill="#7a4d10">选中: Isoform 2 (490bp &gt; 370bp)</text>
 
-  <text x="470" y="487" font-size="9" fill="#666">← gene_id: AT1G01010</text>
+  <rect x="60" y="470" width="100" height="26" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="110" y="487" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10">Exon 1</text>
+  <rect x="175" y="470" width="90" height="26" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="220" y="487" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10">Exon 2</text>
+  <rect x="280" y="470" width="85" height="26" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="322" y="487" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10">Exon 3</text>
+  <rect x="380" y="470" width="70" height="26" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="415" y="487" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10">Exon 4</text>
 
-  <!-- Key point box -->
-  <rect x="50" y="510" width="470" height="110" rx="5" fill="#e8f5e9" stroke="#4caf50"/>
-  <text x="70" y="532" font-size="11" font-weight="bold" fill="#1b5e20">特点：</text>
-  <text x="70" y="552" font-size="10" fill="#555">1. 按 transcript 的总元件长度比较，选最长的那个</text>
-  <text x="70" y="570" font-size="10" fill="#555">2. 保留该 isoform 的所有 fragment（exon/CDS/UTR）</text>
-  <text x="70" y="588" font-size="10" fill="#555">3. 转录本 ID 替换为基因 ID（AT1G01010.2 → AT1G01010）</text>
-  <text x="70" y="606" font-size="10" fill="#555">4. mRNA 模式可额外减去 UTR（-m No）</text>
+  <text x="470" y="487" font-size="9" fill="#64748b">← gene_id: AT1G01010</text>
 
+  <rect x="50" y="510" width="470" height="110" rx="5" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="70" y="532" font-size="11" font-weight="700" fill="#0f172a">特点：</text>
+  <g font-size="10" fill="#475569">
+    <text x="70" y="552">1. 按 transcript 的总元件长度比较，选最长的那个</text>
+    <text x="70" y="570">2. 保留该 isoform 的所有 fragment（exon/CDS/UTR）</text>
+    <text x="70" y="588">3. 转录本 ID 替换为基因 ID（AT1G01010.2 → AT1G01010）</text>
+    <text x="70" y="606">4. mRNA 模式可额外减去 UTR（-m No）</text>
+  </g>
 
-  <!-- ================================================================ -->
-  <!-- PART C: Merged strategy -->
-  <!-- ================================================================ -->
-  <rect x="565" y="380" width="505" height="260" rx="10" fill="#f9f9f9" stroke="#ddd"/>
-  <text x="817" y="408" text-anchor="middle" font-size="15" font-weight="bold" fill="#1565c0">C. Merged 策略</text>
-  <text x="817" y="428" text-anchor="middle" font-size="11" fill="#555">合并所有 isoform 的区间（取并集）</text>
+  <!-- PART C: Merged (mode-intervals azure) -->
+  <rect x="565" y="380" width="505" height="260" rx="10" fill="#eef3fd" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="565" y="380" width="505" height="2" fill="#1f6feb"/>
+  <text x="817" y="408" text-anchor="middle" font-size="15" font-weight="700" fill="#0d3a8c">C. Merged 策略</text>
+  <text x="817" y="428" text-anchor="middle" font-size="11" fill="#475569">合并所有 isoform 的区间（取并集）</text>
 
-  <!-- Arrow from A -->
-  <line x1="817" y1="360" x2="817" y2="380" stroke="#555" stroke-width="2" marker-end="url(#arrowDown)"/>
+  <line x1="817" y1="360" x2="817" y2="380" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <!-- Show overlapping regions from both isoforms -->
-  <text x="585" y="455" font-size="10" fill="#999">Isoform 1:</text>
-  <rect x="680" y="444" width="80" height="16" rx="2" fill="#66bb6a" opacity="0.5" stroke="#2e7d32"/>
-  <rect x="800" y="444" width="100" height="16" rx="2" fill="#66bb6a" opacity="0.5" stroke="#2e7d32"/>
-  <rect x="930" y="444" width="70" height="16" rx="2" fill="#66bb6a" opacity="0.5" stroke="#2e7d32"/>
+  <text x="585" y="455" font-size="10" fill="#64748b">Isoform 1:</text>
+  <rect x="680" y="444" width="80" height="16" rx="2" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
+  <rect x="800" y="444" width="100" height="16" rx="2" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
+  <rect x="930" y="444" width="70" height="16" rx="2" fill="#bdded8" stroke="#0f766e" stroke-width="0.8"/>
 
-  <text x="585" y="480" font-size="10" fill="#999">Isoform 2:</text>
-  <rect x="670" y="469" width="100" height="16" rx="2" fill="#ff8a65" opacity="0.5" stroke="#d84315"/>
-  <rect x="790" y="469" width="90" height="16" rx="2" fill="#ff8a65" opacity="0.5" stroke="#d84315"/>
-  <rect x="910" y="469" width="85" height="16" rx="2" fill="#ff8a65" opacity="0.5" stroke="#d84315"/>
-  <rect x="1010" y="469" width="50" height="16" rx="2" fill="#ff8a65" opacity="0.5" stroke="#d84315"/>
+  <text x="585" y="480" font-size="10" fill="#64748b">Isoform 2:</text>
+  <rect x="670" y="469" width="100" height="16" rx="2" fill="#fde9c6" stroke="#b7791f" stroke-width="0.8"/>
+  <rect x="790" y="469" width="90" height="16" rx="2" fill="#fde9c6" stroke="#b7791f" stroke-width="0.8"/>
+  <rect x="910" y="469" width="85" height="16" rx="2" fill="#fde9c6" stroke="#b7791f" stroke-width="0.8"/>
+  <rect x="1010" y="469" width="50" height="16" rx="2" fill="#fde9c6" stroke="#b7791f" stroke-width="0.8"/>
 
-  <!-- Merge arrow -->
-  <text x="817" y="500" text-anchor="middle" font-size="10" fill="#555">↓ bedtools merge（重叠区间合并）</text>
+  <text x="817" y="500" text-anchor="middle" font-size="10" fill="#64748b">↓ bedtools merge（重叠区间合并）</text>
 
-  <!-- Merged result -->
-  <text x="585" y="525" font-size="10" fill="#333" font-weight="bold">合并后:</text>
-  <rect x="670" y="514" width="115" height="20" rx="3" fill="#7e57c2" stroke="#4527a0" stroke-width="1.5"/>
-  <text x="727" y="528" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Union 1</text>
-  <rect x="790" y="514" width="105" height="20" rx="3" fill="#7e57c2" stroke="#4527a0" stroke-width="1.5"/>
-  <text x="842" y="528" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Union 2</text>
-  <rect x="910" y="514" width="90" height="20" rx="3" fill="#7e57c2" stroke="#4527a0" stroke-width="1.5"/>
-  <text x="955" y="528" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">Union 3</text>
-  <rect x="1010" y="514" width="50" height="20" rx="3" fill="#7e57c2" stroke="#4527a0" stroke-width="1.5"/>
-  <text x="1035" y="528" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">U4</text>
+  <text x="585" y="525" font-size="10" fill="#0f172a" font-weight="700">合并后:</text>
+  <rect x="670" y="514" width="115" height="20" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1.2"/>
+  <text x="727" y="528" text-anchor="middle" font-size="9" font-weight="700" fill="#0d3a8c">Union 1</text>
+  <rect x="790" y="514" width="105" height="20" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1.2"/>
+  <text x="842" y="528" text-anchor="middle" font-size="9" font-weight="700" fill="#0d3a8c">Union 2</text>
+  <rect x="910" y="514" width="90" height="20" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1.2"/>
+  <text x="955" y="528" text-anchor="middle" font-size="9" font-weight="700" fill="#0d3a8c">Union 3</text>
+  <rect x="1010" y="514" width="50" height="20" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1.2"/>
+  <text x="1035" y="528" text-anchor="middle" font-size="9" font-weight="700" fill="#0d3a8c">U4</text>
 
-  <!-- Key point box -->
-  <rect x="585" y="548" width="470" height="72" rx="5" fill="#e3f2fd" stroke="#90caf9"/>
-  <text x="605" y="570" font-size="11" font-weight="bold" fill="#0d47a1">特点：</text>
-  <text x="605" y="590" font-size="10" fill="#555">1. 所有 isoform 的元件取并集，重叠区间合并</text>
-  <text x="605" y="608" font-size="10" fill="#555">2. 不区分 isoform，覆盖最全面，但丢失 isoform 特异性</text>
+  <rect x="585" y="548" width="470" height="72" rx="5" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="605" y="570" font-size="11" font-weight="700" fill="#0f172a">特点：</text>
+  <g font-size="10" fill="#475569">
+    <text x="605" y="590">1. 所有 isoform 的元件取并集，重叠区间合并</text>
+    <text x="605" y="608">2. 不区分 isoform，覆盖最全面，但丢失 isoform 特异性</text>
+  </g>
 
-  <!-- ================================================================ -->
-  <!-- PART D: Comparison table -->
-  <!-- ================================================================ -->
-  <rect x="30" y="660" width="1040" height="240" rx="10" fill="#f9f9f9" stroke="#ddd"/>
-  <text x="550" y="688" text-anchor="middle" font-size="15" font-weight="bold" fill="#333">D. 可选元件类型与适用场景</text>
+  <!-- PART D: Table -->
+  <rect x="30" y="660" width="1040" height="240" rx="10" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="550" y="688" text-anchor="middle" font-size="15" font-weight="700" fill="#0f172a">D. 可选元件类型与适用场景</text>
 
   <!-- Table header -->
-  <rect x="60" y="705" width="160" height="28" rx="3" fill="#455a64"/>
-  <text x="140" y="724" text-anchor="middle" font-size="11" font-weight="bold" fill="#fff">元件类型</text>
-  <rect x="220" y="705" width="200" height="28" rx="3" fill="#455a64"/>
-  <text x="320" y="724" text-anchor="middle" font-size="11" font-weight="bold" fill="#fff">GFF3 attribute key</text>
-  <rect x="420" y="705" width="120" height="28" rx="3" fill="#455a64"/>
-  <text x="480" y="724" text-anchor="middle" font-size="11" font-weight="bold" fill="#fff">Fragment 数</text>
-  <rect x="540" y="705" width="480" height="28" rx="3" fill="#455a64"/>
-  <text x="780" y="724" text-anchor="middle" font-size="11" font-weight="bold" fill="#fff">生物学意义</text>
+  <rect x="60" y="705" width="160" height="28" rx="3" fill="#0f172a"/>
+  <text x="140" y="724" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">元件类型</text>
+  <rect x="220" y="705" width="200" height="28" rx="3" fill="#0f172a"/>
+  <text x="320" y="724" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">GFF3 attribute key</text>
+  <rect x="420" y="705" width="120" height="28" rx="3" fill="#0f172a"/>
+  <text x="480" y="724" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Fragment 数</text>
+  <rect x="540" y="705" width="480" height="28" rx="3" fill="#0f172a"/>
+  <text x="780" y="724" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">生物学意义</text>
 
-  <!-- Row 1: mRNA -->
-  <rect x="60" y="733" width="160" height="28" rx="0" fill="#e8f5e9" stroke="#c8e6c9"/>
-  <text x="140" y="752" text-anchor="middle" font-size="10" font-weight="bold" fill="#2e7d32">mRNA</text>
-  <rect x="220" y="733" width="200" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="320" y="752" text-anchor="middle" font-size="10" fill="#333">ID=transcript:</text>
-  <rect x="420" y="733" width="120" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="480" y="752" text-anchor="middle" font-size="10" fill="#333">1 / 基因</text>
-  <rect x="540" y="733" width="480" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="780" y="752" text-anchor="middle" font-size="10" fill="#555">全转录本跨度，可减去 UTR 只保留编码区</text>
+  <!-- Table rows -->
+  <g font-size="10">
+    <!-- Row 1: mRNA (violet) -->
+    <rect x="60" y="733" width="160" height="28" fill="#f6f1fb" stroke="#dbe5e8"/>
+    <text x="140" y="752" text-anchor="middle" font-weight="700" fill="#5e2d8c">mRNA</text>
+    <rect x="220" y="733" width="200" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="320" y="752" text-anchor="middle" fill="#334155" font-family="ui-monospace, SF Mono, Menlo, monospace">ID=transcript:</text>
+    <rect x="420" y="733" width="120" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="480" y="752" text-anchor="middle" fill="#334155">1 / 基因</text>
+    <rect x="540" y="733" width="480" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="780" y="752" text-anchor="middle" fill="#475569">全转录本跨度，可减去 UTR 只保留编码区</text>
 
-  <!-- Row 2: exon -->
-  <rect x="60" y="761" width="160" height="28" rx="0" fill="#e8f5e9" stroke="#c8e6c9"/>
-  <text x="140" y="780" text-anchor="middle" font-size="10" font-weight="bold" fill="#2e7d32">exon</text>
-  <rect x="220" y="761" width="200" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="320" y="780" text-anchor="middle" font-size="10" fill="#333">Parent=transcript:</text>
-  <rect x="420" y="761" width="120" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="480" y="780" text-anchor="middle" font-size="10" fill="#333">多个 / 基因</text>
-  <rect x="540" y="761" width="480" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="780" y="780" text-anchor="middle" font-size="10" fill="#555">exonic splicing enhancer/silencer (ESE/ESS)</text>
+    <!-- Row 2: exon (slate) -->
+    <rect x="60" y="761" width="160" height="28" fill="#f1f5f9" stroke="#dbe5e8"/>
+    <text x="140" y="780" text-anchor="middle" font-weight="700" fill="#334155">exon</text>
+    <rect x="220" y="761" width="200" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="320" y="780" text-anchor="middle" fill="#334155" font-family="ui-monospace, SF Mono, Menlo, monospace">Parent=transcript:</text>
+    <rect x="420" y="761" width="120" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="480" y="780" text-anchor="middle" fill="#334155">多个 / 基因</text>
+    <rect x="540" y="761" width="480" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="780" y="780" text-anchor="middle" fill="#475569">exonic splicing enhancer/silencer (ESE/ESS)</text>
 
-  <!-- Row 3: CDS -->
-  <rect x="60" y="789" width="160" height="28" rx="0" fill="#e8f5e9" stroke="#c8e6c9"/>
-  <text x="140" y="808" text-anchor="middle" font-size="10" font-weight="bold" fill="#2e7d32">CDS</text>
-  <rect x="220" y="789" width="200" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="320" y="808" text-anchor="middle" font-size="10" fill="#333">Parent=transcript:</text>
-  <rect x="420" y="789" width="120" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="480" y="808" text-anchor="middle" font-size="10" fill="#333">多个 / 基因</text>
-  <rect x="540" y="789" width="480" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="780" y="808" text-anchor="middle" font-size="10" fill="#555">编码区内调控元件（探索性）</text>
+    <!-- Row 3: CDS (teal) -->
+    <rect x="60" y="789" width="160" height="28" fill="#eef8f6" stroke="#dbe5e8"/>
+    <text x="140" y="808" text-anchor="middle" font-weight="700" fill="#134e4a">CDS</text>
+    <rect x="220" y="789" width="200" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="320" y="808" text-anchor="middle" fill="#334155" font-family="ui-monospace, SF Mono, Menlo, monospace">Parent=transcript:</text>
+    <rect x="420" y="789" width="120" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="480" y="808" text-anchor="middle" fill="#334155">多个 / 基因</text>
+    <rect x="540" y="789" width="480" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="780" y="808" text-anchor="middle" fill="#475569">编码区内调控元件（探索性）</text>
 
-  <!-- Row 4: 5'UTR -->
-  <rect x="60" y="817" width="160" height="28" rx="0" fill="#e8f5e9" stroke="#c8e6c9"/>
-  <text x="140" y="836" text-anchor="middle" font-size="10" font-weight="bold" fill="#2e7d32">five_prime_UTR</text>
-  <rect x="220" y="817" width="200" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="320" y="836" text-anchor="middle" font-size="10" fill="#333">Parent=transcript:</text>
-  <rect x="420" y="817" width="120" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="480" y="836" text-anchor="middle" font-size="10" fill="#333">1 / 基因</text>
-  <rect x="540" y="817" width="480" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="780" y="836" text-anchor="middle" font-size="10" fill="#555">uORF、翻译调控元件、IRES</text>
+    <!-- Row 4: 5'UTR (azure) -->
+    <rect x="60" y="817" width="160" height="28" fill="#eef3fd" stroke="#dbe5e8"/>
+    <text x="140" y="836" text-anchor="middle" font-weight="700" fill="#0d3a8c">five_prime_UTR</text>
+    <rect x="220" y="817" width="200" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="320" y="836" text-anchor="middle" fill="#334155" font-family="ui-monospace, SF Mono, Menlo, monospace">Parent=transcript:</text>
+    <rect x="420" y="817" width="120" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="480" y="836" text-anchor="middle" fill="#334155">1 / 基因</text>
+    <rect x="540" y="817" width="480" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="780" y="836" text-anchor="middle" fill="#475569">uORF、翻译调控元件、IRES</text>
 
-  <!-- Row 5: 3'UTR -->
-  <rect x="60" y="845" width="160" height="28" rx="0" fill="#e8f5e9" stroke="#c8e6c9"/>
-  <text x="140" y="864" text-anchor="middle" font-size="10" font-weight="bold" fill="#2e7d32">three_prime_UTR</text>
-  <rect x="220" y="845" width="200" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="320" y="864" text-anchor="middle" font-size="10" fill="#333">Parent=transcript:</text>
-  <rect x="420" y="845" width="120" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="480" y="864" text-anchor="middle" font-size="10" fill="#333">1 / 基因</text>
-  <rect x="540" y="845" width="480" height="28" rx="0" fill="#fff" stroke="#e0e0e0"/>
-  <text x="780" y="864" text-anchor="middle" font-size="10" fill="#555">miRNA 结合位点、ARE、poly(A) 信号</text>
+    <!-- Row 5: 3'UTR (ochre) -->
+    <rect x="60" y="845" width="160" height="28" fill="#fdf6e7" stroke="#dbe5e8"/>
+    <text x="140" y="864" text-anchor="middle" font-weight="700" fill="#7a4d10">three_prime_UTR</text>
+    <rect x="220" y="845" width="200" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="320" y="864" text-anchor="middle" fill="#334155" font-family="ui-monospace, SF Mono, Menlo, monospace">Parent=transcript:</text>
+    <rect x="420" y="845" width="120" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="480" y="864" text-anchor="middle" fill="#334155">1 / 基因</text>
+    <rect x="540" y="845" width="480" height="28" fill="#ffffff" stroke="#dbe5e8"/>
+    <text x="780" y="864" text-anchor="middle" fill="#475569">miRNA 结合位点、ARE、poly(A) 信号</text>
+  </g>
 
-  <!-- Legend note -->
-  <text x="550" y="900" text-anchor="middle" font-size="10" fill="#999">多 fragment 元件（exon/CDS/UTR）在 Step 3 中会被标记为 __GENE__N，FIMO 分别扫描后在 Step 9 合并回基因级别</text>
+  <text x="550" y="900" text-anchor="middle" font-size="10" fill="#94a3b8">多 fragment 元件（exon/CDS/UTR）在 Step 3 中会被标记为 __GENE__N，FIMO 分别扫描后在 Step 9 合并回基因级别</text>
 </svg>

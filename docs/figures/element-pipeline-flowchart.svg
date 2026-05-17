@@ -1,146 +1,163 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 950" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 950" role="img" aria-labelledby="pipefc-title pipefc-desc" lang="zh-CN" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif">
+  <title id="pipefc-title">_pmet_index_element.sh — 基因组元件 Homotypic 索引流程</title>
+  <desc id="pipefc-desc">从输入（genome.fa、annot.gff3、motifs.meme + -e/-s/-i/-n/-k/-f/-t 参数）开始，依次走 10 步：Step 0 染色体命名一致性检查（FAIL FAST）；Step 1 GFF3→BED 坐标提取（1-based → 0-based）；Step 2 Isoform 聚合（longest 按总元件长度选最长 isoform，或 merged 用 bedtools merge 取并集）；Step 3 fragment 标记 + 过滤 &lt;30bp 区间；Step 4 universe.txt + promoter_lengths.txt；Step 5 bedtools getfasta -s 提取序列；Step 6 fasta-get-markov 背景模型；Step 7 calculateICfrommeme → IC.txt；Step 8 index_fimo_fused 核心步骤（OpenMP 并行扫描全部 motif → 二项阈值 → PMETBN01 binary）；Step 9 collapse 回基因级别（去 __N，p 值升序，top-k）。最终输出：universe.txt、promoter_lengths.txt、IC.txt、binomial_thresholds.txt、fimohits/*.bin，供 pair_parallel 使用。</desc>
   <defs>
-    <marker id="arrowD" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
+    <marker id="arrSlate" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
     </marker>
-    <marker id="arrowR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
+    <marker id="arrPrimary" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f766e"/>
     </marker>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
   </defs>
 
-  <!-- Title -->
-  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">_pmet_index_element.sh — 基因组元件 Homotypic 索引流程</text>
+  <rect x="0" y="0" width="1100" height="950" rx="14" fill="#ffffff"/>
 
-  <!-- ================================================================ -->
-  <!-- Input files -->
-  <!-- ================================================================ -->
-  <rect x="160" y="55" width="160" height="40" rx="6" fill="#bbdefb" stroke="#1976d2" stroke-width="1.5"/>
-  <text x="240" y="80" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">genome.fa</text>
-  <rect x="370" y="55" width="160" height="40" rx="6" fill="#bbdefb" stroke="#1976d2" stroke-width="1.5"/>
-  <text x="450" y="80" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">annot.gff3</text>
-  <rect x="580" y="55" width="160" height="40" rx="6" fill="#bbdefb" stroke="#1976d2" stroke-width="1.5"/>
-  <text x="660" y="80" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d47a1">motifs.meme</text>
+  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">_pmet_index_element.sh — 基因组元件 Homotypic 索引流程</text>
 
-  <!-- Params box -->
-  <rect x="790" y="55" width="260" height="40" rx="6" fill="#e0e0e0" stroke="#9e9e9e"/>
-  <text x="920" y="72" text-anchor="middle" font-size="9" fill="#333">-e element  -s longest|merged  -i gff3id</text>
-  <text x="920" y="86" text-anchor="middle" font-size="9" fill="#333">-n topn  -k maxk  -f thresh  -t threads</text>
+  <!-- Inputs (azure / mode-intervals) -->
+  <g>
+    <rect x="160" y="55" width="160" height="40" rx="6" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+    <text x="240" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#0d3a8c" font-family="ui-monospace, SF Mono, Menlo, monospace">genome.fa</text>
+    <rect x="370" y="55" width="160" height="40" rx="6" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+    <text x="450" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#0d3a8c" font-family="ui-monospace, SF Mono, Menlo, monospace">annot.gff3</text>
+    <rect x="580" y="55" width="160" height="40" rx="6" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+    <text x="660" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#0d3a8c" font-family="ui-monospace, SF Mono, Menlo, monospace">motifs.meme</text>
+  </g>
 
-  <line x1="450" y1="95" x2="450" y2="118" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <!-- Params (slate) -->
+  <rect x="790" y="55" width="260" height="40" rx="6" fill="#f1f5f9" stroke="#dbe5e8" stroke-width="1"/>
+  <g font-size="9" fill="#475569">
+    <text x="920" y="72" text-anchor="middle">-e element  -s longest|merged  -i gff3id</text>
+    <text x="920" y="86" text-anchor="middle">-n topn  -k maxk  -f thresh  -t threads</text>
+  </g>
 
-  <!-- Step 0: Preflight -->
-  <rect x="280" y="123" width="340" height="42" rx="8" fill="#ffcdd2" stroke="#e53935" stroke-width="1.5"/>
-  <text x="450" y="141" text-anchor="middle" font-size="12" font-weight="bold" fill="#b71c1c">Step 0: 染色体命名一致性检查</text>
-  <text x="450" y="157" text-anchor="middle" font-size="9" fill="#c62828">GFF3 第一行 vs FASTA 第一个 header → 不一致则 fail fast</text>
+  <line x1="450" y1="95" x2="450" y2="118" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <line x1="450" y1="165" x2="450" y2="188" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <!-- Step 0 preflight (slate with subtle accent — alarm semantic) -->
+  <rect x="280" y="123" width="340" height="42" rx="8" fill="#fdf6e7" stroke="#b7791f" stroke-width="1"/>
+  <text x="450" y="141" text-anchor="middle" font-size="12" font-weight="700" fill="#7a4d10">Step 0: 染色体命名一致性检查</text>
+  <text x="450" y="157" text-anchor="middle" font-size="9" fill="#7a4d10">GFF3 第一行 vs FASTA 第一个 header → 不一致则 fail fast</text>
 
-  <!-- Step 1: GFF3 → BED -->
-  <rect x="280" y="193" width="340" height="50" rx="8" fill="#fff9c4" stroke="#f9a825" stroke-width="1.5"/>
-  <text x="450" y="213" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57f17">Step 1: GFF3 → BED 坐标提取</text>
-  <text x="450" y="229" text-anchor="middle" font-size="9" fill="#795548">awk $3 == element → 提取 chrom, start-1, end, transcript_id, strand</text>
-  <text x="450" y="241" text-anchor="middle" font-size="9" fill="#e53935" font-weight="bold">GFF3 1-based → BED 0-based ($4-1)</text>
+  <line x1="450" y1="165" x2="450" y2="188" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <line x1="450" y1="243" x2="450" y2="266" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <!-- Step 1: GFF3 → BED (accent — indexing journey) -->
+  <rect x="280" y="193" width="340" height="50" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="280" y="193" width="4" height="50" fill="#b7791f"/>
+  <text x="450" y="213" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Step 1: GFF3 → BED 坐标提取</text>
+  <text x="450" y="229" text-anchor="middle" font-size="9" fill="#475569">awk $3 == element → 提取 chrom, start-1, end, transcript_id, strand</text>
+  <text x="450" y="241" text-anchor="middle" font-size="9" fill="#7a4d10" font-weight="700">GFF3 1-based → BED 0-based ($4-1)</text>
 
-  <!-- Step 2: Strategy branch -->
-  <rect x="280" y="271" width="340" height="38" rx="8" fill="#e1bee7" stroke="#8e24aa" stroke-width="1.5"/>
-  <text x="450" y="295" text-anchor="middle" font-size="12" font-weight="bold" fill="#6a1b9a">Step 2: Isoform 聚合策略</text>
+  <line x1="450" y1="243" x2="450" y2="266" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <!-- Branch lines -->
-  <line x1="350" y1="309" x2="200" y2="335" stroke="#555" stroke-width="1.5" marker-end="url(#arrowD)"/>
-  <line x1="550" y1="309" x2="700" y2="335" stroke="#555" stroke-width="1.5" marker-end="url(#arrowD)"/>
+  <!-- Step 2 isoform strategy (mode-elements violet) -->
+  <rect x="280" y="271" width="340" height="38" rx="8" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1"/>
+  <text x="450" y="295" text-anchor="middle" font-size="12" font-weight="700" fill="#5e2d8c">Step 2: Isoform 聚合策略</text>
 
-  <!-- Longest branch -->
-  <rect x="80" y="340" width="240" height="68" rx="6" fill="#c8e6c9" stroke="#43a047"/>
-  <text x="200" y="360" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">longest</text>
-  <text x="200" y="376" text-anchor="middle" font-size="9" fill="#555">2a. 按总元件长度选最长 isoform</text>
-  <text x="200" y="390" text-anchor="middle" font-size="9" fill="#555">2b. 保留其所有 fragment，重标 gene ID</text>
-  <text x="200" y="404" text-anchor="middle" font-size="9" fill="#555">2c. -e mRNA: 可减去 UTR (-m No)</text>
+  <line x1="350" y1="309" x2="200" y2="335" stroke="#475569" stroke-width="1.5" marker-end="url(#arrSlate)"/>
+  <line x1="550" y1="309" x2="700" y2="335" stroke="#475569" stroke-width="1.5" marker-end="url(#arrSlate)"/>
 
-  <!-- Merged branch -->
-  <rect x="580" y="340" width="240" height="52" rx="6" fill="#b3e5fc" stroke="#0288d1"/>
-  <text x="700" y="360" text-anchor="middle" font-size="11" font-weight="bold" fill="#01579b">merged</text>
-  <text x="700" y="376" text-anchor="middle" font-size="9" fill="#555">所有 isoform 取并集</text>
-  <text x="700" y="390" text-anchor="middle" font-size="9" fill="#555">重叠区间合并（bedtools merge）</text>
+  <!-- longest branch (primary teal) -->
+  <rect x="80" y="340" width="240" height="68" rx="6" fill="#ffffff" stroke="#0f766e" stroke-width="1"/>
+  <rect x="80" y="340" width="4" height="68" fill="#0f766e"/>
+  <text x="200" y="360" text-anchor="middle" font-size="11" font-weight="700" fill="#134e4a">longest</text>
+  <g font-size="9" fill="#475569">
+    <text x="200" y="376" text-anchor="middle">2a. 按总元件长度选最长 isoform</text>
+    <text x="200" y="390" text-anchor="middle">2b. 保留其所有 fragment，重标 gene ID</text>
+    <text x="200" y="404" text-anchor="middle">2c. -e mRNA: 可减去 UTR (-m No)</text>
+  </g>
 
-  <!-- Merge back — two branch lines converge at x=450 -->
-  <line x1="200" y1="408" x2="450" y2="438" stroke="#555" stroke-width="1.5"/>
-  <line x1="700" y1="392" x2="450" y2="438" stroke="#555" stroke-width="1.5"/>
-  <circle cx="450" cy="438" r="3" fill="#555"/>
+  <!-- merged branch (azure) -->
+  <rect x="580" y="340" width="240" height="52" rx="6" fill="#ffffff" stroke="#1f6feb" stroke-width="1"/>
+  <rect x="580" y="340" width="4" height="52" fill="#1f6feb"/>
+  <text x="700" y="360" text-anchor="middle" font-size="11" font-weight="700" fill="#0d3a8c">merged</text>
+  <g font-size="9" fill="#475569">
+    <text x="700" y="376" text-anchor="middle">所有 isoform 取并集</text>
+    <text x="700" y="390" text-anchor="middle">重叠区间合并（bedtools merge）</text>
+  </g>
 
-  <line x1="450" y1="441" x2="450" y2="450" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <line x1="200" y1="408" x2="450" y2="438" stroke="#475569" stroke-width="1.5"/>
+  <line x1="700" y1="392" x2="450" y2="438" stroke="#475569" stroke-width="1.5"/>
+  <circle cx="450" cy="438" r="3" fill="#475569"/>
 
-  <!-- Step 3: Fragment tagging -->
-  <rect x="280" y="455" width="340" height="42" rx="8" fill="#fff9c4" stroke="#f9a825" stroke-width="1.5"/>
-  <text x="450" y="473" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57f17">Step 3: Fragment 标记 + 过滤</text>
-  <text x="450" y="489" text-anchor="middle" font-size="9" fill="#795548">多 fragment 基因: col4 → __GENE__N | 丢弃 &lt;30bp 区间</text>
+  <line x1="450" y1="441" x2="450" y2="450" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <line x1="450" y1="497" x2="450" y2="518" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <!-- Step 3 fragment tagging (accent) -->
+  <rect x="280" y="455" width="340" height="42" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="280" y="455" width="4" height="42" fill="#b7791f"/>
+  <text x="450" y="473" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Step 3: Fragment 标记 + 过滤</text>
+  <text x="450" y="489" text-anchor="middle" font-size="9" fill="#475569">多 fragment 基因: col4 → __GENE__N | 丢弃 &lt;30bp 区间</text>
 
-  <!-- Step 4: universe + lengths -->
-  <rect x="280" y="523" width="340" height="42" rx="8" fill="#fff9c4" stroke="#f9a825" stroke-width="1.5"/>
-  <text x="450" y="541" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57f17">Step 4: universe.txt + promoter_lengths.txt</text>
-  <text x="450" y="557" text-anchor="middle" font-size="9" fill="#795548">去除 __N 后缀 → 唯一基因列表 | 每 fragment 长度</text>
+  <line x1="450" y1="497" x2="450" y2="518" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <!-- Output files on right -->
-  <rect x="700" y="526" width="140" height="18" rx="4" fill="#c8e6c9" stroke="#43a047"/>
-  <text x="770" y="539" text-anchor="middle" font-size="9" font-weight="bold" fill="#2e7d32">universe.txt</text>
-  <line x1="620" y1="537" x2="700" y2="537" stroke="#43a047" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowR)"/>
-  <rect x="700" y="547" width="140" height="18" rx="4" fill="#c8e6c9" stroke="#43a047"/>
-  <text x="770" y="560" text-anchor="middle" font-size="9" font-weight="bold" fill="#2e7d32">promoter_lengths.txt</text>
+  <!-- Step 4 universe + lengths (accent) -->
+  <rect x="280" y="523" width="340" height="42" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="280" y="523" width="4" height="42" fill="#b7791f"/>
+  <text x="450" y="541" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Step 4: universe.txt + promoter_lengths.txt</text>
+  <text x="450" y="557" text-anchor="middle" font-size="9" fill="#475569">去除 __N 后缀 → 唯一基因列表 | 每 fragment 长度</text>
 
-  <line x1="450" y1="565" x2="450" y2="586" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <!-- inline output chips -->
+  <rect x="700" y="526" width="140" height="18" rx="4" fill="#fdf6e7" stroke="#b7791f" stroke-width="0.8"/>
+  <text x="770" y="539" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10" font-family="ui-monospace, SF Mono, Menlo, monospace">universe.txt</text>
+  <line x1="620" y1="537" x2="700" y2="537" stroke="#b7791f" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="700" y="547" width="140" height="18" rx="4" fill="#fdf6e7" stroke="#b7791f" stroke-width="0.8"/>
+  <text x="770" y="560" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10" font-family="ui-monospace, SF Mono, Menlo, monospace">promoter_lengths.txt</text>
 
-  <!-- Step 5: Sequence extraction -->
-  <rect x="280" y="591" width="340" height="42" rx="8" fill="#fff9c4" stroke="#f9a825" stroke-width="1.5"/>
-  <text x="450" y="609" text-anchor="middle" font-size="12" font-weight="bold" fill="#f57f17">Step 5: 序列提取</text>
-  <text x="450" y="625" text-anchor="middle" font-size="9" fill="#e53935" font-weight="bold">bedtools getfasta -s（-s 确保负链反向互补）→ promoter.fa</text>
+  <line x1="450" y1="565" x2="450" y2="586" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <line x1="450" y1="633" x2="450" y2="650" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <!-- Step 5 sequence extraction (accent) -->
+  <rect x="280" y="591" width="340" height="42" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="280" y="591" width="4" height="42" fill="#b7791f"/>
+  <text x="450" y="609" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Step 5: 序列提取</text>
+  <text x="450" y="625" text-anchor="middle" font-size="9" fill="#7a4d10" font-weight="700">bedtools getfasta -s（-s 确保负链反向互补）→ promoter.fa</text>
 
-  <!-- Step 6-7: Background + IC (compact) -->
-  <rect x="160" y="655" width="260" height="38" rx="6" fill="#e0e0e0" stroke="#9e9e9e"/>
-  <text x="290" y="671" text-anchor="middle" font-size="10" font-weight="bold" fill="#333">Step 6: 背景模型</text>
-  <text x="290" y="686" text-anchor="middle" font-size="9" fill="#555">fasta-get-markov → promoter.bg</text>
+  <line x1="450" y1="633" x2="450" y2="650" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <rect x="480" y="655" width="240" height="38" rx="6" fill="#e0e0e0" stroke="#9e9e9e"/>
-  <text x="600" y="671" text-anchor="middle" font-size="10" font-weight="bold" fill="#333">Step 7: IC 计算</text>
-  <text x="600" y="686" text-anchor="middle" font-size="9" fill="#555">calculateICfrommeme → IC.txt</text>
+  <!-- Step 6-7 background + IC (slate, support steps) -->
+  <rect x="160" y="655" width="260" height="38" rx="6" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="290" y="671" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">Step 6: 背景模型</text>
+  <text x="290" y="686" text-anchor="middle" font-size="9" fill="#64748b" font-family="ui-monospace, SF Mono, Menlo, monospace">fasta-get-markov → promoter.bg</text>
 
-  <!-- IC output -->
-  <rect x="790" y="660" width="90" height="18" rx="4" fill="#c8e6c9" stroke="#43a047"/>
-  <text x="835" y="673" text-anchor="middle" font-size="9" font-weight="bold" fill="#2e7d32">IC.txt</text>
-  <line x1="720" y1="670" x2="790" y2="670" stroke="#43a047" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowR)"/>
+  <rect x="480" y="655" width="240" height="38" rx="6" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="600" y="671" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">Step 7: IC 计算</text>
+  <text x="600" y="686" text-anchor="middle" font-size="9" fill="#64748b" font-family="ui-monospace, SF Mono, Menlo, monospace">calculateICfrommeme → IC.txt</text>
 
-  <line x1="450" y1="693" x2="450" y2="715" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <rect x="790" y="660" width="90" height="18" rx="4" fill="#fdf6e7" stroke="#b7791f" stroke-width="0.8"/>
+  <text x="835" y="673" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10" font-family="ui-monospace, SF Mono, Menlo, monospace">IC.txt</text>
+  <line x1="720" y1="670" x2="790" y2="670" stroke="#b7791f" stroke-width="1" stroke-dasharray="4,3"/>
 
-  <!-- Step 8: index_fimo_fused -->
-  <rect x="230" y="720" width="440" height="60" rx="10" fill="#ef9a9a" stroke="#c62828" stroke-width="2"/>
-  <text x="450" y="744" text-anchor="middle" font-size="14" font-weight="bold" fill="#b71c1c">Step 8: index_fimo_fused（FIMO + 建索引 合为一步）</text>
-  <text x="450" y="762" text-anchor="middle" font-size="10" fill="#c62828">OMP_NUM_THREADS=$threads | 内部 OpenMP 批次 | --topn --topk --thresh</text>
-  <text x="450" y="776" text-anchor="middle" font-size="10" fill="#c62828">扫描全部 motif → 二项阈值 → 直接输出 PMETBN01 binary</text>
+  <line x1="450" y1="693" x2="450" y2="715" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <!-- Output -->
-  <rect x="730" y="725" width="160" height="18" rx="4" fill="#c8e6c9" stroke="#43a047"/>
-  <text x="810" y="738" text-anchor="middle" font-size="9" font-weight="bold" fill="#2e7d32">binomial_thresholds.txt</text>
-  <line x1="670" y1="736" x2="730" y2="736" stroke="#43a047" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowR)"/>
-  <rect x="730" y="747" width="160" height="18" rx="4" fill="#c8e6c9" stroke="#43a047"/>
-  <text x="810" y="760" text-anchor="middle" font-size="9" font-weight="bold" fill="#2e7d32">fimohits/*.bin (per-motif)</text>
+  <!-- Step 8 — the big indexing core (accent, emphasized) -->
+  <rect x="230" y="720" width="440" height="60" rx="10" fill="#fdf6e7" stroke="#b7791f" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="230" y="720" width="6" height="60" fill="#b7791f"/>
+  <text x="450" y="744" text-anchor="middle" font-size="14" font-weight="700" fill="#7a4d10">Step 8: index_fimo_fused（FIMO + 建索引 合为一步）</text>
+  <text x="450" y="762" text-anchor="middle" font-size="10" fill="#7a4d10">OMP_NUM_THREADS=$threads | 内部 OpenMP 批次 | --topn --topk --thresh</text>
+  <text x="450" y="776" text-anchor="middle" font-size="10" fill="#7a4d10">扫描全部 motif → 二项阈值 → 直接输出 PMETBN01 binary</text>
 
-  <line x1="450" y1="780" x2="450" y2="802" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <rect x="730" y="725" width="160" height="18" rx="4" fill="#fdf6e7" stroke="#b7791f" stroke-width="0.8"/>
+  <text x="810" y="738" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10" font-family="ui-monospace, SF Mono, Menlo, monospace">binomial_thresholds.txt</text>
+  <line x1="670" y1="736" x2="730" y2="736" stroke="#b7791f" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="730" y="747" width="160" height="18" rx="4" fill="#fdf6e7" stroke="#b7791f" stroke-width="0.8"/>
+  <text x="810" y="760" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10" font-family="ui-monospace, SF Mono, Menlo, monospace">fimohits/*.bin (per-motif)</text>
 
-  <!-- Step 9: Collapse -->
-  <rect x="230" y="807" width="440" height="52" rx="8" fill="#e1bee7" stroke="#8e24aa" stroke-width="1.5"/>
-  <text x="450" y="827" text-anchor="middle" font-size="12" font-weight="bold" fill="#6a1b9a">Step 9: Collapse 回基因级别</text>
-  <text x="450" y="843" text-anchor="middle" font-size="9" fill="#795548">去除 __N → lengths 求和 | collapse_element_fimohits.py（PMETBN01 binary 解码）</text>
-  <text x="450" y="855" text-anchor="middle" font-size="9" fill="#795548">按 gene 分组 → p-value 升序 → top-k per gene → 对比 binomial 阈值</text>
+  <line x1="450" y1="780" x2="450" y2="802" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
 
-  <line x1="450" y1="859" x2="450" y2="882" stroke="#555" stroke-width="2" marker-end="url(#arrowD)"/>
+  <!-- Step 9 collapse (mode-elements violet) -->
+  <rect x="230" y="807" width="440" height="52" rx="8" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="230" y="807" width="4" height="52" fill="#8a4cbe"/>
+  <text x="450" y="827" text-anchor="middle" font-size="12" font-weight="700" fill="#5e2d8c">Step 9: Collapse 回基因级别</text>
+  <text x="450" y="843" text-anchor="middle" font-size="9" fill="#475569">去除 __N → lengths 求和 | collapse_element_fimohits.py（PMETBN01 binary 解码）</text>
+  <text x="450" y="855" text-anchor="middle" font-size="9" fill="#475569">按 gene 分组 → p-value 升序 → top-k per gene → 对比 binomial 阈值</text>
 
-  <!-- Final outputs -->
-  <rect x="250" y="887" width="400" height="52" rx="10" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"/>
-  <text x="450" y="907" text-anchor="middle" font-size="13" font-weight="bold" fill="#1b5e20">最终输出（供 pair_parallel 使用）</text>
-  <text x="450" y="924" text-anchor="middle" font-size="10" fill="#2e7d32">universe.txt | promoter_lengths.txt (gene-level) | IC.txt</text>
-  <text x="450" y="937" text-anchor="middle" font-size="10" fill="#2e7d32">binomial_thresholds.txt | fimohits/*.bin (gene-level, per-motif)</text>
+  <line x1="450" y1="859" x2="450" y2="882" stroke="#475569" stroke-width="2" marker-end="url(#arrSlate)"/>
+
+  <!-- Final outputs (primary teal — feeds downstream pair engine) -->
+  <rect x="250" y="887" width="400" height="52" rx="10" fill="#eef8f6" stroke="#0f766e" stroke-width="1" filter="url(#softShadow)"/>
+  <rect x="250" y="887" width="6" height="52" fill="#0f766e"/>
+  <text x="450" y="907" text-anchor="middle" font-size="13" font-weight="700" fill="#134e4a">最终输出（供 pair_parallel 使用）</text>
+  <text x="450" y="924" text-anchor="middle" font-size="10" fill="#134e4a">universe.txt | promoter_lengths.txt (gene-level) | IC.txt</text>
+  <text x="450" y="937" text-anchor="middle" font-size="10" fill="#134e4a">binomial_thresholds.txt | fimohits/*.bin (gene-level, per-motif)</text>
 </svg>

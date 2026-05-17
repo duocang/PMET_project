@@ -1,296 +1,264 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 980" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 980" role="img" aria-labelledby="gapen-title gapen-desc" lang="en" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">
+  <title id="gapen-title">Promoter motif scanning — before vs after gap</title>
+  <desc id="gapen-desc">A. Without Gap: the entire 1000 bp promoter is scanned, so the ~100 bp core-promoter region near the TSS (TATA box, Inr, other universal elements) is also picked up, yielding abundant but low-specificity motif hits. B. With Gap (distance=100): only the distal 900 bp regulatory region is scanned; the proximal 100 bp gap (dashed grey block + grey motif with ✕) is excluded, suppressing interference from generic motifs and improving the signal for gene-specific TF binding sites. Both panels show positive- and negative-strand genes (the negative strand is mirrored). Gap distance is configured by -g in 05_promoter_gap.sh (default 100 bp). Legend: filled triangle = retained hit, grey triangle with ✕ = excluded hit, hatched fill = scan region, dashed grey = gap region, blue/green/amber = 5'UTR/CDS/3'UTR.</desc>
   <defs>
-    <marker id="arrowR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#2e7d32"/>
+    <marker id="arrPrimary" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0f766e"/>
     </marker>
-    <marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#c62828"/>
+    <marker id="arrAccent" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#b7791f"/>
     </marker>
     <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="6" stroke="#8b6914" stroke-width="1.5"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#b7791f" stroke-width="1.5"/>
     </pattern>
     <symbol id="motif" viewBox="0 0 20 16">
-      <polygon points="10,0 20,16 0,16" fill="#e53935" opacity="0.85"/>
+      <polygon points="10,0 20,16 0,16" fill="#0f766e" opacity="0.85"/>
     </symbol>
     <symbol id="motifGray" viewBox="0 0 20 16">
-      <polygon points="10,0 20,16 0,16" fill="#bbb" opacity="0.6"/>
+      <polygon points="10,0 20,16 0,16" fill="#cbd5e1" opacity="0.85"/>
     </symbol>
   </defs>
 
-  <!-- Title -->
-  <text x="550" y="32" text-anchor="middle" font-size="21" font-weight="bold" fill="#222">Promoter Motif Scanning — Before vs After Gap</text>
+  <rect x="0" y="0" width="1100" height="980" rx="14" fill="#ffffff"/>
 
-  <!-- ================================================================ -->
-  <!-- PART A: WITHOUT GAP -->
-  <!-- ================================================================ -->
-  <rect x="30" y="50" width="1040" height="420" rx="10" fill="#f9f9f9" stroke="#ddd" stroke-width="1"/>
-  <text x="550" y="78" text-anchor="middle" font-size="16" font-weight="bold" fill="#1565c0">A. Without Gap — Scanning the Entire Promoter Region</text>
+  <text x="550" y="32" text-anchor="middle" font-size="21" font-weight="700" fill="#0f172a">Promoter Motif Scanning — Before vs After Gap</text>
 
-  <!-- === A+: Positive strand === -->
-  <text x="50" y="98" font-size="13" font-weight="bold" fill="#2e7d32">Positive-strand Gene (+ strand)</text>
-  <text x="50" y="116" font-size="10" fill="#2e7d32">Transcription direction</text>
-  <line x1="180" y1="112" x2="250" y2="112" stroke="#2e7d32" stroke-width="2" marker-end="url(#arrowR)"/>
+  <!-- ====== PART A: WITHOUT GAP (accent — the problem) ====== -->
+  <rect x="30" y="50" width="1040" height="420" rx="10" fill="#fdf6e7" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="30" y="50" width="1040" height="2" fill="#b7791f"/>
+  <text x="550" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#7a4d10">A. Without Gap — Scanning the Entire Promoter Region</text>
 
-  <!-- Promoter -->
-  <rect x="100" y="130" width="380" height="40" rx="4" fill="url(#hatch)" stroke="#8b6914" stroke-width="1.5"/>
-  <text x="290" y="155" text-anchor="middle" font-size="12" font-weight="bold" fill="#5d4037">Promoter (1000 bp)</text>
+  <!-- Positive strand -->
+  <text x="50" y="98" font-size="13" font-weight="700" fill="#134e4a">Positive-strand Gene (+ strand)</text>
+  <text x="50" y="116" font-size="10" fill="#0f766e">Transcription direction</text>
+  <line x1="180" y1="112" x2="250" y2="112" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
-  <!-- Motifs on promoter -->
+  <rect x="100" y="130" width="380" height="40" rx="4" fill="url(#hatch)" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="290" y="155" text-anchor="middle" font-size="12" font-weight="700" fill="#7a4d10">Promoter (1000 bp)</text>
+
   <use href="#motif" x="130" y="125" width="16" height="13"/>
   <use href="#motif" x="210" y="125" width="16" height="13"/>
   <use href="#motif" x="310" y="125" width="16" height="13"/>
   <use href="#motif" x="400" y="125" width="16" height="13"/>
   <use href="#motif" x="450" y="125" width="16" height="13"/>
 
-  <!-- TSS -->
-  <line x1="480" y1="122" x2="480" y2="175" stroke="#d32f2f" stroke-width="2.5"/>
-  <polygon points="475,122 480,110 485,122" fill="#d32f2f"/>
-  <text x="480" y="105" text-anchor="middle" font-size="11" font-weight="bold" fill="#d32f2f">TSS</text>
+  <line x1="480" y1="122" x2="480" y2="175" stroke="#b7791f" stroke-width="2.5"/>
+  <polygon points="475,122 480,110 485,122" fill="#b7791f"/>
+  <text x="480" y="105" text-anchor="middle" font-size="11" font-weight="700" fill="#7a4d10">TSS</text>
 
-  <!-- 5'UTR -->
-  <rect x="480" y="130" width="70" height="40" rx="3" fill="#81d4fa" stroke="#0288d1" stroke-width="1.5"/>
-  <text x="515" y="155" text-anchor="middle" font-size="10" font-weight="bold" fill="#01579b">5'UTR</text>
+  <rect x="480" y="130" width="70" height="40" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="515" y="155" text-anchor="middle" font-size="10" font-weight="700" fill="#0d3a8c">5'UTR</text>
 
-  <!-- CDS exons + introns -->
-  <rect x="550" y="125" width="90" height="50" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="595" y="153" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="640" y1="150" x2="670" y2="138" stroke="#888" stroke-width="1.2"/>
-  <line x1="670" y1="138" x2="700" y2="150" stroke="#888" stroke-width="1.2"/>
-  <rect x="700" y="125" width="90" height="50" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="745" y="153" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="790" y1="150" x2="820" y2="138" stroke="#888" stroke-width="1.2"/>
-  <line x1="820" y1="138" x2="850" y2="150" stroke="#888" stroke-width="1.2"/>
-  <rect x="850" y="125" width="80" height="50" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="890" y="153" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
+  <rect x="550" y="125" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="595" y="153" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="640" y1="150" x2="670" y2="138" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="670" y1="138" x2="700" y2="150" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="700" y="125" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="745" y="153" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="790" y1="150" x2="820" y2="138" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="820" y1="138" x2="850" y2="150" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="850" y="125" width="80" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="890" y="153" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
 
-  <!-- 3'UTR -->
-  <rect x="930" y="130" width="70" height="40" rx="3" fill="#ffcc80" stroke="#ef6c00" stroke-width="1.5"/>
-  <text x="965" y="155" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">3'UTR</text>
+  <rect x="930" y="130" width="70" height="40" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="965" y="155" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">3'UTR</text>
 
-  <!-- Coordinates -->
-  <text x="100" y="190" text-anchor="middle" font-size="9" fill="#666">2630</text>
-  <text x="480" y="190" text-anchor="middle" font-size="9" fill="#666">3630</text>
-  <text x="1000" y="190" text-anchor="middle" font-size="9" fill="#666">5899</text>
-
-  <!-- Scan bracket -->
-  <line x1="100" y1="198" x2="480" y2="198" stroke="#e53935" stroke-width="2"/>
-  <line x1="100" y1="194" x2="100" y2="202" stroke="#e53935" stroke-width="2"/>
-  <line x1="480" y1="194" x2="480" y2="202" stroke="#e53935" stroke-width="2"/>
-  <text x="290" y="214" text-anchor="middle" font-size="10" font-weight="bold" fill="#e53935">PMET Scan Range</text>
-
-  <!-- === A-: Negative strand === -->
-  <text x="1050" y="238" text-anchor="end" font-size="13" font-weight="bold" fill="#c62828">Negative-strand Gene (- strand)</text>
-  <text x="1050" y="256" text-anchor="end" font-size="10" fill="#c62828">Transcription direction</text>
-  <g transform="translate(985, 0) scale(-1, 1)">
-    <line x1="60" y1="252" x2="130" y2="252" stroke="#c62828" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <g font-size="9" fill="#64748b">
+    <text x="100" y="190" text-anchor="middle">2630</text>
+    <text x="480" y="190" text-anchor="middle">3630</text>
+    <text x="1000" y="190" text-anchor="middle">5899</text>
   </g>
 
-  <!-- 3'UTR -->
-  <rect x="100" y="268" width="70" height="40" rx="3" fill="#ffcc80" stroke="#ef6c00" stroke-width="1.5"/>
-  <text x="135" y="293" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">3'UTR</text>
+  <line x1="100" y1="198" x2="480" y2="198" stroke="#b7791f" stroke-width="2"/>
+  <line x1="100" y1="194" x2="100" y2="202" stroke="#b7791f" stroke-width="2"/>
+  <line x1="480" y1="194" x2="480" y2="202" stroke="#b7791f" stroke-width="2"/>
+  <text x="290" y="214" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">PMET Scan Range</text>
 
-  <!-- CDS exons + introns -->
-  <rect x="170" y="263" width="80" height="50" rx="3" fill="#26a69a" stroke="#00897b" stroke-width="1.5"/>
-  <text x="210" y="291" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="250" y1="288" x2="280" y2="276" stroke="#888" stroke-width="1.2"/>
-  <line x1="280" y1="276" x2="310" y2="288" stroke="#888" stroke-width="1.2"/>
-  <rect x="310" y="263" width="90" height="50" rx="3" fill="#26a69a" stroke="#00897b" stroke-width="1.5"/>
-  <text x="355" y="291" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="400" y1="288" x2="430" y2="276" stroke="#888" stroke-width="1.2"/>
-  <line x1="430" y1="276" x2="460" y2="288" stroke="#888" stroke-width="1.2"/>
-  <rect x="460" y="263" width="90" height="50" rx="3" fill="#26a69a" stroke="#00897b" stroke-width="1.5"/>
-  <text x="505" y="291" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
+  <!-- Negative strand -->
+  <text x="1050" y="238" text-anchor="end" font-size="13" font-weight="700" fill="#134e4a">Negative-strand Gene (- strand)</text>
+  <text x="1050" y="256" text-anchor="end" font-size="10" fill="#0f766e">Transcription direction</text>
+  <g transform="translate(985, 0) scale(-1, 1)">
+    <line x1="60" y1="252" x2="130" y2="252" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
+  </g>
 
-  <!-- 5'UTR -->
-  <rect x="550" y="268" width="70" height="40" rx="3" fill="#81d4fa" stroke="#0288d1" stroke-width="1.5"/>
-  <text x="585" y="293" text-anchor="middle" font-size="10" font-weight="bold" fill="#01579b">5'UTR</text>
+  <rect x="100" y="268" width="70" height="40" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="135" y="293" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">3'UTR</text>
 
-  <!-- TSS -->
-  <line x1="620" y1="260" x2="620" y2="313" stroke="#d32f2f" stroke-width="2.5"/>
-  <polygon points="615,260 620,248 625,260" fill="#d32f2f"/>
-  <text x="620" y="243" text-anchor="middle" font-size="11" font-weight="bold" fill="#d32f2f">TSS</text>
+  <rect x="170" y="263" width="80" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="210" y="291" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="250" y1="288" x2="280" y2="276" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="280" y1="276" x2="310" y2="288" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="310" y="263" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="355" y="291" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="400" y1="288" x2="430" y2="276" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="430" y1="276" x2="460" y2="288" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="460" y="263" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="505" y="291" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
 
-  <!-- Promoter -->
-  <rect x="620" y="268" width="380" height="40" rx="4" fill="url(#hatch)" stroke="#8b6914" stroke-width="1.5"/>
-  <text x="810" y="293" text-anchor="middle" font-size="12" font-weight="bold" fill="#5d4037">Promoter (1000 bp)</text>
+  <rect x="550" y="268" width="70" height="40" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="585" y="293" text-anchor="middle" font-size="10" font-weight="700" fill="#0d3a8c">5'UTR</text>
 
-  <!-- Motifs -->
+  <line x1="620" y1="260" x2="620" y2="313" stroke="#b7791f" stroke-width="2.5"/>
+  <polygon points="615,260 620,248 625,260" fill="#b7791f"/>
+  <text x="620" y="243" text-anchor="middle" font-size="11" font-weight="700" fill="#7a4d10">TSS</text>
+
+  <rect x="620" y="268" width="380" height="40" rx="4" fill="url(#hatch)" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="810" y="293" text-anchor="middle" font-size="12" font-weight="700" fill="#7a4d10">Promoter (1000 bp)</text>
+
   <use href="#motif" x="640" y="263" width="16" height="13"/>
   <use href="#motif" x="710" y="263" width="16" height="13"/>
   <use href="#motif" x="800" y="263" width="16" height="13"/>
   <use href="#motif" x="880" y="263" width="16" height="13"/>
   <use href="#motif" x="960" y="263" width="16" height="13"/>
 
-  <!-- Scan bracket -->
-  <line x1="620" y1="336" x2="1000" y2="336" stroke="#e53935" stroke-width="2"/>
-  <line x1="620" y1="332" x2="620" y2="340" stroke="#e53935" stroke-width="2"/>
-  <line x1="1000" y1="332" x2="1000" y2="340" stroke="#e53935" stroke-width="2"/>
-  <text x="810" y="352" text-anchor="middle" font-size="10" font-weight="bold" fill="#e53935">PMET Scan Range</text>
+  <line x1="620" y1="336" x2="1000" y2="336" stroke="#b7791f" stroke-width="2"/>
+  <line x1="620" y1="332" x2="620" y2="340" stroke="#b7791f" stroke-width="2"/>
+  <line x1="1000" y1="332" x2="1000" y2="340" stroke="#b7791f" stroke-width="2"/>
+  <text x="810" y="352" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">PMET Scan Range</text>
 
-  <!-- Problem box -->
-  <rect x="50" y="375" width="1000" height="80" rx="6" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
-  <text x="70" y="398" font-size="12" font-weight="bold" fill="#e65100">Problem:</text>
-  <text x="70" y="418" font-size="11" fill="#555">The ~100 bp core promoter region near the TSS contains universal transcription initiation elements (TATA box, Inr, etc.), shared by nearly all genes.</text>
-  <text x="70" y="438" font-size="11" fill="#555">These generic motifs produce abundant hits in FIMO scans but lack gene specificity, reducing the signal-to-noise ratio in downstream enrichment analysis.</text>
+  <!-- Problem box (subtle accent, not alarm) -->
+  <rect x="50" y="375" width="1000" height="80" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="70" y="398" font-size="12" font-weight="700" fill="#7a4d10">Problem:</text>
+  <text x="70" y="418" font-size="11" fill="#475569">The ~100 bp core promoter region near the TSS contains universal transcription initiation elements (TATA box, Inr, etc.), shared by nearly all genes.</text>
+  <text x="70" y="438" font-size="11" fill="#475569">These generic motifs produce abundant hits in FIMO scans but lack gene specificity, reducing the signal-to-noise ratio in downstream enrichment analysis.</text>
 
-  <!-- ================================================================ -->
-  <!-- PART B: WITH GAP -->
-  <!-- ================================================================ -->
-  <rect x="30" y="488" width="1040" height="420" rx="10" fill="#f9f9f9" stroke="#ddd" stroke-width="1"/>
-  <text x="550" y="516" text-anchor="middle" font-size="16" font-weight="bold" fill="#2e7d32">B. With Gap (distance=100) — Excluding Core Promoter Region</text>
+  <!-- ====== PART B: WITH GAP (primary — the solution) ====== -->
+  <rect x="30" y="488" width="1040" height="420" rx="10" fill="#eef8f6" stroke="#dbe5e8" stroke-width="1"/>
+  <rect x="30" y="488" width="1040" height="2" fill="#0f766e"/>
+  <text x="550" y="516" text-anchor="middle" font-size="16" font-weight="700" fill="#134e4a">B. With Gap (distance=100) — Excluding Core Promoter Region</text>
 
-  <!-- === B+: Positive strand === -->
-  <text x="50" y="536" font-size="13" font-weight="bold" fill="#2e7d32">Positive-strand Gene (+ strand)</text>
-  <text x="50" y="554" font-size="10" fill="#2e7d32">Transcription direction</text>
-  <line x1="180" y1="550" x2="250" y2="550" stroke="#2e7d32" stroke-width="2" marker-end="url(#arrowR)"/>
+  <!-- Positive strand -->
+  <text x="50" y="536" font-size="13" font-weight="700" fill="#134e4a">Positive-strand Gene (+ strand)</text>
+  <text x="50" y="554" font-size="10" fill="#0f766e">Transcription direction</text>
+  <line x1="180" y1="550" x2="250" y2="550" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
 
-  <!-- Active promoter -->
-  <rect x="100" y="568" width="330" height="40" rx="4" fill="url(#hatch)" stroke="#8b6914" stroke-width="1.5"/>
-  <text x="265" y="593" text-anchor="middle" font-size="12" font-weight="bold" fill="#5d4037">Promoter (900 bp)</text>
+  <rect x="100" y="568" width="330" height="40" rx="4" fill="url(#hatch)" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="265" y="593" text-anchor="middle" font-size="12" font-weight="700" fill="#7a4d10">Promoter (900 bp)</text>
 
-  <!-- Gap -->
-  <rect x="430" y="568" width="50" height="40" rx="3" fill="#eee" stroke="#bbb" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <text x="455" y="591" text-anchor="middle" font-size="9" font-weight="bold" fill="#888">gap</text>
-  <text x="455" y="625" text-anchor="middle" font-size="9" fill="#999">100bp</text>
+  <rect x="430" y="568" width="50" height="40" rx="3" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="455" y="591" text-anchor="middle" font-size="9" font-weight="700" fill="#64748b">gap</text>
+  <text x="455" y="625" text-anchor="middle" font-size="9" fill="#94a3b8">100bp</text>
 
-  <!-- Motifs on active part -->
   <use href="#motif" x="130" y="563" width="16" height="13"/>
   <use href="#motif" x="210" y="563" width="16" height="13"/>
   <use href="#motif" x="310" y="563" width="16" height="13"/>
   <use href="#motif" x="400" y="563" width="16" height="13"/>
-  <!-- Excluded motif in gap -->
   <use href="#motifGray" x="447" y="563" width="16" height="13"/>
-  <line x1="449" y1="561" x2="463" y2="577" stroke="#c62828" stroke-width="2"/>
-  <line x1="463" y1="561" x2="449" y2="577" stroke="#c62828" stroke-width="2"/>
+  <line x1="449" y1="561" x2="463" y2="577" stroke="#64748b" stroke-width="2"/>
+  <line x1="463" y1="561" x2="449" y2="577" stroke="#64748b" stroke-width="2"/>
 
-  <!-- TSS -->
-  <line x1="480" y1="560" x2="480" y2="613" stroke="#d32f2f" stroke-width="2.5"/>
-  <polygon points="475,560 480,548 485,560" fill="#d32f2f"/>
-  <text x="480" y="543" text-anchor="middle" font-size="11" font-weight="bold" fill="#d32f2f">TSS</text>
+  <line x1="480" y1="560" x2="480" y2="613" stroke="#b7791f" stroke-width="2.5"/>
+  <polygon points="475,560 480,548 485,560" fill="#b7791f"/>
+  <text x="480" y="543" text-anchor="middle" font-size="11" font-weight="700" fill="#7a4d10">TSS</text>
 
-  <!-- 5'UTR -->
-  <rect x="480" y="568" width="70" height="40" rx="3" fill="#81d4fa" stroke="#0288d1" stroke-width="1.5"/>
-  <text x="515" y="593" text-anchor="middle" font-size="10" font-weight="bold" fill="#01579b">5'UTR</text>
+  <rect x="480" y="568" width="70" height="40" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="515" y="593" text-anchor="middle" font-size="10" font-weight="700" fill="#0d3a8c">5'UTR</text>
 
-  <!-- CDS -->
-  <rect x="550" y="563" width="90" height="50" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="595" y="591" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="640" y1="588" x2="670" y2="576" stroke="#888" stroke-width="1.2"/>
-  <line x1="670" y1="576" x2="700" y2="588" stroke="#888" stroke-width="1.2"/>
-  <rect x="700" y="563" width="90" height="50" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="745" y="591" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="790" y1="588" x2="820" y2="576" stroke="#888" stroke-width="1.2"/>
-  <line x1="820" y1="576" x2="850" y2="588" stroke="#888" stroke-width="1.2"/>
-  <rect x="850" y="563" width="80" height="50" rx="3" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-  <text x="890" y="591" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
+  <rect x="550" y="563" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="595" y="591" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="640" y1="588" x2="670" y2="576" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="670" y1="576" x2="700" y2="588" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="700" y="563" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="745" y="591" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="790" y1="588" x2="820" y2="576" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="820" y1="576" x2="850" y2="588" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="850" y="563" width="80" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="890" y="591" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
 
-  <!-- 3'UTR -->
-  <rect x="930" y="568" width="70" height="40" rx="3" fill="#ffcc80" stroke="#ef6c00" stroke-width="1.5"/>
-  <text x="965" y="593" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">3'UTR</text>
+  <rect x="930" y="568" width="70" height="40" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="965" y="593" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">3'UTR</text>
 
-  <!-- Coordinates -->
-  <text x="100" y="630" text-anchor="middle" font-size="9" fill="#666">2630</text>
-  <text x="430" y="630" text-anchor="middle" font-size="9" fill="#666">3530</text>
-  <text x="480" y="630" text-anchor="middle" font-size="9" fill="#666">3630</text>
-
-  <!-- Scan bracket -->
-  <line x1="100" y1="638" x2="430" y2="638" stroke="#2e7d32" stroke-width="2"/>
-  <line x1="100" y1="634" x2="100" y2="642" stroke="#2e7d32" stroke-width="2"/>
-  <line x1="430" y1="634" x2="430" y2="642" stroke="#2e7d32" stroke-width="2"/>
-  <text x="265" y="649" text-anchor="middle" font-size="10" font-weight="bold" fill="#2e7d32">PMET Scan Range</text>
-  <text x="265" y="662" text-anchor="middle" font-size="9" fill="#2e7d32">(Core promoter excluded: TATA box, Inr, etc.)</text>
-
-  <!-- === B-: Negative strand === -->
-  <text x="1050" y="676" text-anchor="end" font-size="13" font-weight="bold" fill="#c62828">Negative-strand Gene (- strand)</text>
-  <text x="1050" y="694" text-anchor="end" font-size="10" fill="#c62828">Transcription direction</text>
-  <g transform="translate(985, 0) scale(-1, 1)">
-    <line x1="60" y1="690" x2="130" y2="690" stroke="#c62828" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <g font-size="9" fill="#64748b">
+    <text x="100" y="630" text-anchor="middle">2630</text>
+    <text x="430" y="630" text-anchor="middle">3530</text>
+    <text x="480" y="630" text-anchor="middle">3630</text>
   </g>
 
-  <!-- 3'UTR -->
-  <rect x="100" y="706" width="70" height="40" rx="3" fill="#ffcc80" stroke="#ef6c00" stroke-width="1.5"/>
-  <text x="135" y="731" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">3'UTR</text>
+  <line x1="100" y1="638" x2="430" y2="638" stroke="#0f766e" stroke-width="2"/>
+  <line x1="100" y1="634" x2="100" y2="642" stroke="#0f766e" stroke-width="2"/>
+  <line x1="430" y1="634" x2="430" y2="642" stroke="#0f766e" stroke-width="2"/>
+  <text x="265" y="649" text-anchor="middle" font-size="10" font-weight="700" fill="#0f766e">PMET Scan Range</text>
+  <text x="265" y="662" text-anchor="middle" font-size="9" fill="#475569">(Core promoter excluded: TATA box, Inr, etc.)</text>
 
-  <!-- CDS -->
-  <rect x="170" y="701" width="80" height="50" rx="3" fill="#26a69a" stroke="#00897b" stroke-width="1.5"/>
-  <text x="210" y="729" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="250" y1="726" x2="280" y2="714" stroke="#888" stroke-width="1.2"/>
-  <line x1="280" y1="714" x2="310" y2="726" stroke="#888" stroke-width="1.2"/>
-  <rect x="310" y="701" width="90" height="50" rx="3" fill="#26a69a" stroke="#00897b" stroke-width="1.5"/>
-  <text x="355" y="729" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <line x1="400" y1="726" x2="430" y2="714" stroke="#888" stroke-width="1.2"/>
-  <line x1="430" y1="714" x2="460" y2="726" stroke="#888" stroke-width="1.2"/>
-  <rect x="460" y="701" width="90" height="50" rx="3" fill="#26a69a" stroke="#00897b" stroke-width="1.5"/>
-  <text x="505" y="729" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
+  <!-- Negative strand -->
+  <text x="1050" y="676" text-anchor="end" font-size="13" font-weight="700" fill="#134e4a">Negative-strand Gene (- strand)</text>
+  <text x="1050" y="694" text-anchor="end" font-size="10" fill="#0f766e">Transcription direction</text>
+  <g transform="translate(985, 0) scale(-1, 1)">
+    <line x1="60" y1="690" x2="130" y2="690" stroke="#0f766e" stroke-width="2" marker-end="url(#arrPrimary)"/>
+  </g>
 
-  <!-- 5'UTR -->
-  <rect x="550" y="706" width="70" height="40" rx="3" fill="#81d4fa" stroke="#0288d1" stroke-width="1.5"/>
-  <text x="585" y="731" text-anchor="middle" font-size="10" font-weight="bold" fill="#01579b">5'UTR</text>
+  <rect x="100" y="706" width="70" height="40" rx="3" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="135" y="731" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">3'UTR</text>
 
-  <!-- TSS -->
-  <line x1="620" y1="698" x2="620" y2="751" stroke="#d32f2f" stroke-width="2.5"/>
-  <polygon points="615,698 620,686 625,698" fill="#d32f2f"/>
-  <text x="620" y="681" text-anchor="middle" font-size="11" font-weight="bold" fill="#d32f2f">TSS</text>
+  <rect x="170" y="701" width="80" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="210" y="729" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="250" y1="726" x2="280" y2="714" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="280" y1="714" x2="310" y2="726" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="310" y="701" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="355" y="729" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <line x1="400" y1="726" x2="430" y2="714" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="430" y1="714" x2="460" y2="726" stroke="#94a3b8" stroke-width="1"/>
+  <rect x="460" y="701" width="90" height="50" rx="3" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="505" y="729" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
 
-  <!-- Gap -->
-  <rect x="620" y="706" width="50" height="40" rx="3" fill="#eee" stroke="#bbb" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <text x="645" y="729" text-anchor="middle" font-size="9" font-weight="bold" fill="#888">gap</text>
-  <text x="645" y="763" text-anchor="middle" font-size="9" fill="#999">100bp</text>
+  <rect x="550" y="706" width="70" height="40" rx="3" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="585" y="731" text-anchor="middle" font-size="10" font-weight="700" fill="#0d3a8c">5'UTR</text>
 
-  <!-- Excluded motif in gap -->
+  <line x1="620" y1="698" x2="620" y2="751" stroke="#b7791f" stroke-width="2.5"/>
+  <polygon points="615,698 620,686 625,698" fill="#b7791f"/>
+  <text x="620" y="681" text-anchor="middle" font-size="11" font-weight="700" fill="#7a4d10">TSS</text>
+
+  <rect x="620" y="706" width="50" height="40" rx="3" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="645" y="729" text-anchor="middle" font-size="9" font-weight="700" fill="#64748b">gap</text>
+  <text x="645" y="763" text-anchor="middle" font-size="9" fill="#94a3b8">100bp</text>
+
   <use href="#motifGray" x="637" y="701" width="16" height="13"/>
-  <line x1="639" y1="699" x2="653" y2="715" stroke="#c62828" stroke-width="2"/>
-  <line x1="653" y1="699" x2="639" y2="715" stroke="#c62828" stroke-width="2"/>
+  <line x1="639" y1="699" x2="653" y2="715" stroke="#64748b" stroke-width="2"/>
+  <line x1="653" y1="699" x2="639" y2="715" stroke="#64748b" stroke-width="2"/>
 
-  <!-- Active promoter -->
-  <rect x="670" y="706" width="330" height="40" rx="4" fill="url(#hatch)" stroke="#8b6914" stroke-width="1.5"/>
-  <text x="835" y="731" text-anchor="middle" font-size="12" font-weight="bold" fill="#5d4037">Promoter (900 bp)</text>
+  <rect x="670" y="706" width="330" height="40" rx="4" fill="url(#hatch)" stroke="#b7791f" stroke-width="1.2"/>
+  <text x="835" y="731" text-anchor="middle" font-size="12" font-weight="700" fill="#7a4d10">Promoter (900 bp)</text>
 
-  <!-- Motifs on active part -->
   <use href="#motif" x="710" y="701" width="16" height="13"/>
   <use href="#motif" x="800" y="701" width="16" height="13"/>
   <use href="#motif" x="880" y="701" width="16" height="13"/>
   <use href="#motif" x="960" y="701" width="16" height="13"/>
 
-  <!-- Coordinates -->
-  <text x="620" y="770" text-anchor="middle" font-size="9" fill="#666">TSS</text>
-  <text x="670" y="770" text-anchor="middle" font-size="9" fill="#666">+100</text>
-  <text x="1000" y="770" text-anchor="middle" font-size="9" fill="#666">+1000</text>
+  <g font-size="9" fill="#64748b">
+    <text x="620" y="770" text-anchor="middle">TSS</text>
+    <text x="670" y="770" text-anchor="middle">+100</text>
+    <text x="1000" y="770" text-anchor="middle">+1000</text>
+  </g>
 
-  <!-- Scan bracket -->
-  <line x1="670" y1="778" x2="1000" y2="778" stroke="#2e7d32" stroke-width="2"/>
-  <line x1="670" y1="774" x2="670" y2="782" stroke="#2e7d32" stroke-width="2"/>
-  <line x1="1000" y1="774" x2="1000" y2="782" stroke="#2e7d32" stroke-width="2"/>
-  <text x="835" y="789" text-anchor="middle" font-size="10" font-weight="bold" fill="#2e7d32">PMET Scan Range</text>
-  <text x="835" y="802" text-anchor="middle" font-size="9" fill="#2e7d32">(Core promoter excluded: TATA box, Inr, etc.)</text>
+  <line x1="670" y1="778" x2="1000" y2="778" stroke="#0f766e" stroke-width="2"/>
+  <line x1="670" y1="774" x2="670" y2="782" stroke="#0f766e" stroke-width="2"/>
+  <line x1="1000" y1="774" x2="1000" y2="782" stroke="#0f766e" stroke-width="2"/>
+  <text x="835" y="789" text-anchor="middle" font-size="10" font-weight="700" fill="#0f766e">PMET Scan Range</text>
+  <text x="835" y="802" text-anchor="middle" font-size="9" fill="#475569">(Core promoter excluded: TATA box, Inr, etc.)</text>
 
-  <!-- Benefit box -->
-  <rect x="50" y="815" width="1000" height="90" rx="6" fill="#e8f5e9" stroke="#4caf50" stroke-width="1"/>
-  <text x="70" y="838" font-size="12" font-weight="bold" fill="#1b5e20">Benefit:</text>
-  <text x="70" y="858" font-size="11" fill="#555">Excludes the 100 bp core promoter region near the TSS (TATA box, Inr, and other universal elements), scanning only the distal regulatory region.</text>
-  <text x="70" y="878" font-size="11" fill="#555">Reduces interference from generic motifs, improving the enrichment signal for gene-specific transcription factor binding sites.</text>
-  <text x="70" y="894" font-size="10" fill="#888">Gap distance is configurable via <tspan font-family="Menlo, Consolas, monospace">-g</tspan> in <tspan font-family="Menlo, Consolas, monospace">05_promoter_gap.sh</tspan> (default 100 bp).</text>
+  <!-- Benefit box (primary wash) -->
+  <rect x="50" y="815" width="1000" height="90" rx="6" fill="#ffffff" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="70" y="838" font-size="12" font-weight="700" fill="#134e4a">Benefit:</text>
+  <text x="70" y="858" font-size="11" fill="#475569">Excludes the 100 bp core promoter region near the TSS (TATA box, Inr, and other universal elements), scanning only the distal regulatory region.</text>
+  <text x="70" y="878" font-size="11" fill="#475569">Reduces interference from generic motifs, improving the enrichment signal for gene-specific transcription factor binding sites.</text>
+  <text x="70" y="894" font-size="10" fill="#94a3b8">Gap distance is configurable via <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">-g</tspan> in <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">05_promoter_gap.sh</tspan> (default 100 bp).</text>
 
-  <!-- ================================================================ -->
   <!-- Legend -->
-  <!-- ================================================================ -->
-  <rect x="50" y="910" width="1000" height="55" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <rect x="50" y="910" width="1000" height="55" rx="6" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
   <use href="#motif" x="70" y="928" width="14" height="11"/>
-  <text x="92" y="938" font-size="10" fill="#333">Retained motif hit</text>
+  <text x="92" y="938" font-size="10" fill="#475569">Retained motif hit</text>
   <use href="#motifGray" x="210" y="928" width="14" height="11"/>
-  <line x1="212" y1="927" x2="224" y2="940" stroke="#c62828" stroke-width="1.5"/>
-  <line x1="224" y1="927" x2="212" y2="940" stroke="#c62828" stroke-width="1.5"/>
-  <text x="234" y="938" font-size="10" fill="#333">Excluded motif hit</text>
-  <rect x="380" y="927" width="24" height="14" rx="2" fill="url(#hatch)" stroke="#8b6914" stroke-width="1"/>
-  <text x="412" y="938" font-size="10" fill="#333">Scan region</text>
-  <rect x="500" y="927" width="24" height="14" rx="2" fill="#eee" stroke="#bbb" stroke-width="1" stroke-dasharray="3,2"/>
-  <text x="532" y="938" font-size="10" fill="#333">Gap (excluded region)</text>
-  <rect x="670" y="927" width="24" height="14" rx="2" fill="#81d4fa" stroke="#0288d1" stroke-width="1"/>
-  <text x="702" y="938" font-size="10" fill="#333">5'UTR</text>
-  <rect x="750" y="927" width="24" height="14" rx="2" fill="#66bb6a" stroke="#2e7d32" stroke-width="1"/>
-  <text x="782" y="938" font-size="10" fill="#333">CDS (+)</text>
-  <rect x="830" y="927" width="24" height="14" rx="2" fill="#26a69a" stroke="#00897b" stroke-width="1"/>
-  <text x="862" y="938" font-size="10" fill="#333">CDS (-)</text>
-  <rect x="910" y="927" width="24" height="14" rx="2" fill="#ffcc80" stroke="#ef6c00" stroke-width="1"/>
-  <text x="942" y="938" font-size="10" fill="#333">3'UTR</text>
+  <line x1="212" y1="927" x2="224" y2="940" stroke="#64748b" stroke-width="1.5"/>
+  <line x1="224" y1="927" x2="212" y2="940" stroke="#64748b" stroke-width="1.5"/>
+  <text x="234" y="938" font-size="10" fill="#475569">Excluded motif hit</text>
+  <rect x="380" y="927" width="24" height="14" rx="2" fill="url(#hatch)" stroke="#b7791f" stroke-width="1"/>
+  <text x="412" y="938" font-size="10" fill="#475569">Scan region</text>
+  <rect x="500" y="927" width="24" height="14" rx="2" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="532" y="938" font-size="10" fill="#475569">Gap (excluded region)</text>
+  <rect x="670" y="927" width="24" height="14" rx="2" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="702" y="938" font-size="10" fill="#475569">5'UTR</text>
+  <rect x="750" y="927" width="24" height="14" rx="2" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="782" y="938" font-size="10" fill="#475569">CDS</text>
+  <rect x="830" y="927" width="24" height="14" rx="2" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="862" y="938" font-size="10" fill="#475569">3'UTR</text>
 </svg>

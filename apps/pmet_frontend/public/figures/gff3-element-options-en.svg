@@ -1,176 +1,147 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 490" font-family="Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 490" role="img" aria-labelledby="gff3en-title gff3en-desc" lang="en" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif">
+  <title id="gff3en-title">elements.sh -e options vs. indexed gene regions</title>
+  <desc id="gff3en-desc">A reference gene (promoter, 5' UTR, three CDS exons, 3' UTR, with TSS/TTS markers) is shown across five rows, each highlighting what -e 5UTR / 3UTR / CDS / exon / mRNA actually indexes: 5UTR keeps only the 5' UTR span, 3UTR only the 3' UTR span, CDS one fragment per coding-exon (introns and UTRs excluded), exon the full exon (UTR portions kept), mRNA the TSS→TTS span (or CDS_start→CDS_end with -m No). Footnote: the promoter region is produced by promoter.sh rather than elements.sh; -s longest collapses to one isoform first, -s merged unions fragments across isoforms.</desc>
   <defs>
     <pattern id="hatch-en" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="6" stroke="#b07040" stroke-width="1.5"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#b7791f" stroke-width="1.5"/>
     </pattern>
     <pattern id="hatch-dim-en" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="6" stroke="#bbb" stroke-width="1.5"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#cbd5e1" stroke-width="1.5"/>
     </pattern>
+    <symbol id="dimmed-en" overflow="visible">
+      <rect x="110" y="-13" width="120" height="26" rx="3" fill="url(#hatch-dim-en)" stroke="#dbe5e8" stroke-width="1" opacity="0.7"/>
+      <rect x="231" y="-12" width="48" height="24" fill="#f1f5f9" stroke="#dbe5e8" stroke-width="1"/>
+      <rect x="280" y="-12" width="79" height="24" fill="#f1f5f9" stroke="#dbe5e8" stroke-width="1"/>
+      <line x1="360" y1="0" x2="395" y2="-9" stroke="#dbe5e8" stroke-width="1"/>
+      <line x1="395" y1="-9" x2="430" y2="0" stroke="#dbe5e8" stroke-width="1"/>
+      <rect x="430" y="-13" width="110" height="26" fill="#f1f5f9" stroke="#dbe5e8" stroke-width="1"/>
+      <line x1="540" y1="0" x2="575" y2="-9" stroke="#dbe5e8" stroke-width="1"/>
+      <line x1="575" y1="-9" x2="610" y2="0" stroke="#dbe5e8" stroke-width="1"/>
+      <rect x="611" y="-12" width="79" height="24" fill="#f1f5f9" stroke="#dbe5e8" stroke-width="1"/>
+      <rect x="691" y="-12" width="48" height="24" fill="#f1f5f9" stroke="#dbe5e8" stroke-width="1"/>
+    </symbol>
   </defs>
 
-  <!-- Explicit white background with rounded corners -->
   <rect x="0" y="0" width="1100" height="490" rx="14" fill="#ffffff"/>
 
-  <!-- Title -->
-  <text x="550" y="28" text-anchor="middle" font-size="18" font-weight="bold" fill="#222">What each <tspan font-family="Menlo, Consolas, monospace" fill="#0d47a1">-e</tspan> option indexes (from a single gene)</text>
+  <text x="550" y="28" text-anchor="middle" font-size="18" font-weight="700" fill="#0f172a">What each <tspan font-family="ui-monospace, SF Mono, Menlo, monospace" fill="#8a4cbe">-e</tspan> option indexes (from a single gene)</text>
 
-  <!-- Main content panel -->
-  <rect x="20" y="44" width="1060" height="378" rx="10" fill="#f9f9f9" stroke="#ddd" stroke-width="1"/>
+  <rect x="20" y="44" width="1060" height="378" rx="10" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
 
-  <!-- ============ REFERENCE GENE ============ -->
-  <text x="20" y="78" font-size="11" font-weight="bold" fill="#333">Gene</text>
-  <text x="20" y="92" font-size="9" fill="#888">(reference)</text>
+  <text x="20" y="78" font-size="11" font-weight="700" fill="#0f172a">Gene</text>
+  <text x="20" y="92" font-size="9" fill="#64748b">(reference)</text>
 
-  <!-- promoter -->
-  <rect x="110" y="65" width="120" height="34" rx="3" fill="url(#hatch-en)" stroke="#b07040" stroke-width="1.5" opacity="0.85"/>
-  <text x="170" y="87" text-anchor="middle" font-size="11" font-weight="bold" fill="#6b3410">promoter</text>
-  <text x="170" y="113" text-anchor="middle" font-size="9" fill="#8b4513">~1 kb upstream</text>
+  <rect x="110" y="65" width="120" height="34" rx="3" fill="url(#hatch-en)" stroke="#b7791f" stroke-width="1.2" opacity="0.85"/>
+  <text x="170" y="87" text-anchor="middle" font-size="11" font-weight="700" fill="#7a4d10">promoter</text>
+  <text x="170" y="113" text-anchor="middle" font-size="9" fill="#7a4d10">~1 kb upstream</text>
 
-  <!-- TSS marker -->
-  <line x1="230" y1="55" x2="230" y2="105" stroke="#d32f2f" stroke-width="1.5"/>
-  <polygon points="225,55 230,46 235,55" fill="#d32f2f"/>
-  <text x="230" y="40" text-anchor="middle" font-size="10" font-weight="bold" fill="#d32f2f">TSS</text>
+  <line x1="230" y1="55" x2="230" y2="105" stroke="#b7791f" stroke-width="1.5"/>
+  <polygon points="225,55 230,46 235,55" fill="#b7791f"/>
+  <text x="230" y="40" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">TSS</text>
 
-  <!-- exon1 outline (5'UTR + CDS portion) -->
-  <rect x="230" y="65" width="130" height="34" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="3,2"/>
-  <rect x="231" y="66" width="48" height="32" fill="#81d4fa" stroke="#0288d1" stroke-width="1"/>
-  <text x="255" y="86" text-anchor="middle" font-size="9" font-weight="bold" fill="#01579b">5'UTR</text>
-  <rect x="280" y="66" width="79" height="32" fill="#66bb6a" stroke="#2e7d32" stroke-width="1"/>
-  <text x="319" y="86" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">CDS</text>
-  <text x="295" y="113" text-anchor="middle" font-size="9" fill="#666">exon 1</text>
+  <rect x="230" y="65" width="130" height="34" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="3,2"/>
+  <rect x="231" y="66" width="48" height="32" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+  <text x="255" y="86" text-anchor="middle" font-size="9" font-weight="700" fill="#0d3a8c">5'UTR</text>
+  <rect x="280" y="66" width="79" height="32" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="319" y="86" text-anchor="middle" font-size="9" font-weight="700" fill="#134e4a">CDS</text>
+  <text x="295" y="113" text-anchor="middle" font-size="9" fill="#64748b">exon 1</text>
 
-  <!-- intron 1 -->
-  <line x1="360" y1="82" x2="395" y2="70" stroke="#888" stroke-width="1.5"/>
-  <line x1="395" y1="70" x2="430" y2="82" stroke="#888" stroke-width="1.5"/>
-  <text x="395" y="60" text-anchor="middle" font-size="9" fill="#888">intron</text>
+  <line x1="360" y1="82" x2="395" y2="70" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="395" y1="70" x2="430" y2="82" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="395" y="60" text-anchor="middle" font-size="9" fill="#64748b">intron</text>
 
-  <!-- exon 2 (pure CDS) -->
-  <rect x="430" y="65" width="110" height="34" rx="0" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.2"/>
-  <text x="485" y="86" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">CDS</text>
-  <text x="485" y="113" text-anchor="middle" font-size="9" fill="#666">exon 2</text>
+  <rect x="430" y="65" width="110" height="34" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="485" y="86" text-anchor="middle" font-size="10" font-weight="700" fill="#134e4a">CDS</text>
+  <text x="485" y="113" text-anchor="middle" font-size="9" fill="#64748b">exon 2</text>
 
-  <!-- intron 2 -->
-  <line x1="540" y1="82" x2="575" y2="70" stroke="#888" stroke-width="1.5"/>
-  <line x1="575" y1="70" x2="610" y2="82" stroke="#888" stroke-width="1.5"/>
-  <text x="575" y="60" text-anchor="middle" font-size="9" fill="#888">intron</text>
+  <line x1="540" y1="82" x2="575" y2="70" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="575" y1="70" x2="610" y2="82" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="575" y="60" text-anchor="middle" font-size="9" fill="#64748b">intron</text>
 
-  <!-- exon 3 outline (CDS + 3'UTR) -->
-  <rect x="610" y="65" width="130" height="34" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="3,2"/>
-  <rect x="611" y="66" width="79" height="32" fill="#66bb6a" stroke="#2e7d32" stroke-width="1"/>
-  <text x="650" y="86" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff">CDS</text>
-  <rect x="691" y="66" width="48" height="32" fill="#ffcc80" stroke="#ef6c00" stroke-width="1"/>
-  <text x="715" y="86" text-anchor="middle" font-size="9" font-weight="bold" fill="#bf360c">3'UTR</text>
-  <text x="675" y="113" text-anchor="middle" font-size="9" fill="#666">exon 3</text>
+  <rect x="610" y="65" width="130" height="34" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="3,2"/>
+  <rect x="611" y="66" width="79" height="32" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+  <text x="650" y="86" text-anchor="middle" font-size="9" font-weight="700" fill="#134e4a">CDS</text>
+  <rect x="691" y="66" width="48" height="32" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+  <text x="715" y="86" text-anchor="middle" font-size="9" font-weight="700" fill="#7a4d10">3'UTR</text>
+  <text x="675" y="113" text-anchor="middle" font-size="9" fill="#64748b">exon 3</text>
 
-  <!-- TTS marker -->
-  <line x1="740" y1="55" x2="740" y2="105" stroke="#555" stroke-width="1.2"/>
-  <text x="740" y="40" text-anchor="middle" font-size="10" font-weight="bold" fill="#555">TTS</text>
+  <line x1="740" y1="55" x2="740" y2="105" stroke="#64748b" stroke-width="1.2"/>
+  <text x="740" y="40" text-anchor="middle" font-size="10" font-weight="700" fill="#475569">TTS</text>
 
-  <!-- column header for description -->
-  <text x="810" y="73" font-size="11" font-weight="bold" fill="#444">What you get</text>
-  <text x="810" y="86" font-size="9" fill="#888">(GFF3 source rows + per-gene fragment count)</text>
+  <text x="810" y="73" font-size="11" font-weight="700" fill="#0f172a">What you get</text>
+  <text x="810" y="86" font-size="9" fill="#64748b">(GFF3 source rows + per-gene fragment count)</text>
 
-  <!-- divider -->
-  <line x1="20" y1="135" x2="1080" y2="135" stroke="#bbb" stroke-width="1"/>
+  <line x1="20" y1="135" x2="1080" y2="135" stroke="#dbe5e8" stroke-width="1"/>
 
-  <!-- ============ Helper: faint reference per option row ============ -->
-  <!--   We define a reusable group via <symbol> for the dimmed gene track. -->
-  <symbol id="dimmed-en" overflow="visible">
-    <rect x="110" y="-13" width="120" height="26" rx="3" fill="url(#hatch-dim-en)" stroke="#ccc" stroke-width="1" opacity="0.5"/>
-    <rect x="231" y="-12" width="48" height="24" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
-    <rect x="280" y="-12" width="79" height="24" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
-    <line x1="360" y1="0" x2="395" y2="-9" stroke="#ddd" stroke-width="1"/>
-    <line x1="395" y1="-9" x2="430" y2="0" stroke="#ddd" stroke-width="1"/>
-    <rect x="430" y="-13" width="110" height="26" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
-    <line x1="540" y1="0" x2="575" y2="-9" stroke="#ddd" stroke-width="1"/>
-    <line x1="575" y1="-9" x2="610" y2="0" stroke="#ddd" stroke-width="1"/>
-    <rect x="611" y="-12" width="79" height="24" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
-    <rect x="691" y="-12" width="48" height="24" fill="#e0e0e0" stroke="#ccc" stroke-width="1"/>
-  </symbol>
-
-  <!-- ============ -e 5UTR ============ -->
-  <g transform="translate(0,170)">
-    <text x="100" y="3" text-anchor="end" font-family="Menlo, Consolas, monospace" font-size="12" font-weight="bold" fill="#0288d1">-e 5UTR</text>
+  <g transform="translate(0,170)" aria-label="-e 5UTR: indexes only the 5' UTR">
+    <text x="100" y="3" text-anchor="end" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#1f6feb">-e 5UTR</text>
     <use href="#dimmed-en"/>
-    <rect x="231" y="-12" width="48" height="24" fill="#81d4fa" stroke="#0288d1" stroke-width="1.5"/>
-    <text x="810" y="0" font-size="11" fill="#01579b" font-weight="bold">five_prime_UTR rows</text>
-    <text x="810" y="14" font-size="10" fill="#555">→ 1 fragment per gene (the 5' UTR span)</text>
+    <rect x="231" y="-12" width="48" height="24" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1.5"/>
+    <text x="810" y="0" font-size="11" fill="#0d3a8c" font-weight="700">five_prime_UTR rows</text>
+    <text x="810" y="14" font-size="10" fill="#475569">→ 1 fragment per gene (the 5' UTR span)</text>
   </g>
 
-  <!-- ============ -e 3UTR ============ -->
-  <g transform="translate(0,215)">
-    <text x="100" y="3" text-anchor="end" font-family="Menlo, Consolas, monospace" font-size="12" font-weight="bold" fill="#ef6c00">-e 3UTR</text>
+  <g transform="translate(0,215)" aria-label="-e 3UTR: indexes only the 3' UTR">
+    <text x="100" y="3" text-anchor="end" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#b7791f">-e 3UTR</text>
     <use href="#dimmed-en"/>
-    <rect x="691" y="-12" width="48" height="24" fill="#ffcc80" stroke="#ef6c00" stroke-width="1.5"/>
-    <text x="810" y="0" font-size="11" fill="#bf360c" font-weight="bold">three_prime_UTR rows</text>
-    <text x="810" y="14" font-size="10" fill="#555">→ 1 fragment per gene (the 3' UTR span)</text>
+    <rect x="691" y="-12" width="48" height="24" fill="#fde9c6" stroke="#b7791f" stroke-width="1.5"/>
+    <text x="810" y="0" font-size="11" fill="#7a4d10" font-weight="700">three_prime_UTR rows</text>
+    <text x="810" y="14" font-size="10" fill="#475569">→ 1 fragment per gene (the 3' UTR span)</text>
   </g>
 
-  <!-- ============ -e CDS ============ -->
-  <g transform="translate(0,260)">
-    <text x="100" y="3" text-anchor="end" font-family="Menlo, Consolas, monospace" font-size="12" font-weight="bold" fill="#2e7d32">-e CDS</text>
+  <g transform="translate(0,260)" aria-label="-e CDS: indexes coding-exon segments only (no introns, no UTRs)">
+    <text x="100" y="3" text-anchor="end" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#0f766e">-e CDS</text>
     <use href="#dimmed-en"/>
-    <rect x="280" y="-12" width="79" height="24" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-    <rect x="430" y="-13" width="110" height="26" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-    <rect x="611" y="-12" width="79" height="24" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.5"/>
-    <text x="810" y="0" font-size="11" fill="#1b5e20" font-weight="bold">CDS rows</text>
-    <text x="810" y="14" font-size="10" fill="#555">→ one fragment per coding-exon segment</text>
-    <text x="810" y="26" font-size="10" fill="#555">(introns and UTRs excluded)</text>
+    <rect x="280" y="-12" width="79" height="24" fill="#bdded8" stroke="#0f766e" stroke-width="1.5"/>
+    <rect x="430" y="-13" width="110" height="26" fill="#bdded8" stroke="#0f766e" stroke-width="1.5"/>
+    <rect x="611" y="-12" width="79" height="24" fill="#bdded8" stroke="#0f766e" stroke-width="1.5"/>
+    <text x="810" y="0" font-size="11" fill="#134e4a" font-weight="700">CDS rows</text>
+    <text x="810" y="14" font-size="10" fill="#475569">→ one fragment per coding-exon segment</text>
+    <text x="810" y="26" font-size="10" fill="#475569">(introns and UTRs excluded)</text>
   </g>
 
-  <!-- ============ -e exon ============ -->
-  <g transform="translate(0,310)">
-    <text x="100" y="3" text-anchor="end" font-family="Menlo, Consolas, monospace" font-size="12" font-weight="bold" fill="#33691e">-e exon</text>
+  <g transform="translate(0,310)" aria-label="-e exon: indexes full exons including UTR portions">
+    <text x="100" y="3" text-anchor="end" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#334155">-e exon</text>
     <use href="#dimmed-en"/>
-    <!-- exon1: 5'UTR (native blue) + CDS portion (native green) inside dark-green outer frame -->
-    <rect x="231" y="-12" width="48" height="24" fill="#81d4fa" stroke="#0288d1" stroke-width="1"/>
-    <rect x="280" y="-12" width="79" height="24" fill="#66bb6a" stroke="#2e7d32" stroke-width="1"/>
-    <rect x="230" y="-13" width="130" height="26" fill="none" stroke="#33691e" stroke-width="2"/>
-    <!-- exon2: pure CDS inside dark-green outer frame -->
-    <rect x="430" y="-12" width="110" height="24" fill="#66bb6a" stroke="#2e7d32" stroke-width="1"/>
-    <rect x="430" y="-13" width="110" height="26" fill="none" stroke="#33691e" stroke-width="2"/>
-    <!-- exon3: CDS portion (native green) + 3'UTR (native orange) inside dark-green outer frame -->
-    <rect x="611" y="-12" width="79" height="24" fill="#66bb6a" stroke="#2e7d32" stroke-width="1"/>
-    <rect x="691" y="-12" width="48" height="24" fill="#ffcc80" stroke="#ef6c00" stroke-width="1"/>
-    <rect x="610" y="-13" width="130" height="26" fill="none" stroke="#33691e" stroke-width="2"/>
-    <text x="810" y="0" font-size="11" fill="#33691e" font-weight="bold">exon rows</text>
-    <text x="810" y="14" font-size="10" fill="#555">→ one fragment per full exon</text>
-    <text x="810" y="26" font-size="10" fill="#555">(UTR-bearing exons keep their UTRs)</text>
+    <rect x="231" y="-12" width="48" height="24" fill="#d4e3fc" stroke="#1f6feb" stroke-width="1"/>
+    <rect x="280" y="-12" width="79" height="24" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+    <rect x="230" y="-13" width="130" height="26" fill="none" stroke="#334155" stroke-width="2"/>
+    <rect x="430" y="-12" width="110" height="24" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+    <rect x="430" y="-13" width="110" height="26" fill="none" stroke="#334155" stroke-width="2"/>
+    <rect x="611" y="-12" width="79" height="24" fill="#bdded8" stroke="#0f766e" stroke-width="1"/>
+    <rect x="691" y="-12" width="48" height="24" fill="#fde9c6" stroke="#b7791f" stroke-width="1"/>
+    <rect x="610" y="-13" width="130" height="26" fill="none" stroke="#334155" stroke-width="2"/>
+    <text x="810" y="0" font-size="11" fill="#334155" font-weight="700">exon rows</text>
+    <text x="810" y="14" font-size="10" fill="#475569">→ one fragment per full exon</text>
+    <text x="810" y="26" font-size="10" fill="#475569">(UTR-bearing exons keep their UTRs)</text>
   </g>
 
-  <!-- ============ -e mRNA ============ -->
-  <g transform="translate(0,372)">
-    <text x="100" y="3" text-anchor="end" font-family="Menlo, Consolas, monospace" font-size="12" font-weight="bold" fill="#6a1b9a">-e mRNA</text>
+  <g transform="translate(0,372)" aria-label="-e mRNA: TSS→TTS span; with -m No, CDS_start→CDS_end">
+    <text x="100" y="3" text-anchor="end" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#8a4cbe">-e mRNA</text>
     <use href="#dimmed-en"/>
 
-    <!-- "-m Yes (default)" label above the bar -->
-    <text x="230" y="-19" font-size="9" font-weight="bold" fill="#6a1b9a"><tspan font-family="Menlo, Consolas, monospace">-m Yes</tspan> (default):</text>
+    <text x="230" y="-19" font-size="9" font-weight="700" fill="#8a4cbe"><tspan font-family="ui-monospace, SF Mono, Menlo, monospace">-m Yes</tspan> (default):</text>
 
-    <!-- Main purple bar = -m Yes default = TSS → TTS, introns included -->
-    <rect x="230" y="-13" width="510" height="26" fill="#ce93d8" stroke="#6a1b9a" stroke-width="2" opacity="0.85"/>
-    <text x="485" y="3" text-anchor="middle" font-size="10" font-weight="bold" fill="#4a148c">TSS → TTS (introns included)</text>
+    <rect x="230" y="-13" width="510" height="26" fill="#e0d4f0" stroke="#8a4cbe" stroke-width="1.5" opacity="0.9"/>
+    <text x="485" y="3" text-anchor="middle" font-size="10" font-weight="700" fill="#5e2d8c">TSS → TTS (introns included)</text>
 
-    <!-- Drop-down dashed connectors at CDS_start / CDS_end -->
-    <line x1="280" y1="13" x2="280" y2="20" stroke="#4a148c" stroke-width="1" stroke-dasharray="2,2"/>
-    <line x1="690" y1="13" x2="690" y2="20" stroke="#4a148c" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="280" y1="13" x2="280" y2="20" stroke="#5e2d8c" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="690" y1="13" x2="690" y2="20" stroke="#5e2d8c" stroke-width="1" stroke-dasharray="2,2"/>
 
-    <!-- "-m No" bracket: CDS_start → CDS_end -->
-    <line x1="280" y1="20" x2="690" y2="20" stroke="#4a148c" stroke-width="1.5"/>
-    <line x1="280" y1="17" x2="280" y2="23" stroke="#4a148c" stroke-width="1.5"/>
-    <line x1="690" y1="17" x2="690" y2="23" stroke="#4a148c" stroke-width="1.5"/>
-    <text x="485" y="33" text-anchor="middle" font-size="9" font-weight="bold" fill="#6a1b9a"><tspan font-family="Menlo, Consolas, monospace">-m No</tspan>: CDS_start → CDS_end</text>
+    <line x1="280" y1="20" x2="690" y2="20" stroke="#5e2d8c" stroke-width="1.5"/>
+    <line x1="280" y1="17" x2="280" y2="23" stroke="#5e2d8c" stroke-width="1.5"/>
+    <line x1="690" y1="17" x2="690" y2="23" stroke="#5e2d8c" stroke-width="1.5"/>
+    <text x="485" y="33" text-anchor="middle" font-size="9" font-weight="700" fill="#8a4cbe"><tspan font-family="ui-monospace, SF Mono, Menlo, monospace">-m No</tspan>: CDS_start → CDS_end</text>
 
-    <!-- Right description -->
-    <text x="810" y="0" font-size="11" fill="#4a148c" font-weight="bold">mRNA rows</text>
-    <text x="810" y="14" font-size="10" fill="#555">→ one continuous span per gene</text>
+    <text x="810" y="0" font-size="11" fill="#5e2d8c" font-weight="700">mRNA rows</text>
+    <text x="810" y="14" font-size="10" fill="#475569">→ one continuous span per gene</text>
   </g>
 
-  <!-- Footer info box (matches the "Effect"/"Problem" panel style of promoter-gap-comparison) -->
-  <rect x="20" y="434" width="1060" height="48" rx="6" fill="#e3f2fd" stroke="#90caf9" stroke-width="1"/>
-  <text x="40" y="453" font-size="10" fill="#0d47a1">
-    <tspan font-weight="bold">Note:</tspan> the promoter region is NOT produced by <tspan font-family="Menlo, Consolas, monospace">elements.sh</tspan> — it is inferred upstream of the TSS by <tspan font-family="Menlo, Consolas, monospace">promoter.sh</tspan> (no native GFF3 type).
+  <rect x="20" y="434" width="1060" height="48" rx="6" fill="#f7faf9" stroke="#dbe5e8" stroke-width="1"/>
+  <text x="40" y="453" font-size="10" fill="#475569">
+    <tspan font-weight="700" fill="#0f172a">Note:</tspan> the promoter region is NOT produced by <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">elements.sh</tspan> — it is inferred upstream of the TSS by <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">promoter.sh</tspan> (no native GFF3 type).
   </text>
-  <text x="40" y="471" font-size="10" fill="#0d47a1">
-    With <tspan font-family="Menlo, Consolas, monospace">-s longest</tspan>, multi-isoform genes are reduced to one isoform first; with <tspan font-family="Menlo, Consolas, monospace">-s merged</tspan>, fragments are unioned across isoforms.
+  <text x="40" y="471" font-size="10" fill="#475569">
+    With <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">-s longest</tspan>, multi-isoform genes are reduced to one isoform first; with <tspan font-family="ui-monospace, SF Mono, Menlo, monospace">-s merged</tspan>, fragments are unioned across isoforms.
   </text>
 </svg>

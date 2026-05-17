@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440"
+     role="img" aria-labelledby="hero-title hero-desc" lang="en"
      font-family="Arial, Helvetica, sans-serif">
+  <title id="hero-title">PMET — Paired Motif Enrichment Tool overview</title>
+  <desc id="hero-desc">Three-card hero illustration: ① FIMO SCAN — motif hits (A/B/C/D) across a promoter region with a DNA backbone hint and a TSS flag, producing a reusable homotypic index. ② PAIRING — the hypergeometric test compares co-occurrences in a TARGET GENE SET (88 of 188 promoters) versus the BACKGROUND universe (1 of 6666). ③ OUTPUT — motif pairs ranked by adj.p, A+B significant (.003, teal bar). Bottom row highlights three value props: pre-computed indexes for 21 plant species × 5 motif DBs, hypergeometric pair test with BH/Bonferroni, and three input modes (promoters / peaks / intervals).</desc>
   <!--
     PMET hero background — second pass.
 
@@ -51,14 +54,17 @@
     <!-- Motif shapes. Each is a vertical micro-gradient (top to
          bottom) instead of a flat fill — a single subtle highlight
          is what separates "infographic clip-art" from "data-vis". -->
+    <!-- Motif palette matches the curated token set (mode-*/motif-*).
+         A=ochre, B=teal, C=violet, D=slate. Order must agree with
+         every other figure in /public/figures/. -->
     <linearGradient id="mA" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#4bbeb4"/><stop offset="100%" stop-color="#0f766e"/>
-    </linearGradient>
-    <linearGradient id="mB" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#d6a247"/><stop offset="100%" stop-color="#b7791f"/>
     </linearGradient>
+    <linearGradient id="mB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4bbeb4"/><stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
     <linearGradient id="mC" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#7f8db9"/><stop offset="100%" stop-color="#56639e"/>
+      <stop offset="0%" stop-color="#a982cf"/><stop offset="100%" stop-color="#8a4cbe"/>
     </linearGradient>
     <linearGradient id="mD" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#475569"/>
@@ -91,12 +97,12 @@
   <rect width="1200" height="440" fill="url(#rightGlow)"/>
   <rect width="1200" height="440" fill="url(#leftQuiet)"/>
 
-  <g id="hero-illustration" transform="translate(-2, -40)">
+  <g id="hero-illustration" transform="translate(-2, -40)" aria-label="Three-card hero illustration: FIMO scan, pairing, ranked output">
 
   <!-- ============================================================
        CARD 1 — FIMO scan: motif hits across promoters
        ============================================================ -->
-  <g transform="translate(40, 48)">
+  <g transform="translate(40, 48)" aria-label="Card 1 — FIMO scan: motif hits across promoters">
     <rect width="500" height="280" rx="8" fill="#fbfefd" fill-opacity="0.9"
           stroke="#dbe5e8" stroke-opacity="0.72" stroke-width="1" filter="url(#cardShadow)"/>
     <!-- Header strip -->
@@ -120,9 +126,9 @@
             fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,4" opacity="0.45"/>
 
       <!-- TSS flag + gene body, off the right edge of the promoter -->
-      <line x1="436" y1="6" x2="436" y2="56" stroke="#dc2626" stroke-width="1.6"/>
-      <polygon points="436,52 442,56 430,56" fill="#dc2626"/>
-      <text x="436" y="68" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">TSS</text>
+      <line x1="436" y1="6" x2="436" y2="56" stroke="#b7791f" stroke-width="1.6"/>
+      <polygon points="436,52 442,56 430,56" fill="#b7791f"/>
+      <text x="436" y="68" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4d10">TSS</text>
 
       <!-- Motif hits along the strand -->
       <use href="#motifA" x="20"  y="42" width="44" height="22"/>
@@ -157,7 +163,7 @@
   <!-- ============================================================
        CARD 2 — Pairing: test every motif pair for enrichment
        ============================================================ -->
-  <g transform="translate(590, 48)">
+  <g transform="translate(590, 48)" aria-label="Card 2 — Pairing: hypergeometric test per motif pair">
     <rect width="450" height="280" rx="8" fill="#fbfefd" fill-opacity="0.9"
           stroke="#dbe5e8" stroke-opacity="0.72" stroke-width="1" filter="url(#cardShadow)"/>
     <path d="M0 0 H450 V46 H0 Z" fill="#f6faf9" fill-opacity="0.78"/>
@@ -191,7 +197,7 @@
       <!-- Verdict zone, separated from the strip by ~14 px of padding -->
       <line x1="290" y1="50" x2="290" y2="68" stroke="#b7dcd5" stroke-width="1"/>
       <text x="302" y="60" font-size="13" font-weight="700" fill="#0f766e" dominant-baseline="middle">88 of 188</text>
-      <text x="302" y="63" dy="13" font-size="9" fill="#0f766e">co-occurrences</text>
+      <text x="302" y="63" dy="9" font-size="9" fill="#0f766e">co-occurrences</text>
     </g>
 
     <!-- ── BACKGROUND ── -->
@@ -208,7 +214,7 @@
 
       <line x1="290" y1="50" x2="290" y2="68" stroke="#dbe5e8" stroke-width="1"/>
       <text x="302" y="60" font-size="13" font-weight="700" fill="#94a3b8" dominant-baseline="middle">1 of 6666</text>
-      <text x="302" y="63" dy="13" font-size="9" fill="#94a3b8">co-occurrences</text>
+      <text x="302" y="63" dy="9" font-size="9" fill="#94a3b8">co-occurrences</text>
     </g>
 
     <!-- Hypergeometric-test pill at bottom -->
@@ -228,7 +234,7 @@
   <!-- ============================================================
        CARD 3 — Output: ranked motif pairs by adj.p
        ============================================================ -->
-  <g transform="translate(1078, 48)">
+  <g transform="translate(1078, 48)" aria-label="Card 3 — Output: motif pairs ranked by adj.p">
     <rect width="86" height="280" rx="8" fill="#fbfefd" fill-opacity="0.9"
           stroke="#dbe5e8" stroke-opacity="0.72" stroke-width="1" filter="url(#cardShadow)"/>
     <path d="M0 0 H86 V46 H0 Z" fill="#f6faf9" fill-opacity="0.78"/>
