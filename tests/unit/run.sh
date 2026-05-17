@@ -67,6 +67,9 @@ run_one "fimo progress monitor (bash)" \
 run_one "list_tasks pagination + filter (Python)" \
     "$PYTHON" tests/unit/test_list_tasks_pagination.py
 
+run_one "admin stats aggregator (Python)" \
+    "$PYTHON" tests/unit/test_admin_stats.py
+
 # Frontend Zustand store actions — uses `tsx` (devDep). Skip if
 # node_modules isn't installed (CI / fresh checkout where the
 # user hasn't run npm install yet).

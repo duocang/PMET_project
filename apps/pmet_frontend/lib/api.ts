@@ -6,6 +6,34 @@ export interface AdminSettings {
   notify_user_on_start: boolean;
 }
 
+export interface AdminTrendPoint {
+  date: string;
+  submitted: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
+}
+
+export interface AdminRuntimeStats {
+  count: number;
+  p50: number | null;
+  p95: number | null;
+  samples: number[];
+}
+
+export interface AdminTopError {
+  message: string;
+  count: number;
+}
+
+export interface AdminStatsResponse {
+  range_days: number;
+  submit_trend: AdminTrendPoint[];
+  status_distribution: Record<string, number>;
+  runtime_by_mode: Record<string, AdminRuntimeStats>;
+  top_errors: AdminTopError[];
+}
+
 // Empty string = same-origin. In docker/nginx deployment the app is served on
 // :80 and nginx proxies /api/* to the backend. In local dev, set
 // NEXT_PUBLIC_API_URL=http://localhost:8000 when frontend runs on :3000.
@@ -95,6 +123,11 @@ export const adminApi = {
     settings: AdminSettings,
   ): Promise<AdminSettings> => {
     const response = await api.put('/api/admin/settings', settings);
+    return response.data;
+  },
+
+  stats: async (days: number): Promise<AdminStatsResponse> => {
+    const response = await api.get(`/api/admin/stats?days=${days}`);
     return response.data;
   },
 };

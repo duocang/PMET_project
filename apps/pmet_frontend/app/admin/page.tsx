@@ -6,6 +6,7 @@ import { adminApi } from '@/lib/api';
 import { useAdminStore } from '@/lib/adminStore';
 import { useTranslation } from '@/lib/i18n';
 import { SettingsCard } from '@/components/admin/SettingsCard';
+import { StatsPanel } from '@/components/admin/StatsPanel';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -52,9 +53,7 @@ export default function AdminDashboardPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
           {t('admin.dashboard.section.stats')}
         </h2>
-        <div className="card text-sm text-slate-500">
-          {t('admin.dashboard.section.stats.placeholder')}
-        </div>
+        <StatsPanel />
       </section>
 
       <section id="settings" className="space-y-3">
