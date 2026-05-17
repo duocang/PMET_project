@@ -441,6 +441,22 @@ Six tracks, each catching a **different class of regression**. Fastest first; ea
 
 CI ([`.github/workflows/test.yml`](.github/workflows/test.yml)) runs the first four tracks in parallel on every push / PR. Per-track case lists live in [`docs/tests/coverage.md`](docs/tests/coverage.md) so this table stays scannable.
 
+**Running the GitHub workflow locally** — `make test` is usually enough, but the CI runner installs a slightly different toolchain (Ubuntu apt instead of macOS brew, fresh `r-base` without your CRAN packages, no TAIR10 fetched, …) and a check that passes locally can still fail there. [`nektos/act`](https://github.com/nektos/act) reproduces the workflow in a local Docker container so you can find out before you push:
+
+```bash
+# macOS
+brew install act
+# Linux (one-liner)
+curl -fsSL https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# From repo root — needs Docker running.
+act -l                       # list jobs in the workflow
+act -j test-integration      # run only the job that's failing on CI
+act push                     # simulate a 'git push' event (runs everything)
+```
+
+First run pulls a ~1 GB Ubuntu image; subsequent runs are seconds-fast. Caveat: act's runner image is a smaller subset of GitHub's hosted runner, so a job that needs a tool not in the act image (uncommon for this repo's lean apt installs) will fail in act but pass on GitHub.
+
 <a id="en-11"></a>
 
 ## 11. Troubleshooting — first-time gotchas
@@ -908,6 +924,22 @@ make rebuild
 | CLI baseline（[`tests/baseline/`](tests/baseline/)） | `make baseline-check`（别名 `make baseline`） | 把 demo run 的所有输出文件 + 生产二进制做 hash，与 commit 过的 `fingerprints.txt` 对比。只比 substance（header 里 timestamp / git SHA 自动忽略）。**有真回归就 exit 非 0**，CI 可直接 gate。临时 capture 落到 gitignored 的 `fingerprints.actual.txt`，工作树永远干净。**故意接受新数字**：`make baseline-update`。~30 秒。 |
 
 CI（[`.github/workflows/test.yml`](.github/workflows/test.yml)）每次 push / PR 并行跑前四条。每条 track 覆盖了哪些具体 case 见 [`docs/tests/coverage.md`](docs/tests/coverage.md)，让上表保持易扫。
+
+**本地跑 GitHub workflow** —— `make test` 一般够用，但 CI runner 的工具链跟你本地不一样（Ubuntu apt vs macOS brew、裸 `r-base` 没有你装的 CRAN 包、没拉 TAIR10 …），本地通过的 check 上去还是可能失败。[`nektos/act`](https://github.com/nektos/act) 把 workflow 跑在本地 Docker 容器里，能在推送前先发现：
+
+```bash
+# macOS
+brew install act
+# Linux 一行装
+curl -fsSL https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# 仓库根目录跑 —— 要 Docker 在。
+act -l                       # 列 workflow 里的所有 job
+act -j test-integration      # 单跑 CI 失败的那条
+act push                     # 模拟 git push 事件（跑全部）
+```
+
+首次跑会拉 ~1 GB 的 Ubuntu 镜像；之后秒级。注意：act 用的 runner 镜像是 GitHub hosted runner 的精简子集，**少数**需要 GitHub 镜像里独有工具的 job 会在 act 里 fail 但 GitHub 上 pass（本 repo 的 apt 安装链精简，这种情况很少撞到）。
 
 <a id="cn-11"></a>
 
