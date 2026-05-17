@@ -72,8 +72,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install workflow deps
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq bedtools samtools r-base
+          cache: pip
+      - name: Install workflow deps (apt)
+        # r-cran-* are pre-built debs — seconds vs minutes if we let
+        # the smoke's R-libs check fall back to CRAN compile. The smoke
+        # auto-skips when these are absent, so the install is the
+        # difference between "PASS" and "SKIP" for the heatmap row.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+              bedtools samtools r-base \
+              r-cran-dplyr r-cran-data.table r-cran-stringr r-cran-jsonlite
+      - name: Install assess_integrity.py deps (pip)
+        # Smoke's GFF3 fragment check imports numpy + pandas. SKIP path
+        # exists, but we want this check to actually run in CI.
+        run: python -m pip install --quiet numpy pandas
       - name: Run test-integration
         run: make test-integration
 

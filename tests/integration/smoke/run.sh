@@ -193,6 +193,15 @@ rm -rf "$chr_tmp"
 # ---------------------------------------------------------------------------
 section "assess_integrity.py handles non-adjacent split fragments"
 
+# The script imports numpy + pandas. Bare python3 on CI doesn't have
+# them; SKIP cleanly rather than masquerade as a real failure.
+if ! python3 -c "import numpy, pandas" >/dev/null 2>&1; then
+    printf '  SKIP  numpy / pandas not installed (pip install numpy pandas to enable)\n'
+    # fall through to the next section — bash trap on EXIT cleans the
+    # tmpdir we never created.
+    :
+else
+
 ai_tmp=$(mktemp -d)
 cat > "$ai_tmp/promoters.bed" <<'BED'
 chr1	1000	1500	GENE_X	1	+
@@ -221,6 +230,8 @@ else
 fi
 rm -rf "$ai_tmp"
 
+fi   # numpy/pandas present
+
 # ---------------------------------------------------------------------------
 # Test 6: real-data strand extraction (TAIR10). Skipped if data missing.
 # ---------------------------------------------------------------------------
@@ -246,10 +257,19 @@ fi
 section "R vs frontend heatmap consistency"
 
 heatmap_fixture="$script_dir/fixtures/heatmap/motif_output.txt"
+# The R-side dump pulls in dplyr / data.table / stringr / jsonlite.
+# Bare r-base on a fresh Ubuntu (CI) doesn't have these, and installing
+# them from CRAN takes minutes — too slow for a smoke. Probe first and
+# SKIP cleanly when any are missing, same shape as the TAIR10 skip.
+r_libs_ok() {
+    Rscript -e 'q(status = ifelse(all(c("dplyr","data.table","stringr","jsonlite") %in% rownames(installed.packages())), 0, 1))' >/dev/null 2>&1
+}
 if [[ ! -s "$heatmap_fixture" ]]; then
     printf '  SKIP  fixture missing: tests/integration/smoke/fixtures/heatmap/motif_output.txt\n'
 elif ! command -v Rscript >/dev/null 2>&1; then
     printf '  SKIP  Rscript not on PATH (heatmap consistency check needs R)\n'
+elif ! r_libs_ok; then
+    printf '  SKIP  R packages missing (need dplyr / data.table / stringr / jsonlite — run scripts/r/install_packages.R)\n'
 else
     heatmap_log="$log_dir/heatmap_consistency.log"
     if python3 "$script_dir/verify_heatmap_consistency.py" \
