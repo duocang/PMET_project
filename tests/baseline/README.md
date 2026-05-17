@@ -20,19 +20,20 @@
 
 You changed something in the C/C++ engines — a refactor, a perf tweak, a bug fix — and you want to know **fast**: did the demo runs still produce exactly the same numbers as before, or did your change leak into the output?
 
-This directory holds the "before" snapshot. `capture.sh` runs the demo indexing and pairing pipelines on tiny inputs from `data/demos/`, hashes every output file with sha256, and writes the whole hash list to `fingerprints.txt`. After your change, re-run and check the diff:
+This directory holds the "before" snapshot. `capture.sh` runs the demo indexing and pairing pipelines on tiny inputs from `data/demos/`, hashes every output file with sha256. `check.sh` compares a fresh capture against the committed `fingerprints.txt` — substance only, ignoring the timestamp / git-SHA header — and exits non-0 on real divergence.
 
 ```bash
-# Re-capture: hashes every demo output and overwrites fingerprints.txt.
-make baseline
+# Compare current output hashes against the committed baseline.
+# Exits 0 on no regression, non-0 on real divergence.
+# Workspace stays clean; transient capture is gitignored.
+make baseline-check     # alias: make baseline
 
-# Compare against the fingerprints.txt that's committed — any line that
-# changed = a file whose bytes shifted since the last commit.
-git diff tests/baseline/fingerprints.txt
+# Behavioural change is intentional? Rewrite the committed baseline.
+make baseline-update
 ```
 
-- **No diff** → your change didn't affect any numbers. Safe to commit.
-- **Some files differ** → either you broke something (revert and look), or you intentionally changed an algorithm. In the latter case the new fingerprints replace the old — commit the updated `fingerprints.txt` to bless the new behavior.
+- **`baseline-check` exits 0** → bytes match. Safe to commit your code change.
+- **`baseline-check` exits non-0** → either you broke something (revert + look at the printed diff), or the change is intentional → run `make baseline-update` to re-bless and commit the updated `fingerprints.txt`.
 
 A full capture takes ~30 s once the host binaries are built.
 
@@ -41,16 +42,18 @@ A full capture takes ~30 s once the host binaries are built.
 ## 2. Run
 
 ```bash
-# Capture a fresh fingerprint set into tests/baseline/fingerprints.txt.
-make baseline
+# Non-destructive: capture into the gitignored 'actual' file,
+# diff substance, exit non-0 if anything changed.
+make baseline-check
 
-# Diff against the version git knows about.
-git diff tests/baseline/fingerprints.txt
+# Destructive: overwrite the committed baseline with the current
+# capture. Use ONLY when the change is intentional.
+make baseline-update
 ```
 
 **Needs** — `build/indexing_fimo_fused` and `build/pairing_parallel` (run `make build` once if missing). The demo inputs under `data/demos/` ship with the repo, so no `make fetch-data` required.
 
-**Produces** — overwrites `tests/baseline/fingerprints.txt` (one ~1.7 KB plain-text file). Sections are headered like `## section:foo`; each section lists one sha256 per file produced by that step:
+**Produces** — `baseline-check` writes only `tests/baseline/fingerprints.actual.txt` (gitignored, deleted on a clean pass). `baseline-update` overwrites the tracked `tests/baseline/fingerprints.txt` (one ~1.7 KB plain-text file). Sections are headered like `## section:foo`; each section lists one sha256 per file produced by that step:
 
 ```
 # baseline captured: 2026-04-30T07:11:16Z
@@ -68,12 +71,10 @@ b5a8ee82b9078787…  ./fused/fimohits/CCA1.bin
 …
 ```
 
-**How to read it** — the actual signal is `git diff` against the committed `fingerprints.txt`:
+**How to read the output** — `baseline-check`'s own diff is the signal:
 
-- **No diff** → nothing changed, your edit is bytes-clean.
-- **A per-file sha changed** → that one file's contents shifted; open the file and compare to its previous output to see how.
-- **`# RUN_OK` flipped to `# RUN_FAIL exit=N`** → the underlying script aborted before producing output; the `# ...` lines below it are the last 20 lines of stderr from the matching log under `results/tests/baseline/{indexing_fused,pairing,env_check,backend_pytest}.log`.
-- **A whole section gained or lost lines** → an output file was added or deleted by the workflow.
+- **`[baseline] OK`** → nothing changed, your edit is bytes-clean.
+- **`[baseline] REGRESSION` + diff block** → at least one file's sha changed, or a section gained/lost lines, or a `# RUN_OK` flipped to `# RUN_FAIL exit=N`. The `# …` indented lines under a RUN_FAIL marker are the last 20 lines of stderr from the matching log under `results/tests/baseline/{indexing_fused,pairing,env_check,backend_pytest}.log`. The full new capture is at `tests/baseline/fingerprints.actual.txt` (gitignored) if you want to inspect or diff further.
 
 Safe to re-run any time. Each section is wrapped in a fallback block, so a missing input (no TAIR10 yet, no host binaries built, etc.) degrades to a clearly-marked SKIP instead of aborting mid-capture.
 
@@ -128,19 +129,19 @@ The original `fingerprints.txt` was captured at commit `123a39b` on the `refacto
 
 你改了 C/C++ 引擎里的某个东西 —— 重构、性能微调、修 bug —— 你想立刻知道：demo 跑出来的数字跟改之前一字不差吗？还是你的改动悄悄漏进了输出里？
 
-这个目录就是用来抓"改之前"那一份快照的。`capture.sh` 用 `data/demos/` 下的小输入跑 demo 的 indexing 和 pairing，给每个生成的文件算 sha256，全部写到 `fingerprints.txt`。改完后重新跑一次，看看 diff：
+这个目录就是用来抓"改之前"那一份快照的。`capture.sh` 用 `data/demos/` 下的小输入跑 demo 的 indexing 和 pairing，给每个生成的文件算 sha256。`check.sh` 把当前的 capture 与 commit 过的 `fingerprints.txt` 比对 —— 只比 substance（header 里 timestamp / git SHA 自动忽略），有真回归就 exit 非 0。
 
 ```bash
-# 重新抓：把所有 demo 输出 hash 一遍，覆盖写 fingerprints.txt。
-make baseline
+# 比对当前输出 hash 与 commit 过的 baseline。
+# 一致 exit 0，有差异 exit 非 0。工作树永远干净，临时 capture 文件 gitignored。
+make baseline-check     # 别名：make baseline
 
-# 跟仓库里 commit 过的 fingerprints.txt 对比 —— 任何变了的行 = 那个
-# 文件的字节自上次 commit 以来变了。
-git diff tests/baseline/fingerprints.txt
+# 行为变化是故意的？重写 commit 过的 baseline。
+make baseline-update
 ```
 
-- **没 diff** → 你的改动没影响任何数字。可以提交。
-- **有文件不一样** → 要么你写错了（revert 排查），要么你有意改了算法。后者只需把更新后的 `fingerprints.txt` 一起 commit，就算认可了新行为。
+- **`baseline-check` exit 0** → 字节一致，你的代码改动可以提交。
+- **`baseline-check` exit 非 0** → 要么写错了（revert + 看打印出的 diff），要么是有意改 → `make baseline-update` 重新祝福并提交新的 `fingerprints.txt`。
 
 二进制编好的话，整次 capture 大约 30 秒。
 
@@ -149,16 +150,17 @@ git diff tests/baseline/fingerprints.txt
 ## 2. 运行
 
 ```bash
-# 抓一份新的 fingerprint 写到 tests/baseline/fingerprints.txt。
-make baseline
+# 非破坏：把新 capture 写到 gitignored 的 'actual' 文件，比 substance，
+# 有差异就 exit 非 0。
+make baseline-check
 
-# 跟 git 里那一份对比。
-git diff tests/baseline/fingerprints.txt
+# 破坏：用当前 capture 覆盖 commit 过的 baseline。仅在故意变更时使用。
+make baseline-update
 ```
 
 **需要** —— `build/indexing_fimo_fused` 和 `build/pairing_parallel`（缺就先 `make build` 一次）。`data/demos/` 下的 demo 输入随仓库一起带着，**不**需要 `make fetch-data`。
 
-**产出** —— 覆盖写 `tests/baseline/fingerprints.txt`（一个 ~1.7 KB 的纯文本文件）。分段以 `## section:foo` 开头；每段列出该步骤产出的每个文件的 sha256：
+**产出** —— `baseline-check` 只写 `tests/baseline/fingerprints.actual.txt`（gitignored，对比通过时删除）。`baseline-update` 覆盖写 commit 过的 `tests/baseline/fingerprints.txt`（一个 ~1.7 KB 的纯文本文件）。分段以 `## section:foo` 开头；每段列出该步骤产出的每个文件的 sha256：
 
 ```
 # baseline captured: 2026-04-30T07:11:16Z
@@ -176,11 +178,10 @@ b5a8ee82b9078787…  ./fused/fimohits/CCA1.bin
 …
 ```
 
-**怎么解读** —— 真正的信号是 `git diff` 对比仓库里 commit 过的 `fingerprints.txt`：
+**怎么解读输出** —— `baseline-check` 自己的输出就是信号：
 
-- **没 diff** → 啥都没变，你的改动在字节层面是干净的。
-- **某个文件的 sha 变了** → 那个文件的内容有变化；打开它跟上一次输出对比看怎么变的。
-- **`# RUN_OK` 翻成 `# RUN_FAIL exit=N`** → 底层脚本在产出之前就 abort 了；下面 `# ...` 那几行是 `results/tests/baseline/{indexing_fused,pairing,env_check,backend_pytest}.log` 对应那份末尾 20 行 stderr。
+- **`[baseline] OK`** → 啥都没变，你的改动在字节层面是干净的。
+- **`[baseline] REGRESSION` + diff block** → 至少有一个文件的 sha 变了、或者某个 section 多了/少了行、或者 `# RUN_OK` 翻成了 `# RUN_FAIL exit=N`。RUN_FAIL 行下面 `# …` 那几行是 `results/tests/baseline/{indexing_fused,pairing,env_check,backend_pytest}.log` 对应那份末尾 20 行 stderr。完整新 capture 在 `tests/baseline/fingerprints.actual.txt`（gitignored），想细看 diff 用它。
 - **整段多了 / 少了几行** → workflow 多产了 / 少产了某个输出文件。
 
 随时可以重跑。每段都包了 fallback，缺输入（还没下 TAIR10、还没编 host 二进制等）时会清清楚楚标个 SKIP，不会中途 abort。

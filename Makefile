@@ -32,7 +32,9 @@ help:
 	@echo "    test-backend-smoke - backend FastAPI 5-stage smoke (~2 s; needs /tmp/pmet_test_venv or fastapi on \$$PATH)"
 	@echo "    test-audit       - workflow audit; renders docs/workflows/*.md (minutes)"
 	@echo "    test-e2e         - Playwright admin walkthrough (needs dev server + PMET_E2E_ADMIN_TOKEN)"
-	@echo "    baseline         - CLI baseline fingerprints to tests/baseline/fingerprints.txt"
+	@echo "    baseline         - alias for baseline-check (non-destructive)"
+	@echo "    baseline-check   - diff current output hashes against committed fingerprints; exits non-0 on regression"
+	@echo "    baseline-update  - rewrite tests/baseline/fingerprints.txt (only after an intentional behavioural change)"
 	@echo ""
 	@echo "  Web app stack — docker-compose, exposes nginx on http://localhost:5960"
 	@echo "    build-app    - build the docker images only (api + worker + frontend)"
@@ -142,7 +144,7 @@ test-backend-smoke:
 #   - make test-audit       — minutes; rewrites docs/workflows/*.md
 #   - make test-e2e         — needs dev server + admin token
 #   - tests/integration/scripts/* — need TAIR10 / real-data fixtures
-test-all: test test-backend-smoke baseline
+test-all: test test-backend-smoke baseline-check
 
 # Frontend E2E (Playwright). Needs the dev server (npm run dev) on
 # :3000 against a live backend on :5960, and PMET_E2E_ADMIN_TOKEN
@@ -151,9 +153,17 @@ test-all: test test-backend-smoke baseline
 test-e2e:
 	@cd apps/pmet_frontend && npm run test:e2e
 
-baseline:
+baseline-check:
+	@bash tests/baseline/check.sh
+
+baseline-update:
 	@bash tests/baseline/capture.sh > tests/baseline/fingerprints.txt
-	@echo "wrote tests/baseline/fingerprints.txt"
+	@echo "[baseline] updated tests/baseline/fingerprints.txt"
+
+# Back-compat alias — old muscle memory + docs may say `make baseline`.
+# Default is the non-destructive comparison; if you actually want to
+# overwrite the tracked file, call baseline-update explicitly.
+baseline: baseline-check
 
 fetch-data:
 	@bash scripts/fetch_data.sh

@@ -56,6 +56,11 @@ admin_audit.jsonl.1
 # Playwright E2E artifacts (traces + screenshots on failure)
 apps/pmet_frontend/test-results/
 apps/pmet_frontend/playwright-report/
+
+# baseline-check transient capture (committed baseline lives in
+# tests/baseline/fingerprints.txt; this file is the "actual" side of
+# the comparison and is rewritten on every check)
+tests/baseline/fingerprints.actual.txt
 .env
 .env.*
 
