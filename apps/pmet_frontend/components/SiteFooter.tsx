@@ -25,6 +25,9 @@ export function SiteFooter() {
             <Link href="/contributors" className="hover:text-primary-700">
               {t('nav.contributors')}
             </Link>
+            <Link href="/impressum" className="hover:text-primary-700">
+              Impressum
+            </Link>
             <a
               href={GITHUB_URL}
               target="_blank"
