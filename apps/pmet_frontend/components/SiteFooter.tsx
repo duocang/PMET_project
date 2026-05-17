@@ -28,6 +28,9 @@ export function SiteFooter() {
             <Link href="/impressum" className="hover:text-primary-700">
               Impressum
             </Link>
+            <Link href="/datenschutz" className="hover:text-primary-700">
+              Datenschutz
+            </Link>
             <a
               href={GITHUB_URL}
               target="_blank"
