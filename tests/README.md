@@ -19,6 +19,42 @@ Four sibling subdirectories, each answering a different question. You usually on
 
 `make test` chains the three fast hermetic tracks (core + unit + integration smoke, ~10 s). `make test-all` layers on the backend API smoke + the CLI baseline-check for ~30 s of "everything that runs without an external service." E2E (`make test-e2e`) + audit + baseline-update are opt-in; see [README §10](../README.md#en-10) for the full track-by-track table.
 
+## How to run
+
+All `make` targets are repo-root. The `make` ones are the canonical entry points; the direct invocations next to them are for when you want to run a single file in isolation (e.g. iterating on one test, or grabbing a flag like `--verbose`).
+
+| What you want | Command | Runtime |
+|---|---|---|
+| **Pre-commit gate** (default) | `make test` | ~10 s |
+| Everything hermetic (test + backend smoke + baseline-check) | `make test-all` | ~30 s |
+| Just the C++ math kernels | `make test-core` (or `make test-pairing` / `make test-indexing`) | < 5 s |
+| Just the Python / R / bash / TS unit tests | `make test-unit` (driver: [`tests/unit/run.sh`](unit/run.sh)) | ~5 s |
+| Just the integration smoke (`smoke/run.sh`) | `make test-integration` | ~3–10 s |
+| Backend FastAPI 5-stage smoke | `make test-backend-smoke` | ~2 s |
+| Frontend E2E (admin walkthrough) | `PMET_E2E_ADMIN_TOKEN=… make test-e2e` | ~10 s |
+| Workflow audit + rewrite `docs/workflows/*.md` | `make test-audit` (or `python3 tests/audit/generate.py <name>`) | minutes |
+| Compare current output hashes vs committed baseline | `make baseline-check` (alias `make baseline`) | ~30 s |
+| Re-bless baseline after an intentional behavioural change | `make baseline-update` | ~30 s |
+| Run one specific Python test file | `/tmp/pmet_test_venv/bin/python tests/unit/test_audit.py` | < 1 s |
+| Run one specific C++ test suite | `make test-pairing` (the runner inside prints per-case PASS lines) | < 5 s |
+| Run one specific Playwright spec | `cd apps/pmet_frontend && PMET_E2E_ADMIN_TOKEN=… npx playwright test e2e/admin.spec.ts -g 'A6'` | ~3 s |
+| Get verbose pytest-style output from a Python file | `python -m unittest -v tests/unit/test_audit` (run from `tests/unit/`) | < 1 s |
+
+**Need a test venv?** Python backend tests need `fastapi` and friends. The unit-test runner picks up `/tmp/pmet_test_venv` automatically if it exists:
+
+```bash
+python3 -m venv /tmp/pmet_test_venv
+/tmp/pmet_test_venv/bin/pip install -q -r apps/pmet_backend/requirements.txt
+```
+
+Frontend tests need `apps/pmet_frontend/node_modules`:
+
+```bash
+cd apps/pmet_frontend && npm install
+```
+
+Both are best-effort: missing the venv just skips the Python backend rows in `make test-unit`, missing `node_modules` skips the tsx rows.
+
 ## Where outputs land — the `results/tests/` convention
 
 Every test that produces files (logs, sidecars, replay workspaces, fingerprints) writes under **one root**:
@@ -180,6 +216,42 @@ The two backend files are the real problem — they have **30 cases of unique up
 | [`audit/`](audit/) | "每个 workflow 在 canonical 输入上实际做了什么？文档跟实际对得上吗？" | opt-in `make test-audit`（分钟级），重生 [`docs/workflows/*.md`](../docs/workflows/) | [`tests/audit/README.md`](audit/README.md) |
 
 `make test` 串起三条快 hermetic 轨道（core + unit + integration smoke，~10 秒）。`make test-all` 再叠加后端 API smoke + CLI baseline-check，~30 秒"无外部依赖能跑的全跑了"。E2E（`make test-e2e`）+ audit + baseline-update 留 opt-in；完整一表见 [README §10](../README.md#cn-10)。
+
+## 怎么跑
+
+`make` target 都在仓库根目录。`make` 入口是规范用法；右边那列直接调用是"想单跑一份文件、或者加个 `--verbose` flag 时"的备选。
+
+| 你想干嘛 | 命令 | 时长 |
+|---|---|---|
+| **commit 前 gate**（默认） | `make test` | ~10 秒 |
+| 一切 hermetic（test + 后端 smoke + baseline-check） | `make test-all` | ~30 秒 |
+| 只跑 C++ 数学 kernel | `make test-core`（或 `make test-pairing` / `make test-indexing`） | < 5 秒 |
+| 只跑 Python / R / bash / TS 单测 | `make test-unit`（驱动：[`tests/unit/run.sh`](unit/run.sh)） | ~5 秒 |
+| 只跑集成 smoke（`smoke/run.sh`） | `make test-integration` | ~3–10 秒 |
+| 后端 FastAPI 5 阶段 smoke | `make test-backend-smoke` | ~2 秒 |
+| 前端 E2E（管理员 walkthrough） | `PMET_E2E_ADMIN_TOKEN=… make test-e2e` | ~10 秒 |
+| Workflow audit + 重写 `docs/workflows/*.md` | `make test-audit`（或 `python3 tests/audit/generate.py <name>`） | 分钟级 |
+| 比对当前输出 hash 与 commit 过的 baseline | `make baseline-check`（别名 `make baseline`） | ~30 秒 |
+| 故意更新 baseline（行为变化是有意的） | `make baseline-update` | ~30 秒 |
+| 单跑某个 Python 测试文件 | `/tmp/pmet_test_venv/bin/python tests/unit/test_audit.py` | < 1 秒 |
+| 单跑某个 C++ 测试套 | `make test-pairing`（内部 runner 逐 case 打 PASS） | < 5 秒 |
+| 单跑某个 Playwright spec | `cd apps/pmet_frontend && PMET_E2E_ADMIN_TOKEN=… npx playwright test e2e/admin.spec.ts -g 'A6'` | ~3 秒 |
+| 拿到 pytest 风格的详细输出 | `python -m unittest -v tests/unit/test_audit`（在 `tests/unit/` 下执行） | < 1 秒 |
+
+**需要 Python venv？** 后端 Python 测试要 `fastapi` 等。`make test-unit` 自动认 `/tmp/pmet_test_venv`：
+
+```bash
+python3 -m venv /tmp/pmet_test_venv
+/tmp/pmet_test_venv/bin/pip install -q -r apps/pmet_backend/requirements.txt
+```
+
+前端测试需要 `apps/pmet_frontend/node_modules`：
+
+```bash
+cd apps/pmet_frontend && npm install
+```
+
+两者都是 best-effort：没 venv 时 `make test-unit` 跳过 Python 后端那几行；没 `node_modules` 时跳 tsx 那几行。
 
 ## 输出落点 —— `results/tests/` 约定
 
