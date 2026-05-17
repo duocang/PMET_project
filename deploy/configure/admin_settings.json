@@ -5,5 +5,5 @@
   "submissions_paused": false,
   "admin_notify_email": "",
   "minhash_threshold": null,
-  "result_retention_days": null
+  "result_retention_days": 30
 }
