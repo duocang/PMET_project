@@ -154,6 +154,54 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(len(new_lines), 1)
         self.assertEqual(json.loads(new_lines[0])["action"], "post_rotation")
 
+    # ------------------------------------------------------------------
+    # GDPR data minimisation (Art. 5(1)(c)) + storage limitation (5(1)(e))
+    # ------------------------------------------------------------------
+    def test_ipv4_anonymized_to_slash_24(self):
+        """User IPv4 must hit disk with the last octet zeroed — no raw
+        IPs in audit logs under GDPR."""
+        audit.emit(action="login_ok", ip="192.168.65.7")
+        rec = audit.read_tail(n=1)[0]
+        self.assertEqual(rec["ip"], "192.168.65.0")
+
+    def test_ipv6_anonymized_to_slash_64(self):
+        """IPv6 host portion (last 64 bits) zeroed, network portion kept
+        so geo / ASN can still be derived for ops if needed."""
+        audit.emit(action="login_ok", ip="2001:db8:1234:5678:dead:beef:cafe:f00d")
+        rec = audit.read_tail(n=1)[0]
+        self.assertEqual(rec["ip"], "2001:db8:1234:5678::")
+
+    def test_unparseable_ip_passes_through_unchanged(self):
+        """``unknown`` / proxy-mangled garbage / None: we keep the row,
+        we just can't anonymise what we can't parse. This is by design
+        — silently swallowing bad input would hide upstream bugs."""
+        audit.emit(action="login_ok", ip="unknown")
+        audit.emit(action="login_ok", ip=None)
+        records = audit.read_tail(n=10)
+        ips = [r["ip"] for r in records]
+        self.assertIn("unknown", ips)
+        self.assertIn(None, ips)
+
+    def test_read_tail_filters_records_older_than_retention(self):
+        """30-day cutoff: an audit row written by hand with an old
+        timestamp must not appear in read_tail output. Older records
+        are still on disk (size rotation drops them naturally) but
+        invisible to readers."""
+        log_path = self.tmp / "admin_audit.jsonl"
+        # Hand-craft an "ancient" record (90 days old) + a fresh one.
+        from datetime import datetime, timedelta, timezone
+        ancient_ts = (datetime.now(tz=timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(
+            json.dumps({"ts": ancient_ts, "category": "admin", "action": "ancient",
+                        "ok": True, "ip": None, "target": None, "detail": None}) + "\n"
+        )
+        # Now emit a fresh one through the helper.
+        audit.emit(action="recent", ip="1.1.1.1")
+        actions = [r["action"] for r in audit.read_tail(n=10)]
+        self.assertEqual(actions, ["recent"])
+        self.assertNotIn("ancient", actions)
+
 
 if __name__ == "__main__":
     unittest.main()
