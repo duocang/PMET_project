@@ -1,8 +1,54 @@
 # TODO
 
-三批待办按时间分层。**最新一批（2026-05-17）**：admin 体验整改 —— 把隐藏在 `/tasks` 角落的管理入口提到独立的 dashboard，加任务统计 + 4 张图，扩 4 个运行时开关，并列出后续 9 项 hardening。**(2026-05-04)**：3 方代码审查（我 + DeepSeek + GPT）+ MCP 浏览器实地验证后筛出来的安全/正确性/性能问题。**老的（2026-04-30）**：矩阵测试 72 个任务暴露的工作流问题，多数已修。
+四批待办按时间分层。**最新一批（2026-05-17 安全）**：自检 admin 鉴权 + nginx header + 邮件 header 注入 3 条 hardening。**(2026-05-17 admin)**：admin 体验整改 —— 把隐藏在 `/tasks` 角落的管理入口提到独立的 dashboard，加任务统计 + 4 张图，扩 4 个运行时开关，并列出后续 9 项 hardening。**(2026-05-04)**：3 方代码审查（我 + DeepSeek + GPT）+ MCP 浏览器实地验证后筛出来的安全/正确性/性能问题。**老的（2026-04-30）**：矩阵测试 72 个任务暴露的工作流问题，多数已修。
 
 > 本文件聚焦"已知问题与改进路线"。"如何安装/使用"在 [README.md](README.md)，两者不重叠。
+
+---
+
+## 安全 hardening（2026-05-17）
+
+公网 `pmet.online` 暴露的视角下，刚才一轮 admin 代码自检挑出来的 3 项。前两条降低 admin cookie 泄露 / framing 攻击的影响半径，第三条是补一个邮件 header 注入的回归测试。
+
+| # | 项 | 风险 | 状态 |
+|---|---|---|---|
+| [S1](#sec-1) | Admin cookie 值就是 admin token 字面量 | 🔴 cookie 任意渠道泄露 = token 泄露；rotate 后旧 cookie 不再有效但**截过的 token 仍是真凭据** | ⏳ |
+| [S2](#sec-2) | nginx 缺 `X-Frame-Options` / `CSP frame-ancestors` / `X-Content-Type-Options` | 🟡 点击劫持 / MIME sniffing 攻击面（`samesite=lax` 已挡掉大部分 CSRF） | ⏳ |
+| [S3](#sec-3) | 邮件 To 头从 user-input 取，没单测覆盖 CRLF 注入 | 🟢 Pydantic `EmailStr` 实测会拒 `\r\n`，但**没回归测试**，下次升级 deps 可能漏 | ⏳ |
+
+<a id="sec-1"></a>
+
+### S1 / Admin cookie 改成 session ID
+
+**现状**：[admin.py:153-159](apps/pmet_backend/api/routes/admin.py#L153-L159) 把 `config.ADMIN_TOKEN` 字面塞进 cookie value。`require_admin` 用 `hmac.compare_digest` 比 cookie 值 vs token。
+
+**改法**：login 时 `secrets.token_hex(16)` 生成 session ID，进程内 dict `{session_id: created_at}` 存活到 cookie 过期 / 主动 logout / rotate-token。cookie 值放 session ID。`require_admin` 改成查 dict 看 session 是否还活。logout 删 dict entry。rotate-token 清空整个 dict（强制所有会话下线 —— 已经的行为）。
+
+**完成条件**：cookie 值是 32-char hex；token 字面**永不进 cookie**；`test_admin_auth.py` 加 case 验 session ID 与 token 不相等 + logout 让 session 失效 + rotate 清所有 session。
+
+<a id="sec-2"></a>
+
+### S2 / nginx 加防御纵深 header
+
+**改法**：[deploy/nginx/nginx.conf](deploy/nginx/nginx.conf) 在 `server` block 里加：
+
+```nginx
+add_header X-Frame-Options "DENY" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Content-Security-Policy "frame-ancestors 'none'" always;
+```
+
+HSTS 不加 —— dev 走 HTTP，TLS 在 Cloudflare/edge 终止，HSTS 应该在那一层加，否则 dev 会被浏览器死锁在 https。在 nginx README / TODO 标注一句"HSTS 在 edge 层加"。
+
+**完成条件**：响应里能看到这三个 header；`make test` 不受影响；docker stack 起来正常。
+
+<a id="sec-3"></a>
+
+### S3 / 邮件 header 注入回归测试
+
+**改法**：[tests/unit/test_mail_dispatch.py](tests/unit/test_mail_dispatch.py) 加 case：构造 `TaskCreate(email="x@y.test\r\nBcc: evil@a.b")`，期望 Pydantic 抛 `ValidationError`。如果 Pydantic 居然放过（说明 EmailStr 改了实现），再退一步在 `MailService._send_email` 入口加 `to.replace('\r','').replace('\n','')` 显式剥。
+
+**完成条件**：单测捕到 CRLF；如果 EmailStr 现行就拒，case pass；如果不拒，加入显式剥并加 case 验证剥后没 CRLF。
 
 ---
 

@@ -90,6 +90,7 @@ def _reset_login_state_for_tests() -> None:
     with _login_lock:
         _login_failures.clear()
         _login_lockouts.clear()
+        _sessions.clear()
 
 
 def _token_matches(candidate: Optional[str]) -> bool:
@@ -104,6 +105,54 @@ def _token_matches(candidate: Optional[str]) -> bool:
     if not candidate or not config.ADMIN_TOKEN:
         return False
     return hmac.compare_digest(candidate, config.ADMIN_TOKEN)
+
+
+# Session store. cookie value = session_id; the real ADMIN_TOKEN never
+# leaves the server. This way a cookie leak (browser memory dump, an
+# accidental log line, a stale shared device) gives the attacker only
+# one revocable session — not the token itself. logout deletes the
+# entry; rotate-token clears the whole dict so all browsers are kicked
+# at the same time the token file is overwritten.
+#
+# Process-local, like the throttle counters. Single-worker deploy
+# (current docker-compose) makes this sufficient; multi-worker would
+# want redis (same caveat as #19 in TODO.md system-review backlog).
+_SESSION_TTL_SEC = 60 * 60 * 24 * 30  # mirrors the cookie max_age
+_sessions: dict[str, float] = {}  # session_id → created monotonic
+
+
+def _new_session() -> str:
+    """Mint a fresh random session ID and record its creation time."""
+    sid = secrets.token_hex(16)  # 32-char hex, 128 bits — collision-resistant
+    with _login_lock:
+        _sessions[sid] = time.monotonic()
+    return sid
+
+
+def _session_valid(sid: Optional[str]) -> bool:
+    """Check whether a cookie-supplied session_id is currently active."""
+    if not sid:
+        return False
+    with _login_lock:
+        created = _sessions.get(sid)
+        if created is None:
+            return False
+        if time.monotonic() - created > _SESSION_TTL_SEC:
+            _sessions.pop(sid, None)
+            return False
+        return True
+
+
+def _drop_session(sid: Optional[str]) -> None:
+    if not sid:
+        return
+    with _login_lock:
+        _sessions.pop(sid, None)
+
+
+def _drop_all_sessions() -> None:
+    with _login_lock:
+        _sessions.clear()
 
 
 class LoginPayload(BaseModel):
@@ -126,11 +175,17 @@ def _settings_path() -> Path:
 
 
 def require_admin(pmet_admin: Optional[str] = Cookie(default=None)) -> bool:
-    """FastAPI dependency that 401s if the request lacks a valid admin cookie."""
+    """FastAPI dependency that 401s if the request lacks a valid admin cookie.
+
+    The cookie carries a server-minted session_id, NOT the admin token.
+    A leaked cookie can be revoked by deleting the session entry on the
+    server (logout / rotate-token) without changing the underlying
+    operator credential.
+    """
     if not config.ADMIN_TOKEN:
         # Token not configured on the server — admin features disabled.
         raise HTTPException(status_code=503, detail="Admin not configured")
-    if not _token_matches(pmet_admin):
+    if not _session_valid(pmet_admin):
         raise HTTPException(status_code=401, detail="Not authenticated")
     return True
 
@@ -147,13 +202,16 @@ async def login(payload: LoginPayload, request: Request, response: Response):
         raise HTTPException(status_code=401, detail="Invalid token")
     _login_record_success(ip)
     audit.emit(action="login_ok", ok=True, ip=ip)
-    # 30-day cookie. httpOnly + samesite=lax. Secure flag is omitted because
-    # the dev stack runs over plain http on localhost; nginx in production
-    # should add it via the proxy.
+    # Mint a session_id and stash it server-side. cookie value = session
+    # id — the admin token never leaves the host. 30-day cookie matches
+    # the in-memory TTL. httpOnly + samesite=lax. Secure flag is omitted
+    # because the dev stack runs over plain http on localhost; nginx in
+    # production should add it via the proxy.
+    sid = _new_session()
     response.set_cookie(
         key=ADMIN_COOKIE,
-        value=config.ADMIN_TOKEN,
-        max_age=60 * 60 * 24 * 30,
+        value=sid,
+        max_age=_SESSION_TTL_SEC,
         httponly=True,
         samesite="lax",
     )
@@ -161,8 +219,10 @@ async def login(payload: LoginPayload, request: Request, response: Response):
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response):
+async def logout(request: Request, response: Response,
+                 pmet_admin: Optional[str] = Cookie(default=None)):
     audit.emit(action="logout", ok=True, ip=_client_ip(request))
+    _drop_session(pmet_admin)
     response.delete_cookie(ADMIN_COOKIE)
     return {"ok": True}
 
@@ -179,7 +239,7 @@ async def me(pmet_admin: Optional[str] = Cookie(default=None)):
     would learn about it anyway.
     """
     return {
-        "is_admin": _token_matches(pmet_admin),
+        "is_admin": _session_valid(pmet_admin),
         "submissions_paused": config.SUBMISSIONS_PAUSED,
     }
 
@@ -287,18 +347,21 @@ async def cleanup_run(request: Request):
 @router.post("/rotate-token", dependencies=[Depends(require_admin)])
 async def rotate_token(request: Request, response: Response):
     """Generate a fresh 256-bit hex token, write it to
-    ``admin_token.txt``, invalidate the current cookie, and return the
-    new token *once* so the operator can copy it to a password manager.
+    ``admin_token.txt``, invalidate every active session, and return
+    the new token *once* so the operator can copy it to a password
+    manager.
 
-    Existing sessions on other browsers / tabs are killed immediately —
-    config.ADMIN_TOKEN updates in-process, so their cookie value no
-    longer matches.
+    Existing sessions on other browsers / tabs are killed immediately
+    because ``_drop_all_sessions()`` empties the in-memory session
+    store; their cookies still carry a session_id, but that id is no
+    longer in the store, so ``require_admin`` will 401 them.
     """
     new_token = secrets.token_hex(32)
     path = config.CONFIGURE_DIR / "admin_token.txt"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(new_token + "\n")
     config.reload()
+    _drop_all_sessions()
     response.delete_cookie(ADMIN_COOKIE)
     audit.emit(
         action="rotate_token",

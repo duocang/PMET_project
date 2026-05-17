@@ -74,6 +74,19 @@ class BruteForceThrottleTests(AdminAuthBase):
         self.assertEqual(r.status_code, 200)
         self.assertIn("pmet_admin", r.cookies)
 
+    def test_cookie_value_is_session_id_not_token_literal(self):
+        """S1 — leaked cookie must not equal the admin token. The
+        cookie carries a server-minted session_id; the real ADMIN_TOKEN
+        never reaches the client.
+        """
+        r = self.client.post("/api/admin/login", json={"token": FIXTURE_TOKEN})
+        self.assertEqual(r.status_code, 200)
+        cookie_value = r.cookies["pmet_admin"]
+        self.assertNotEqual(cookie_value, FIXTURE_TOKEN,
+                            "cookie must NOT carry the admin token verbatim")
+        # The session id is hex.token_hex(16) → 32 hex chars.
+        self.assertRegex(cookie_value, r"^[0-9a-f]{32}$")
+
     def test_wrong_token_returns_401(self):
         r = self.client.post("/api/admin/login", json={"token": "wrong"})
         self.assertEqual(r.status_code, 401)
@@ -114,6 +127,22 @@ class BruteForceThrottleTests(AdminAuthBase):
         # 503 (admin disabled) — not 401, not 429.
         self.assertEqual(r.status_code, 503)
 
+    def test_logout_invalidates_only_that_session(self):
+        """S1 — logging out a browser must kill THAT session_id only,
+        not every other browser that has a valid session against the
+        same admin token. Two clients log in; one logs out; the other
+        still works.
+        """
+        with TestClient(app) as client_a, TestClient(app) as client_b:
+            client_a.post("/api/admin/login", json={"token": FIXTURE_TOKEN})
+            client_b.post("/api/admin/login", json={"token": FIXTURE_TOKEN})
+            self.assertEqual(client_a.get("/api/admin/settings").status_code, 200)
+            self.assertEqual(client_b.get("/api/admin/settings").status_code, 200)
+            client_a.post("/api/admin/logout")
+            # A is dead, B is alive.
+            self.assertEqual(client_a.get("/api/admin/settings").status_code, 401)
+            self.assertEqual(client_b.get("/api/admin/settings").status_code, 200)
+
 
 # ----------------------------------------------------------------------
 # A3: token rotation
@@ -152,10 +181,26 @@ class TokenRotationTests(AdminAuthBase):
         self.assertEqual(r.status_code, 200)
         # Rotate.
         self.client.post("/api/admin/rotate-token")
-        # The cookie we still hold is the OLD token; it no longer
-        # matches the freshly-rotated config.ADMIN_TOKEN.
+        # The cookie we still hold carries the OLD session_id; that id
+        # was removed from the in-memory store when rotate cleared all
+        # sessions, so require_admin now 401s.
         r = self.client.get("/api/admin/settings")
         self.assertEqual(r.status_code, 401)
+
+    def test_rotate_kills_every_active_session(self):
+        """S1 — rotation must invalidate sessions on OTHER browsers
+        too, not just the one that triggered the rotate. Two clients
+        log in; one rotates; the other is also kicked.
+        """
+        with TestClient(app) as client_a, TestClient(app) as client_b:
+            client_a.post("/api/admin/login", json={"token": FIXTURE_TOKEN})
+            client_b.post("/api/admin/login", json={"token": FIXTURE_TOKEN})
+            self.assertEqual(client_b.get("/api/admin/settings").status_code, 200)
+            # client_a rotates → both should be 401 after.
+            r = client_a.post("/api/admin/rotate-token")
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(client_a.get("/api/admin/settings").status_code, 401)
+            self.assertEqual(client_b.get("/api/admin/settings").status_code, 401)
 
     def test_can_log_in_with_new_token_after_rotation(self):
         self._login()
