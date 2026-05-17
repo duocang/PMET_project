@@ -154,6 +154,40 @@ build-app:
 	@$(MAKE) -C deploy build-images
 
 up:
+	@# 0. Bootstrap admin token. Missing/empty file means the backend will
+	@#    return 503 on /admin/*. If stdin is a TTY, offer to generate one
+	@#    (256-bit hex, single line). Non-interactive runs just warn.
+	@token_file=deploy/configure/admin_token.txt; \
+	if [ ! -s "$$token_file" ]; then \
+		if [ -t 0 ]; then \
+			printf "\n%s is missing — admin features will be disabled.\n" "$$token_file"; \
+			printf "Generate a random 256-bit token now? [Y/n] "; \
+			read ans; \
+			case "$$ans" in \
+				""|y|Y|yes|YES) \
+					mkdir -p deploy/configure; \
+					openssl rand -hex 32 > "$$token_file"; \
+					echo ""; \
+					echo "Generated $$token_file:"; \
+					echo "  $$(cat $$token_file)"; \
+					echo "Save this to a password manager — you'll paste it at /admin/login."; \
+					echo "" ;; \
+				*) \
+					echo "Skipped. /admin/* will return 503 until you create $$token_file." ;; \
+			esac; \
+		else \
+			echo "WARN: $$token_file is missing — /admin/* will return 503."; \
+		fi; \
+	fi
+	@# 0b. Soft warnings for the other two operator-supplied files. These
+	@#     need real input (SMTP creds, public domain), so no prompt — just
+	@#     a one-liner so the operator notices.
+	@if [ ! -s deploy/configure/email_credential.txt ]; then \
+		echo "WARN: deploy/configure/email_credential.txt missing — task emails won't be sent."; \
+	fi
+	@if [ ! -s deploy/configure/public_base_url.txt ]; then \
+		echo "WARN: deploy/configure/public_base_url.txt missing — emails won't carry a clickable link."; \
+	fi
 	@# 1. Stop our own compose project cleanly (no-op if nothing running).
 	@$(MAKE) -C deploy stop 2>/dev/null || true
 	@# 2. If any *other* docker container is still publishing :5960 — typically
