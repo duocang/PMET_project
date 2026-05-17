@@ -52,6 +52,8 @@ if(PMET_BUILD_TESTS)
       tests/test_minhash_sketch.cpp
       tests/test_geometric_binomial.cpp
       tests/test_coloc.cpp
+      tests/test_sort_hits.cpp
+      tests/test_output_sort.cpp
       $<TARGET_OBJECTS:pair_lib>
   )
   target_link_libraries(test_pairing Threads::Threads)

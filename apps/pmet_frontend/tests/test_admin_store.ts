@@ -56,6 +56,43 @@ test('setStatus propagates submissions_paused regardless of admin flag', () => {
     'anonymous visitors still need to know about a maintenance window');
 });
 
+test('setSubmissionsPaused flips paused without disturbing isAdmin', () => {
+  // SettingsCard calls this after a successful PUT so the /submit
+  // banner reacts immediately, independent of the admin login state.
+  reset();
+  useAdminStore.getState().setStatus(true, false);
+  useAdminStore.getState().setSubmissionsPaused(true);
+  const s = useAdminStore.getState();
+  assert.strictEqual(s.isAdmin, true, 'admin flag must survive a paused flip');
+  assert.strictEqual(s.submissionsPaused, true);
+  assert.strictEqual(s.checked, true, 'checked must survive a paused flip');
+});
+
+test('bumpSettings increments settingsVersion each call', () => {
+  // CleanupCard subscribes to settingsVersion so it can re-fetch its
+  // eligible-count preview when SettingsCard saves new policy.
+  reset();
+  const v0 = useAdminStore.getState().settingsVersion;
+  assert.strictEqual(v0, 0, 'initial version is 0');
+  useAdminStore.getState().bumpSettings();
+  assert.strictEqual(useAdminStore.getState().settingsVersion, 1);
+  useAdminStore.getState().bumpSettings();
+  useAdminStore.getState().bumpSettings();
+  assert.strictEqual(useAdminStore.getState().settingsVersion, 3,
+    'each call adds exactly 1 (not a snapshot, not a hash)');
+});
+
+test('bumpSettings does not touch isAdmin / submissionsPaused / checked', () => {
+  reset();
+  useAdminStore.getState().setStatus(true, true);
+  const before = useAdminStore.getState();
+  useAdminStore.getState().bumpSettings();
+  const after = useAdminStore.getState();
+  assert.strictEqual(after.isAdmin, before.isAdmin);
+  assert.strictEqual(after.submissionsPaused, before.submissionsPaused);
+  assert.strictEqual(after.checked, before.checked);
+});
+
 test('reset returns to initial state after a successful login', () => {
   reset();
   useAdminStore.getState().setStatus(true, false);

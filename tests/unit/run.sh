@@ -70,14 +70,29 @@ run_one "list_tasks pagination + filter (Python)" \
 run_one "admin stats aggregator (Python)" \
     "$PYTHON" tests/unit/test_admin_stats.py
 
-# Frontend Zustand store actions — uses `tsx` (devDep). Skip if
-# node_modules isn't installed (CI / fresh checkout where the
-# user hasn't run npm install yet).
-if [[ -x /Users/nuioi/projects/pmet/apps/pmet_frontend/node_modules/.bin/tsx ]]; then
-    run_one "settings store form-state actions (TypeScript)" \
+run_one "admin audit log helper (Python)" \
+    "$PYTHON" tests/unit/test_audit.py
+
+run_one "admin retention cleanup (Python)" \
+    "$PYTHON" tests/unit/test_cleanup.py
+
+run_one "admin self-test probes (Python)" \
+    "$PYTHON" tests/unit/test_healthcheck.py
+
+run_one "admin task-level endpoints (Python)" \
+    "$PYTHON" tests/unit/test_admin_tasks.py
+
+run_one "admin login throttle + token rotate (Python)" \
+    "$PYTHON" tests/unit/test_admin_auth.py
+
+# Frontend tsx tests (zustand stores + runtime formatters). Skip if
+# node_modules isn't installed (CI / fresh checkout where the user
+# hasn't run npm install yet).
+if [[ -x "$repo_root/apps/pmet_frontend/node_modules/.bin/tsx" ]]; then
+    run_one "frontend stores + runtime formatters (TypeScript)" \
         bash -c "cd apps/pmet_frontend && npm run --silent test:unit"
 else
-    printf '\n[unit] settings store form-state actions (TypeScript): SKIP — apps/pmet_frontend/node_modules not installed\n'
+    printf '\n[unit] frontend stores + runtime formatters (TypeScript): SKIP — apps/pmet_frontend/node_modules not installed\n'
 fi
 
 printf '\n========================================\n'

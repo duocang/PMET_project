@@ -1,0 +1,98 @@
+name: tests
+
+# Run the fast tracks (core + unit + integration) on every push to main
+# and on every PR. The heavy tracks (audit, baseline, E2E) stay opt-in;
+# they need real data (audit) or a running stack (E2E) and would balloon
+# the workflow runtime past what GitHub Actions free minutes can absorb.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------------------------------------------------
+  # C/C++ math kernels — pairing + indexing test binaries.
+  # Build is hermetic (CMake + g++); no Python / R deps needed.
+  # -------------------------------------------------------------------
+  test-core:
+    name: core math kernels (C/C++)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build deps
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq cmake g++ make
+      - name: Run test-core (pairing + indexing)
+        run: make test-core
+
+  # -------------------------------------------------------------------
+  # Backend Python unit tests + workflow bash + R + frontend zustand.
+  # -------------------------------------------------------------------
+  test-unit:
+    name: unit tests (Python + bash + R + TS store)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: apps/pmet_frontend/package-lock.json
+      - name: Install R + bedtools (apt is enough — versions don't matter)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq r-base bedtools
+      - name: Install backend Python deps into the canonical /tmp venv
+        run: |
+          python -m venv /tmp/pmet_test_venv
+          /tmp/pmet_test_venv/bin/pip install -q -r apps/pmet_backend/requirements.txt
+      - name: Install frontend deps (for tsx store tests)
+        working-directory: apps/pmet_frontend
+        run: npm ci --silent
+      - name: Run test-unit
+        run: make test-unit
+
+  # -------------------------------------------------------------------
+  # Pipeline-level integration smoke (bedtools strand / chrom preflight
+  # / GFF3 fragment handling). Does NOT need the full motif corpus —
+  # the smoke is gated on tiny in-repo fixtures.
+  # -------------------------------------------------------------------
+  test-integration:
+    name: integration smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install workflow deps
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bedtools samtools r-base
+      - name: Run test-integration
+        run: make test-integration
+
+  # -------------------------------------------------------------------
+  # Lightweight verification that the frontend still type-checks +
+  # builds. Catches "I broke the bundle" before it reaches a reviewer.
+  # -------------------------------------------------------------------
+  frontend-build:
+    name: frontend tsc + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: apps/pmet_frontend/package-lock.json
+      - working-directory: apps/pmet_frontend
+        run: |
+          npm ci --silent
+          npx tsc --noEmit
+          npm run build

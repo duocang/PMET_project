@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:unit": "tsx tests/test_settings_store.ts && tsx tests/test_admin_store.ts"
+    "test:unit": "tsx tests/test_settings_store.ts && tsx tests/test_admin_store.ts && tsx tests/test_runtime.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -21,6 +22,7 @@
     "zustand": "^4.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

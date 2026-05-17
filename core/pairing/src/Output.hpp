@@ -32,6 +32,15 @@ public:
     o.pval = rawP;
     return o;
   }
+  // Same but with motif1 / motif2 indices set — needed by sort tests
+  // that name the rows via a parallel motifNamesByIndex vector.
+  static Output makeForTestWithIndices(int m1, int m2, double rawP = 1.0) {
+    Output o;
+    o.motif1Index = m1;
+    o.motif2Index = m2;
+    o.pval = rawP;
+    return o;
+  }
 
 private:
   int motif1Index = -1;

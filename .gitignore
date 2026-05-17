@@ -52,6 +52,10 @@ admin_token.txt
 # Admin audit trail (append-only JSONL; rotated to .jsonl.1)
 admin_audit.jsonl
 admin_audit.jsonl.1
+
+# Playwright E2E artifacts (traces + screenshots on failure)
+apps/pmet_frontend/test-results/
+apps/pmet_frontend/playwright-report/
 .env
 .env.*
 
