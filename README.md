@@ -427,17 +427,19 @@ Finer deploy targets: `cd deploy && make help`.
 
 ## 10. Tests & regression baseline
 
-Five tracks, each catching a **different class of regression**. Fastest first; each has a `make` target; **`make test` chains the three fast tracks** (core + unit + integration, ~10 s) as the default pre-commit gate. The two writing tracks (audit, baseline) overwrite committed files and stay opt-in.
+Six tracks, each catching a **different class of regression**. Fastest first; each has a `make` target. **`make test`** chains the three fast hermetic tracks (core + unit + integration, ~10 s) as the default pre-commit gate. **`make test-all`** layers on the backend API smoke + the CLI baseline for ~30 s of "everything that runs without an external service." The audit + E2E tracks each need a heavier setup and stay opt-in.
 
 | Track | Command | Why & runtime |
 |---|---|---|
-| Core math kernels (C/C++) | `make test-core` (or `make test-pairing` / `make test-indexing`) | Catches refactors that silently break the math under the engines (BH, hypergeometric, MinHash, …) before a real workflow writes wrong p-values. Test binary links the same OBJECT library production uses — no test/prod drift. **< 5 s.** |
-| Repo-wide unit tests (Python / R / bash / TS) | `make test-unit` | One test file per fixed bug — locks each fix in so a future refactor cannot quietly re-introduce it. Frontend tsx auto-skips if `apps/pmet_frontend/node_modules` is absent. **< 5 s.** |
+| Core math kernels (C/C++) | `make test-core` (or `make test-pairing` / `make test-indexing`) | Catches refactors that silently break the math under the engines (BH, hypergeometric, MinHash, …) before a real workflow writes wrong p-values. Test binary links the same OBJECT library production uses — no test/prod drift. **< 5 s.** 110 cases. |
+| Repo-wide unit tests (Python / R / bash / TS) | `make test-unit` | One test file per fixed bug — locks each fix in so a future refactor cannot quietly re-introduce it. Frontend tsx auto-skips if `apps/pmet_frontend/node_modules` is absent. **< 5 s.** 16 test files. |
 | Pipeline-level integration | `make test-integration` (smoke; heavier scripts in [`tests/integration/README.md`](tests/integration/README.md)) | Cross-script invariants unit tests miss: `bedtools -s`, chromosome-name preflight, GFF3 fragment handling, R-vs-frontend heatmap consistency. **~3–10 s** depending on whether `Rscript` is on PATH. |
+| Backend API smoke | `make test-backend-smoke` | FastAPI 5-stage smoke (imports / TaskCreate / StorageService / PMETExecutor / app load). Reads `/tmp/pmet_test_venv` if present, else system python3. **~2 s.** |
+| Frontend E2E (Playwright) | `make test-e2e` ([`apps/pmet_frontend/e2e/`](apps/pmet_frontend/e2e/)) | Replays the admin walkthrough in a real browser — login redirect / health / audit / cleanup refresh / brute-force lockout. **Needs dev server + `PMET_E2E_ADMIN_TOKEN`** env var; self-skips if env is absent. ~10 s once both are up. |
 | Workflow audit ([`tests/audit/`](tests/audit/)) | `make test-audit` (or `python3 tests/audit/generate.py <name>`) | Runs each workflow end-to-end against canonical inputs, rewrites [`docs/workflows/*.md`](docs/workflows/) with fresh numbers + SHA-256 anchors. pair_only ~15 s, intervals ~16 s, promoter ~2 min, elements ~5 min. **Writes to `docs/workflows/`** → opt-in. |
-| CLI baseline ([`tests/baseline/`](tests/baseline/)) | `make baseline` | Hashes every demo-run output file + production binaries; diffs against the committed fingerprint to answer "did my edit change demo output?". **Writes `tests/baseline/fingerprints.txt`** → opt-in. ~30 s. |
+| CLI baseline ([`tests/baseline/`](tests/baseline/)) | `make baseline` | Hashes every demo-run output file + production binaries; the committed fingerprint is the truth — a non-empty `git diff` after the rerun is the regression signal. **Writes `tests/baseline/fingerprints.txt`** → opt-in. ~30 s. |
 
-Per-track case lists live in [`docs/tests/coverage.md`](docs/tests/coverage.md) (kept out of the README so the table stays scannable). `apps/pmet_backend/test_api.py` is a separate 5-stage smoke (imports / TaskCreate / StorageService / PMETExecutor / app load): `python apps/pmet_backend/test_api.py` on the host, or `cd deploy && make test` inside the backend image.
+CI ([`.github/workflows/test.yml`](.github/workflows/test.yml)) runs the first four tracks in parallel on every push / PR. Per-track case lists live in [`docs/tests/coverage.md`](docs/tests/coverage.md) so this table stays scannable.
 
 <a id="en-11"></a>
 
@@ -893,17 +895,19 @@ make rebuild
 
 ## 10. 测试与回归基线
 
-五条轨道，每条防的是**一类不同的回归**。按快慢排；每条都有 `make` target；**`make test` 把前三条快的串起来**（core + unit + integration，~10 秒），用作 commit 前的默认 gate。后两条会写入仓库内的文件（audit 写文档、baseline 写 fingerprint），所以保持 opt-in。
+六条轨道，每条防的是**一类不同的回归**。按快慢排。**`make test`** 串起三条快 hermetic 轨道（core + unit + integration，~10 秒），是 commit 前的默认 gate。**`make test-all`** 再叠加后端 API smoke + CLI baseline，~30 秒把"无外部依赖能跑的全跑了"。audit / E2E 各需要重型环境，留 opt-in。
 
 | 轨道 | 命令 | 为什么 + 时长 |
 |---|---|---|
-| Core 数学 kernel（C/C++） | `make test-core`（或 `make test-pairing` / `make test-indexing`） | 防重构悄悄把引擎下面的数学（BH、超几何、MinHash …）改坏，在真实 workflow 把错的 p 值写出之前就 fail。测试二进制与生产共享同一份 OBJECT library —— 测的就是跑的。**< 5 秒。** |
-| 仓库级单元测试（Python / R / bash / TS） | `make test-unit` | 每个 fix 一份 test，把修过的 bug 钉死，防下次重构又悄悄退化。前端 tsx 在缺 `apps/pmet_frontend/node_modules` 时自动跳过。**< 5 秒。** |
+| Core 数学 kernel（C/C++） | `make test-core`（或 `make test-pairing` / `make test-indexing`） | 防重构悄悄把引擎下面的数学（BH、超几何、MinHash …）改坏，在真实 workflow 把错的 p 值写出之前就 fail。测试二进制与生产共享同一份 OBJECT library —— 测的就是跑的。**< 5 秒。** 110 case。 |
+| 仓库级单元测试（Python / R / bash / TS） | `make test-unit` | 每个 fix 一份 test，把修过的 bug 钉死，防下次重构又悄悄退化。前端 tsx 在缺 `apps/pmet_frontend/node_modules` 时自动跳过。**< 5 秒。** 16 个 test 文件。 |
 | Pipeline 级集成 | `make test-integration`（跑 smoke；其它重脚本见 [`tests/integration/README.md`](tests/integration/README.md)） | 单元测试盖不到的跨脚本不变量：`bedtools -s`、染色体名预检、GFF3 拆段、R 与前端热图一致性。**smoke ~3–10 秒**，取决于 PATH 上有没有 `Rscript`。 |
+| 后端 API smoke | `make test-backend-smoke` | FastAPI 5 阶段 smoke（imports / TaskCreate / StorageService / PMETExecutor / app load）。优先用 `/tmp/pmet_test_venv`，没有则 fallback 系统 python3。**~2 秒。** |
+| 前端 E2E（Playwright） | `make test-e2e`（[`apps/pmet_frontend/e2e/`](apps/pmet_frontend/e2e/)） | 真浏览器跑管理员 walkthrough —— 登录跳转 / 健康检查 / audit 日志 / cleanup 刷新 / brute-force 锁。**需要 dev server + `PMET_E2E_ADMIN_TOKEN`** env；缺 env 时整套 skip。环境齐了 ~10 秒。 |
 | Workflow audit（[`tests/audit/`](tests/audit/)） | `make test-audit`（或 `python3 tests/audit/generate.py <name>` 跑指定） | 把每个 workflow 用 canonical 输入跑一遍，把新数字 + SHA-256 anchor 重新渲染回 [`docs/workflows/*.md`](docs/workflows/)。pair_only ~15 s，intervals ~16 s，promoter ~2 min，elements ~5 min。**会写 `docs/workflows/`** → opt-in。 |
-| CLI baseline（[`tests/baseline/`](tests/baseline/)） | `make baseline` | 把 demo run 的所有输出文件 + 生产二进制做 hash，与 commit 过的 fingerprint diff，回答"我这次改动有没有意外改 demo 数字输出"。**会写 `tests/baseline/fingerprints.txt`** → opt-in。~30 秒。 |
+| CLI baseline（[`tests/baseline/`](tests/baseline/)） | `make baseline` | 把 demo run 的所有输出文件 + 生产二进制做 hash；commit 过的 fingerprint 是真相 —— 重跑后 `git diff` 非空就是回归信号。**会写 `tests/baseline/fingerprints.txt`** → opt-in。~30 秒。 |
 
-每条 track 覆盖了哪些具体 case 见 [`docs/tests/coverage.md`](docs/tests/coverage.md)（从 README 里挪出去，让表格更易扫）。`apps/pmet_backend/test_api.py` 是单独的 5 stage smoke（imports / TaskCreate / StorageService / PMETExecutor / app load）：host 上 `python apps/pmet_backend/test_api.py`，或镜像内 `cd deploy && make test`。
+CI（[`.github/workflows/test.yml`](.github/workflows/test.yml)）每次 push / PR 并行跑前四条。每条 track 覆盖了哪些具体 case 见 [`docs/tests/coverage.md`](docs/tests/coverage.md)，让上表保持易扫。
 
 <a id="cn-11"></a>
 

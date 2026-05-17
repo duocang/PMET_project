@@ -23,12 +23,15 @@ help:
 	@echo ""
 	@echo "  Tests — every track has a make target; 'make test' chains the fast ones"
 	@echo "    test             - test-core + test-unit + test-integration  (~10 s, gate before commit)"
+	@echo "    test-all         - test + backend api smoke + baseline (~30 s, opt-in but hermetic)"
 	@echo "    test-core        - C/C++ math kernels (test-pairing + test-indexing, ~5 s)"
 	@echo "    test-pairing     - just the pairing kernel tests"
 	@echo "    test-indexing    - just the indexing kernel tests"
 	@echo "    test-unit        - repo-wide unit tests (Python / R / bash / TS, ~5 s)"
-	@echo "    test-integration - integration smoke + heatmap consistency (~3-10 s; other tests/integration/*.sh need real data)"
+	@echo "    test-integration - integration smoke + heatmap consistency (~3-10 s; tests/integration/scripts/* need real data)"
+	@echo "    test-backend-smoke - backend FastAPI 5-stage smoke (~2 s; needs /tmp/pmet_test_venv or fastapi on \$$PATH)"
 	@echo "    test-audit       - workflow audit; renders docs/workflows/*.md (minutes)"
+	@echo "    test-e2e         - Playwright admin walkthrough (needs dev server + PMET_E2E_ADMIN_TOKEN)"
 	@echo "    baseline         - CLI baseline fingerprints to tests/baseline/fingerprints.txt"
 	@echo ""
 	@echo "  Web app stack — docker-compose, exposes nginx on http://localhost:5960"
@@ -117,6 +120,36 @@ test-audit:
 # Default aggregator: all the fast tracks. Audit + baseline write
 # files to disk, so they remain explicit opt-ins.
 test: test-core test-unit test-integration
+
+# Backend API smoke — 5 stages (imports / TaskCreate / StorageService /
+# PMETExecutor / app load). Reads from the canonical /tmp/pmet_test_venv
+# if it exists, falls back to system python3 (which may be missing
+# fastapi, in which case the script prints a clear ImportError).
+test-backend-smoke:
+	@if [ -x /tmp/pmet_test_venv/bin/python ]; then \
+		/tmp/pmet_test_venv/bin/python apps/pmet_backend/test_api.py; \
+	else \
+		python3 apps/pmet_backend/test_api.py; \
+	fi
+
+# Full local test bundle — everything that runs without an external
+# service or live dev server. Adds backend api smoke + baseline on
+# top of `make test`. Baseline rewrites tests/baseline/fingerprints.txt
+# so a non-empty `git diff` after this target is meaningful evidence
+# of a behavioural change.
+#
+# Not included (need extra infrastructure):
+#   - make test-audit       — minutes; rewrites docs/workflows/*.md
+#   - make test-e2e         — needs dev server + admin token
+#   - tests/integration/scripts/* — need TAIR10 / real-data fixtures
+test-all: test test-backend-smoke baseline
+
+# Frontend E2E (Playwright). Needs the dev server (npm run dev) on
+# :3000 against a live backend on :5960, and PMET_E2E_ADMIN_TOKEN
+# pointing at a valid admin token. Skipped specs are fine — they
+# self-skip when the env var is absent.
+test-e2e:
+	@cd apps/pmet_frontend && npm run test:e2e
 
 baseline:
 	@bash tests/baseline/capture.sh > tests/baseline/fingerprints.txt
