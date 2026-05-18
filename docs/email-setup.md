@@ -71,6 +71,7 @@ Add these at your domain registrar / DNS provider (Aliyun for pmet.online):
 
 | Type | Host | Value | TTL |
 |---|---|---|---|
+| TXT | `@` | `v=spf1 include:spf.brevo.com include:spf.improvmx.com ~all` | 600 |
 | TXT | `@` | `brevo-code:1490641405020edd151353c94eb25ad5` | 600 |
 | CNAME | `brevo1._domainkey` | `b1.pmet-online.dkim.brevo.com` | 600 |
 | CNAME | `brevo2._domainkey` | `b2.pmet-online.dkim.brevo.com` | 600 |
@@ -304,6 +305,7 @@ Brevo 账号：`wangxuesong29@gmail.com`（登录）。控制台：[app.brevo.co
 
 | 类型 | 主机记录 | 记录值 | TTL |
 |---|---|---|---|
+| TXT | `@` | `v=spf1 include:spf.brevo.com include:spf.improvmx.com ~all` | 600 |
 | TXT | `@` | `brevo-code:1490641405020edd151353c94eb25ad5` | 600 |
 | CNAME | `brevo1._domainkey` | `b1.pmet-online.dkim.brevo.com` | 600 |
 | CNAME | `brevo2._domainkey` | `b2.pmet-online.dkim.brevo.com` | 600 |
