@@ -100,17 +100,24 @@ The key is a Bearer-pattern credential. **Regenerate it if it ever appears in a 
 
 The Berlin server uses a dynamic residential IP. Brevo's IP whitelist requires a fixed IP, so we bounce through the DigitalOcean VPS.
 
-**On the DO VPS** (once, survives reboots if you add a systemd unit):
+**On the DO VPS** — three steps (one-time). The systemd unit makes the forwarder survive reboots; run it if you want the relay to come back after `apt upgrade` or power loss.
+
+Install socat:
 
 ```bash
-# Install socat if missing
 apt-get install -y socat
+```
 
-# Run forwarder: DO VPS port 10587 → Brevo port 587
-socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587 &
+Test the relay manually (foreground, Ctrl-C to stop):
 
-# Production-grade systemd unit (optional, recommended):
-cat > /etc/systemd/system/pmet-smtp-relay.service <<'UNIT'
+```bash
+socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587
+```
+
+Make it permanent (optional, recommended). Write the unit file:
+
+```bash
+tee /etc/systemd/system/pmet-smtp-relay.service <<'SYSTEMD_UNIT'
 [Unit]
 Description=PMET SMTP relay → Brevo
 After=network-online.target
@@ -124,8 +131,12 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-UNIT
+SYSTEMD_UNIT
+```
 
+Enable and start:
+
+```bash
 systemctl daemon-reload
 systemctl enable --now pmet-smtp-relay
 ```
@@ -334,17 +345,24 @@ key 是 Bearer 模式凭据。**一旦出现在任何日志或聊天记录中就
 
 Berlin 服务器用的是动态家宽 IP。Brevo 的 IP 白名单要求固定 IP，所以我们在 DO VPS 上做一跳转发。
 
-**在 DO VPS 上**（一次性，加 systemd unit 可在重启后自动恢复）：
+**在 DO VPS 上** — 三步（一次性）。systemd unit 确保重启后转发器自动恢复；如果你想 `apt upgrade` 或断电之后不用手动重跑，就带上 unit。
+
+安装 socat：
 
 ```bash
-# 如缺 socat 先装
 apt-get install -y socat
+```
 
-# 启动转发：DO VPS 端口 10587 → Brevo 端口 587
-socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587 &
+先手动测试一下（前台运行，Ctrl-C 退出）：
 
-# 生产级 systemd unit（可选，推荐）：
-cat > /etc/systemd/system/pmet-smtp-relay.service <<'UNIT'
+```bash
+socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587
+```
+
+再写成永久服务（可选，推荐）。先把 unit 文件写到 systemd 目录：
+
+```bash
+tee /etc/systemd/system/pmet-smtp-relay.service <<'SYSTEMD_UNIT'
 [Unit]
 Description=PMET SMTP relay → Brevo
 After=network-online.target
@@ -358,8 +376,12 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-UNIT
+SYSTEMD_UNIT
+```
 
+然后启用并启动：
+
+```bash
 systemctl daemon-reload
 systemctl enable --now pmet-smtp-relay
 ```
