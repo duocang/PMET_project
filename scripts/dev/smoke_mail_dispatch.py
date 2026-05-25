@@ -7,7 +7,7 @@ asserts strings, but only a real client tells us whether the inline-CSS
 amber Notes block, action button, and Subject character set survive.
 
 Run:
-    python3 scripts/dev/smoke_mail_dispatch.py wangxuesong29@gmail.com
+    python3 scripts/dev/smoke_mail_dispatch.py you@example.com
 
 Reads SMTP creds from deploy/configure/email_credential.txt the same way
 the worker does. Prints a tagged log line per send. Exits non-zero on

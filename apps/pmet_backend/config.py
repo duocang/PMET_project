@@ -171,6 +171,13 @@ class Config:
                 self.EMAIL_ADDRESS = lines[2].strip()
                 self.EMAIL_SERVER = lines[3].strip()
                 self.EMAIL_PORT = lines[4].strip()
+                # Support host:port format on line 4 (e.g. "206.81.24.229:10587").
+                # The port in the host string wins over line 5.
+                if ":" in self.EMAIL_SERVER:
+                    host, _, port = self.EMAIL_SERVER.rpartition(":")
+                    if port.isdigit():
+                        self.EMAIL_SERVER = host
+                        self.EMAIL_PORT = port
 
         admin_token_file = self.CONFIGURE_DIR / "admin_token.txt"
         if admin_token_file.exists():

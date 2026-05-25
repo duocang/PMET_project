@@ -2,470 +2,590 @@
 
 **[English](#en) · [汉文](#cn)**
 
-How PMET sends and receives mail on `@pmet.online` — SMTP relay (outbound), MX forwarding (inbound), relay chain, and how to operate it day-to-day. Intended for the maintainer (Wang Xuesong) and anyone who inherits the domain.
+How PMET sends and receives mail on `@pmet.online` — SMTP relay, MX forwarding, maintenance, and troubleshooting.
 
 ---
 
 <a id="en"></a>
 
-## Contents (English)
+## Contents
 
-- [1. Architecture at a glance](#en-1)
-- [2. Outbound — Brevo SMTP](#en-2)
-  - [2.1 DNS records (one-time)](#en-2-1)
-  - [2.2 SMTP credentials](#en-2-2)
-  - [2.3 Relay chain: Docker → DO VPS → Brevo](#en-2-3)
-  - [2.4 IP whitelist](#en-2-4)
-- [3. Inbound — ImprovMX forwarding](#en-3)
-- [4. PMET config file](#en-4)
-- [5. Health check](#en-5)
-- [6. Day-to-day](#en-6)
-- [7. Troubleshooting](#en-7)
+- [1. Architecture](#en-1)
+- [2. Why this setup](#en-2)
+- [3. Outbound — Brevo SMTP](#en-3)
+  - [3.1 DNS records](#en-3-1)
+  - [3.2 SMTP credentials](#en-3-2)
+  - [3.3 Relay chain (VPS socat)](#en-3-3)
+  - [3.4 IP whitelist](#en-3-4)
+- [4. Inbound — ImprovMX](#en-4)
+- [5. PMET config file](#en-5)
+- [6. Verification](#en-6)
+- [7. Maintenance](#en-7)
+- [8. Troubleshooting](#en-8)
+- [9. Emergency recovery](#en-9)
+- [10. Known issues](#en-10)
+- [11. Incident log](#en-11)
 
 <a id="en-1"></a>
 
-## 1. Architecture at a glance
+## 1. Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                      pmet.online                          │
 │                                                           │
-│   📤 SEND (outbound)                                       │
-│   docker-container                                        │
-│        │                                                  │
-│        ▼ (production)                                     │
-│   DO VPS socat :10587  ──────►  Brevo :587  ──►  Gmail   │
-│   (206.81.24.229)                                         │
-│        ▲                                                  │
-│        │ (local dev: direct)                              │
-│   docker-container  ──────►  smtp-relay.brevo.com :587    │
+│  📤 SEND (outbound)                                       │
+│  Berlin Docker → DO VPS :10587 (socat) → Brevo :2525     │
+│  (&lt;vps-ip&gt;)                                            │
 │                                                           │
-│   ─────────────────────────────────────────────           │
-│                                                           │
-│   📥 RECEIVE (inbound)                                     │
-│   someone@internet                                        │
-│        │                                                  │
-│        ▼                                                  │
-│   ImprovMX MX records  ──────►  wangxuesong29@gmail.com   │
-│                                                           │
+│  📥 RECEIVE (inbound)                                     │
+│  Internet → ImprovMX MX → admin inbox                     │
 └──────────────────────────────────────────────────────────┘
 ```
 
-| Direction | Service | Cost | What it does |
+| Direction | Service | Cost | Role |
 |---|---|---|---|
-| Outbound (SMTP) | **Brevo** (France, EEA) | Free — 300/day | PMET sends result notifications to users |
-| Outbound relay | **socat** on DO VPS | $0 (existing VPS) | Masks dynamic home IP behind fixed DO IP |
-| Inbound (MX) | **ImprovMX** | Free — 25 aliases | `questions@pmet.online` → Gmail |
+| Outbound | **Brevo** (France, EEA) | Free — 300/day | Transactional email to users |
+| Outbound relay | **socat** on DO VPS | $0 (existing VPS) | Hides dynamic home IP behind fixed DO IP |
+| Inbound | **ImprovMX** | Free — 25 aliases | `questions@pmet.online` → Gmail |
 
 <a id="en-2"></a>
 
-## 2. Outbound — Brevo SMTP
+## 2. Why this setup
 
-Brevo account: `wangxuesong29@gmail.com` (login). Dashboard: [app.brevo.com](https://app.brevo.com).
+Two problems made direct Brevo connections impossible:
 
-<a id="en-2-1"></a>
+| Problem | Detail |
+|---|---|
+| **Dynamic home IP** | Berlin ISP rotates the public IP periodically. Brevo's anti-spam marks residential IP blocks as low-reputation → `525 Unauthorized IP` on every rotation. |
+| **DO blocks port 587** | DigitalOcean blocks outbound 587 on all VPS to prevent spam abuse. This cannot be lifted. Brevo provides **port 2525** as an alternative for cloud-hosted relays. |
 
-### 2.1 DNS records (one-time)
+**Solution**: socat on the DO VPS listens on `:10587` and forwards to `smtp-relay.brevo.com:2525`. Brevo only sees the VPS static IP (`<vps-ip>`), and the 2525 port bypasses DO's 587 block.
 
-Add these at your domain registrar / DNS provider (Aliyun for pmet.online):
+<a id="en-3"></a>
 
-| Type | Host | Value | TTL |
+## 3. Outbound — Brevo SMTP
+
+Brevo account: `your-email@gmail.com` (login placeholder). Dashboard: [app.brevo.com](https://app.brevo.com).
+
+<a id="en-3-1"></a>
+
+### 3.1 DNS records (one-time)
+
+> These are **examples specific to `pmet.online`**. Each domain gets its own values from Brevo → Senders, domains, IPs → Domains → Authenticate. Do not copy-paste.
+
+Add at your DNS provider (Aliyun):
+
+| Type | Host | Value (example only) | TTL |
 |---|---|---|---|
-| TXT | `@` | `brevo-code:1490641405020edd151353c94eb25ad5` | 600 |
-| CNAME | `brevo1._domainkey` | `b1.pmet-online.dkim.brevo.com` | 600 |
-| CNAME | `brevo2._domainkey` | `b2.pmet-online.dkim.brevo.com` | 600 |
+| TXT | `@` | `brevo-code:<your-code>` | 600 |
+| CNAME | `brevo1._domainkey` | `<dkim1>`.dkim.brevo.com | 600 |
+| CNAME | `brevo2._domainkey` | `<dkim2>`.dkim.brevo.com | 600 |
 | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` | 600 |
 
-Verify in Brevo: Senders, domains, IPs → Domains → Authenticate → should be green ✅.
+Verify: Brevo → Senders, domains, IPs → Domains → all green ✅.
 
-<a id="en-2-2"></a>
+<a id="en-3-2"></a>
 
-### 2.2 SMTP credentials
+### 3.2 SMTP credentials
 
 Brevo → SMTP & API → SMTP tab:
 
 | Field | Value |
 |---|---|
-| SMTP server | `smtp-relay.brevo.com` |
-| Port | `587` (STARTTLS) |
-| Login | `ab9e48001@smtp-brevo.com` (auto-generated by Brevo — not your login email) |
-| SMTP key | `xsmtpsib-...` (generated once via **Generate SMTP key** button; stored in a password manager, never in git) |
+| Server | `smtp-relay.brevo.com` |
+| Port | `2525` (STARTTLS) — use 2525, not 587, because DO blocks 587 |
+| Login | `ab9e48001@smtp-brevo.com` (auto-generated, not your login email) |
+| Key | `xsmtpsib-...` (Generate SMTP key → store in password manager, **never git**) |
 
-The key is a Bearer-pattern credential. **Regenerate it if it ever appears in a log or chat.** Brevo → SMTP & API → `...` on the key row → Revoke → Generate new → update `email_credential.txt`.
+Revoke & regenerate the key immediately if it appears in any log, chat, or screenshot.
 
-<a id="en-2-3"></a>
+<a id="en-3-3"></a>
 
-### 2.3 Relay chain: Docker → DO VPS → Brevo
+### 3.3 Relay chain (VPS socat)
 
-The Berlin server uses a dynamic residential IP. Brevo's IP whitelist requires a fixed IP, so we bounce through the DigitalOcean VPS.
+**VPS info:** DigitalOcean Droplet · `<vps-ip>` · Ubuntu 22.04 · SSH: `vpsadmin` / `root`
 
-**On the DO VPS** (once, survives reboots if you add a systemd unit):
+**Deploy the socat service (one-time):**
 
 ```bash
-# Install socat if missing
-apt-get install -y socat
-
-# Run forwarder: DO VPS port 10587 → Brevo port 587
-socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587 &
-
-# Production-grade systemd unit (optional, recommended):
-cat > /etc/systemd/system/pmet-smtp-relay.service <<'UNIT'
+sudo tee /etc/systemd/system/socat-brevo.service <<'EOF'
 [Unit]
-Description=PMET SMTP relay → Brevo
-After=network-online.target
-Wants=network-online.target
+Description=Socat SMTP Relay to Brevo (Port 2525)
+After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587
+ExecStart=/usr/bin/socat -d -d TCP4-LISTEN:10587,fork,reuseaddr,bind=0.0.0.0 TCP4:smtp-relay.brevo.com:2525
 Restart=always
-RestartSec=10
+RestartSec=2
+User=root
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=socat-brevo
 
 [Install]
 WantedBy=multi-user.target
-UNIT
+EOF
 
-systemctl daemon-reload
-systemctl enable --now pmet-smtp-relay
+sudo systemctl daemon-reload
+sudo systemctl enable --now socat-brevo.service
+sudo ufw allow 10587/tcp && sudo ufw reload
 ```
 
-**DO VPS firewall**: open port `10587` (TCP) — DigitalOcean control panel → Networking → Firewalls → add inbound rule.
+**Key points:**
+- Listens on `10587` (all interfaces), forwards to `smtp-relay.brevo.com:2525`
+- `-d -d` logs every connect/disconnect to journal
+- `RestartSec=2` — fast recovery on crash
 
-**On the Berlin PMET host** (`deploy/configure/email_credential.txt`):
+<a id="en-3-4"></a>
 
-```
-ab9e48001@smtp-brevo.com
-<SMTP_KEY>
-noreply@pmet.online
-206.81.24.229
-10587
-```
+### 3.4 IP whitelist
 
-**On your local Mac** (dev only): use direct Brevo — host is `smtp-relay.brevo.com`, port `587`. Docker Desktop Mac can't route through the socat chain; macOS networking is different.
+Brevo → SMTP & API → IP Access → toggle ON:
 
-<a id="en-2-4"></a>
-
-### 2.4 IP whitelist
-
-Brevo → SMTP & API → IP Access → toggle ON → add IPs:
-
-| IP | What |
+| IP | Role |
 |---|---|
-| `206.81.24.229` | DO VPS (production — the only IP Brevo sees when the socat chain is in place) |
-| `93.215.79.1` | Local Mac outbound IP (dev testing only — dynamic, re-add if it changes) |
+| `<vps-ip>` | DO VPS — the **only** IP Brevo sees in production |
+| `<current home IP>` | Dev only — add from [whatismyip.com](https://whatismyip.com) when testing direct |
 
-ISP may rotate your local/home IP. When Brevo suddenly returns `5.7.1 Unauthorized IP address`, go to [whatismyip.com](https://whatismyip.com) from the affected machine, add the new IP, and remove the stale one.
+When mail stops with `525`, the relay chain is bypassed or broken — never add a dynamic IP as a permanent fix.
 
-<a id="en-3"></a>
+<a id="en-4"></a>
 
-## 3. Inbound — ImprovMX forwarding
+## 4. Inbound — ImprovMX
 
-Account: [improvmx.com](https://improvmx.com) (free — 25 aliases). Referral email: `wangxuesong29@gmail.com`.
+Account: [improvmx.com](https://improvmx.com). Referral email: `your-email@gmail.com`.
 
-### DNS records (Aliyun)
+**DNS (Aliyun):**
 
 | Type | Host | Value | Priority |
 |---|---|---|---|
 | MX | `@` | `mx1.improvmx.com` | 10 |
 | MX | `@` | `mx2.improvmx.com` | 20 |
 
-*(If ImprovMX displays different MX servers, use those instead. The values above are the current defaults.)*
+**Aliases:**
 
-### Aliases
-
-| Alias | Forwards to | Public? |
+| Alias | → | Public? |
 |---|---|---|
-| `questions@pmet.online` | `wangxuesong29@gmail.com` | Yes — published in footer / Impressum |
-| *(add more as needed — up to 25 on the free plan)* | | |
-
-To add an alias: ImprovMX dashboard → Aliases → Add.
-
-<a id="en-4"></a>
-
-## 4. PMET config file
-
-`deploy/configure/email_credential.txt` — **gitignored, never committed.** 5 lines:
-
-```
-# line 1: SMTP login username
-ab9e48001@smtp-brevo.com
-
-# line 2: SMTP key (Brevo-generated, stored in password manager)
-xsmtpsib-...
-
-# line 3: "From:" address in outbound mail
-noreply@pmet.online
-
-# line 4: SMTP server host
-smtp-relay.brevo.com          # local dev
-206.81.24.229                 # production (DO VPS socat)
-
-# line 5: SMTP port
-587                            # both
-```
-
-Backend hot-reload: `cd deploy && make restart-api && make restart-worker`.
+| `questions@pmet.online` | `your-private@email.com` | Yes (footer / Impressum) |
 
 <a id="en-5"></a>
 
-## 5. Health check
+## 5. PMET config file
 
-- **SMTP probe**: `/admin` → System health → Run checks → `smtp: ok` (connects + STARTTLS + AUTH — no mail sent).
-- **Live test**: `/submit` → submit a demo task → check Gmail for the notification.
-- **Audit trail**: `/admin` → Activity log → Mail tab — every send attempt is logged with `send_ok` / `send_fail`.
+`deploy/configure/email_credential.txt` — **gitignored, 5 lines:**
+
+```
+ab9e48001@smtp-brevo.com          # line 1: SMTP login
+xsmtpsib-...                      # line 2: SMTP key
+noreply@pmet.online               # line 3: From address
+<vps-ip>:10587               # line 4: SMTP host[:port]  (production)
+# smtp-relay.brevo.com            # line 4: (dev / direct only)
+587                               # line 5: fallback port (overridden by line 4 port if present)
+```
+
+Line 4 supports `host:port` — the parser extracts the port so `smtplib` receives host and port separately.
+
+Apply: `cd deploy && docker compose restart worker`
 
 <a id="en-6"></a>
 
-## 6. Day-to-day
+## 6. Verification
 
-| Thing | Cadence | What to do |
-|---|---|---|
-| SMTP key rotation | ~90 days (good practice) | Brevo → Revoke → Generate → update `email_credential.txt` → `make restart-api` |
-| Brevo IP whitelist | On ISP IP change | When mail stops, check Brevo error code → add new IP at [whatismyip.com](https://whatismyip.com) |
-| Brevo sending quota | Monitor `/admin` → Mail tab → if `send_fail` spikes | Check Brevo dashboard → Usage for the current month |
-| ImprovMX | Never (set and forget) | Only if email forwarding stops working; re-check MX records |
+### VPS side
+
+```bash
+systemctl status socat-brevo      # Active: active (running)
+ss -tulpn | grep :10587           # port listening
+curl -v telnet://smtp-relay.brevo.com:2525  # Brevo reachable → 220 ESMTP banner
+journalctl -u socat-brevo -n 20   # recent connections
+```
+
+### Berlin side
+
+```bash
+nc -zv &lt;vps-ip&gt; 10587        # → succeeded!
+```
+
+### End-to-end
+
+Submit a demo task at `/submit` → check Gmail for notification. Or check `/admin` → Activity log → Mail tab for `send_ok`.
 
 <a id="en-7"></a>
 
-## 7. Troubleshooting
+## 7. Maintenance
+
+| Task | Cadence | Command / Action |
+|---|---|---|
+| Check relay status | Weekly | `systemctl status socat-brevo` on VPS |
+| View relay logs | On demand | `journalctl -u socat-brevo --since today` |
+| Real-time log monitor | Debugging | `journalctl -u socat-brevo -f` |
+| Restart relay | If stuck | `systemctl restart socat-brevo` on VPS |
+| Rotate SMTP key | ~90 days | Brevo → Revoke → Generate → update line 2 → restart worker |
+| Check sending quota | Monthly | Brevo dashboard → Usage |
+| Audit mail events | On demand | `/admin` → Activity log → Mail tab |
+
+<a id="en-8"></a>
+
+## 8. Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `SEND FAILED` — `5.7.1 Unauthorized IP address` | Outbound IP changed or not in Brevo allowlist | Add current IP at Brevo → IP Access |
-| `SEND FAILED` — `Connection unexpectedly closed` | socat not running on DO VPS, or DO firewall blocks 10587 | SSH to DO VPS, restart socat, check firewall |
-| `SEND FAILED` — `Authentication failed` | SMTP key revoked / expired / wrong in `email_credential.txt` | Brevo → Regenerate key → update line 2 |
-| Mail sent but lands in Gmail Spam | DKIM not set up, or domain reputation low for a new sender | Check DNS records at Brevo → Domains; wait a few sends for reputation build |
-| ImprovMX shows red | MX records missing from DNS | Check Aliyun DNS → add/verify `mx1.improvmx.com` and `mx2.improvmx.com` |
+| `525 Unauthorized IP` | Direct connection, not through relay | Check line 4 points to VPS; verify socat running |
+| `Connection unexpectedly closed` / timeout | socat down, or ufw blocks 10587 | `systemctl restart socat-brevo`; `ufw allow 10587/tcp` |
+| `535 Authentication failed` | SMTP key revoked / wrong | Brevo → regenerate key → update line 2 |
+| TCP connects but no SMTP banner | Wrong Brevo port on VPS | Check socat uses `:2525`, not `:587` |
+| Mail in Gmail Spam | DKIM/DMARC missing | Verify Brevo → Domains shows all green |
+| socat exits immediately | Port 10587 already in use | `lsof -i :10587` → kill the stale process |
+
+<a id="en-9"></a>
+
+## 9. Emergency recovery
+
+If the VPS relay is completely down and mail must go out **now**:
+
+1. Visit [whatismyip.com](https://whatismyip.com) from the Berlin host → note the IP
+2. Brevo → SMTP & API → IP Access → add that IP
+3. Edit `email_credential.txt` line 4 → `smtp-relay.brevo.com` (direct)
+4. `docker compose restart worker`
+5. Wait ~5 min for Brevo to apply the whitelist change
+
+This is **temporary** — the home IP will rotate again. Fix the relay and revert to VPS as soon as possible.
+
+<a id="en-10"></a>
+
+## 10. Known issues
+
+| Issue | Impact | Mitigation |
+|---|---|---|
+| DO blocks outbound 587 | Must use 2525 | socat configured with 2525 upstream |
+| socat has no queue | Mail lost if Brevo unreachable | Acceptable for now (< 300/day); [future: Postfix](#en-10-future) |
+| No auth on port 10587 | Anyone who knows the IP can relay | Don't publish the VPS IP; [future: Postfix + SASL](#en-10-future) |
+| Single VPS = single point of failure | Relay down → mail stops | Emergency recovery procedure in [§9](#en-9) |
+
+<a id="en-10-future"></a>
+
+**Future improvements:**
+- **Postfix relay** instead of socat — mail queue with retry, SMTP auth, multi-upstream failover
+- **Monitoring** — Prometheus + Grafana alert on relay down
+- **HA** — second VPS relay node with DNS round-robin
+
+<a id="en-11"></a>
+
+## 11. Incident log
+
+### 2026-05-24 — All mail broken: 525 Unauthorized IP
+
+**Symptom:** Every email returned `525 5.7.1 Unauthorized IP address`.
+
+**Root cause:** Home IP rotated. `email_credential.txt` was set to `smtp-relay.brevo.com` (direct) instead of the VPS relay, so Brevo saw the new (unlisted) home IP. Additionally, the VPS socat was not running — no systemd unit had been created yet.
+
+**Timeline (UTC):**
+
+| Time | Event |
+|---|---|
+| May 17–20 | `send_ok` — normal |
+| May 24 06:55 | First `525` — ISP rotated IP |
+| May 24 14:51 | `535` — credential file briefly misconfigured |
+| May 25 09:49 | VPS socat systemd unit created, credential fixed to `<vps-ip>:10587` |
+| May 25 ~10:00 | End-to-end test passed — relay chain working |
+
+**Prevention:**
+- `tests/unit/test_mail_dispatch.py` → `SmtpErrorHandlingTests` validates Brevo error codes (525, 535) produce distinct `send_fail` audit records
+- socat now runs as a systemd service with `Restart=always`, surviving VPS reboots
+- `config.py` line 4 now supports `host:port` format
 
 ---
 
 <a id="cn"></a>
 
-## 目录（汉文）
+## 目录
 
-- [1. 总体架构](#cn-1)
-- [2. 发信 —— Brevo SMTP](#cn-2)
-  - [2.1 DNS 记录（一次性）](#cn-2-1)
-  - [2.2 SMTP 凭据](#cn-2-2)
-  - [2.3 转发链：Docker → DO VPS → Brevo](#cn-2-3)
-  - [2.4 IP 白名单](#cn-2-4)
-- [3. 收信 —— ImprovMX 转发](#cn-3)
-- [4. PMET 配置文件](#cn-4)
-- [5. 健康检查](#cn-5)
-- [6. 日常运维](#cn-6)
-- [7. 排错](#cn-7)
+- [1. 架构](#cn-1)
+- [2. 为什么这样设计](#cn-2)
+- [3. 发信 — Brevo SMTP](#cn-3)
+  - [3.1 DNS 记录](#cn-3-1)
+  - [3.2 SMTP 凭据](#cn-3-2)
+  - [3.3 转发链（VPS socat）](#cn-3-3)
+  - [3.4 IP 白名单](#cn-3-4)
+- [4. 收信 — ImprovMX](#cn-4)
+- [5. PMET 配置文件](#cn-5)
+- [6. 验证](#cn-6)
+- [7. 日常运维](#cn-7)
+- [8. 排错](#cn-8)
+- [9. 紧急恢复](#cn-9)
+- [10. 已知问题](#cn-10)
+- [11. 事件日志](#cn-11)
 
 <a id="cn-1"></a>
 
-## 1. 总体架构
+## 1. 架构
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                      pmet.online                          │
 │                                                           │
-│   📤 发信（出站）                                          │
-│   docker-container                                        │
-│        │                                                  │
-│        ▼ (生产环境)                                        │
-│   DO VPS socat :10587  ──────►  Brevo :587  ──►  Gmail   │
-│   (206.81.24.229)                                         │
-│        ▲                                                  │
-│        │ (本地开发：直连)                                   │
-│   docker-container  ──────►  smtp-relay.brevo.com :587    │
+│  📤 发信（出站）                                          │
+│  Berlin Docker → DO VPS :10587 (socat) → Brevo :2525     │
+│  (&lt;vps-ip&gt;)                                            │
 │                                                           │
-│   ─────────────────────────────────────────────           │
-│                                                           │
-│   📥 收信（入站）                                          │
-│   发件人@互联网                                            │
-│        │                                                  │
-│        ▼                                                  │
-│   ImprovMX MX 记录  ──────►  wangxuesong29@gmail.com      │
-│                                                           │
+│  📥 收信（入站）                                          │
+│  互联网 → ImprovMX MX → 管理员邮箱                         │
 └──────────────────────────────────────────────────────────┘
 ```
 
-| 方向 | 服务 | 费用 | 做什么 |
+| 方向 | 服务 | 费用 | 作用 |
 |---|---|---|---|
-| 发信（SMTP） | **Brevo**（法国，EEA） | 免费 —— 300 封/天 | PMET 发结果通知给用户 |
-| 发信中继 | **socat** 运行在 DO VPS | $0（现有 VPS） | 把动态家宽 IP 隐藏在固定 DO IP 后面 |
-| 收信（MX） | **ImprovMX** | 免费 —— 25 个别名 | `questions@pmet.online` → Gmail |
+| 发信 | **Brevo**（法国，EEA） | 免费 300 封/天 | 事务性邮件通知用户 |
+| 发信中继 | **socat** 在 DO VPS | $0（现有 VPS） | 动态家宽 IP 隐藏在 VPS 固定 IP 之后 |
+| 收信 | **ImprovMX** | 免费 25 别名 | `questions@pmet.online` → Gmail |
 
 <a id="cn-2"></a>
 
-## 2. 发信 —— Brevo SMTP
+## 2. 为什么这样设计
 
-Brevo 账号：`wangxuesong29@gmail.com`（登录）。控制台：[app.brevo.com](https://app.brevo.com)。
+两个问题导致无法直连 Brevo：
 
-<a id="cn-2-1"></a>
+| 问题 | 详情 |
+|---|---|
+| **家宽动态 IP** | Berlin ISP 定期更换公网 IP。Brevo 反垃圾系统将住宅 IP 段标记为低信誉，每次 IP 变动返回 `525 Unauthorized IP`。 |
+| **DO 封禁 587 端口** | DigitalOcean 为防止垃圾邮件滥用，默认封禁所有 VPS 的出站 587 端口，无法解除。Brevo 提供 **2525 端口** 作为云服务商环境的替代。 |
 
-### 2.1 DNS 记录（一次性）
+**方案**：VPS 上 socat 监听 `:10587`，转发到 `smtp-relay.brevo.com:2525`。Brevo 只看到 VPS 的固定 IP（`<vps-ip>`），2525 端口绕过 DO 的 587 封锁。
 
-在域名注册商 / DNS 服务商（阿里云）添加：
+<a id="cn-3"></a>
 
-| 类型 | 主机记录 | 记录值 | TTL |
+## 3. 发信 — Brevo SMTP
+
+Brevo 账号：`your-email@gmail.com`（登录占位）。控制台：[app.brevo.com](https://app.brevo.com)。
+
+<a id="cn-3-1"></a>
+
+### 3.1 DNS 记录（一次性）
+
+> 以下为 **`pmet.online` 的示例值**。每个域名需从 Brevo → Senders, domains, IPs → Domains → Authenticate 获取自己的记录值。切勿直接复制粘贴。
+
+在 DNS 服务商（阿里云）添加：
+
+| 类型 | 主机记录 | 记录值（仅示例） | TTL |
 |---|---|---|---|
-| TXT | `@` | `brevo-code:1490641405020edd151353c94eb25ad5` | 600 |
-| CNAME | `brevo1._domainkey` | `b1.pmet-online.dkim.brevo.com` | 600 |
-| CNAME | `brevo2._domainkey` | `b2.pmet-online.dkim.brevo.com` | 600 |
+| TXT | `@` | `brevo-code:<your-code>` | 600 |
+| CNAME | `brevo1._domainkey` | `<dkim1>`.dkim.brevo.com | 600 |
+| CNAME | `brevo2._domainkey` | `<dkim2>`.dkim.brevo.com | 600 |
 | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` | 600 |
 
 验证：Brevo → Senders, domains, IPs → Domains → 全部绿勾 ✅。
 
-<a id="cn-2-2"></a>
+<a id="cn-3-2"></a>
 
-### 2.2 SMTP 凭据
+### 3.2 SMTP 凭据
 
 Brevo → SMTP & API → SMTP 标签页：
 
 | 字段 | 值 |
 |---|---|
-| SMTP 服务器 | `smtp-relay.brevo.com` |
-| 端口 | `587`（STARTTLS） |
-| 登录名 | `ab9e48001@smtp-brevo.com`（Brevo 自动生成 —— **不是**你的登录邮箱） |
-| SMTP key | `xsmtpsib-...`（通过 **Generate SMTP key** 按钮一次生成；存密码管理器，绝不入 git） |
+| 服务器 | `smtp-relay.brevo.com` |
+| 端口 | `2525`（STARTTLS）—— 用 2525 而非 587，因为 DO 封禁 587 |
+| 登录名 | `ab9e48001@smtp-brevo.com`（Brevo 自动生成，不是登录邮箱） |
+| Key | `xsmtpsib-...`（Generate SMTP key 生成；存密码管理器，**绝不入 git**） |
 
-key 是 Bearer 模式凭据。**一旦出现在任何日志或聊天记录中就立即作废重新生成。**Brevo → SMTP & API → 点 key 行的 `...` → Revoke → Generate new → 更新 `email_credential.txt`。
+Key 一旦出现在日志、聊天或截图中立即作废重新生成。
 
-<a id="cn-2-3"></a>
+<a id="cn-3-3"></a>
 
-### 2.3 转发链：Docker → DO VPS → Brevo
+### 3.3 转发链（VPS socat）
 
-Berlin 服务器用的是动态家宽 IP。Brevo 的 IP 白名单要求固定 IP，所以我们在 DO VPS 上做一跳转发。
+**VPS 信息：** DigitalOcean Droplet · `<vps-ip>` · Ubuntu 22.04 · SSH: `vpsadmin` / `root`
 
-**在 DO VPS 上**（一次性，加 systemd unit 可在重启后自动恢复）：
+**部署 socat 服务（一次性）：**
 
 ```bash
-# 如缺 socat 先装
-apt-get install -y socat
-
-# 启动转发：DO VPS 端口 10587 → Brevo 端口 587
-socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587 &
-
-# 生产级 systemd unit（可选，推荐）：
-cat > /etc/systemd/system/pmet-smtp-relay.service <<'UNIT'
+sudo tee /etc/systemd/system/socat-brevo.service <<'EOF'
 [Unit]
-Description=PMET SMTP relay → Brevo
-After=network-online.target
-Wants=network-online.target
+Description=Socat SMTP Relay to Brevo (Port 2525)
+After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/socat TCP4-LISTEN:10587,fork,reuseaddr TCP4:smtp-relay.brevo.com:587
+ExecStart=/usr/bin/socat -d -d TCP4-LISTEN:10587,fork,reuseaddr,bind=0.0.0.0 TCP4:smtp-relay.brevo.com:2525
 Restart=always
-RestartSec=10
+RestartSec=2
+User=root
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=socat-brevo
 
 [Install]
 WantedBy=multi-user.target
-UNIT
+EOF
 
-systemctl daemon-reload
-systemctl enable --now pmet-smtp-relay
+sudo systemctl daemon-reload
+sudo systemctl enable --now socat-brevo.service
+sudo ufw allow 10587/tcp && sudo ufw reload
 ```
 
-**DO VPS 防火墙**：开放端口 `10587`（TCP）—— DigitalOcean 控制台 → Networking → Firewalls → 添加入站规则。
+**要点：**
+- 监听 `10587`（所有接口），转发到 `smtp-relay.brevo.com:2525`
+- `-d -d` 每次连接/断开均写入 journal
+- `RestartSec=2` — 崩溃后快速恢复
 
-**Berlin PMET 主机**（`deploy/configure/email_credential.txt`）：
+<a id="cn-3-4"></a>
 
-```
-ab9e48001@smtp-brevo.com
-<SMTP_KEY>
-noreply@pmet.online
-206.81.24.229
-10587
-```
+### 3.4 IP 白名单
 
-**本地 Mac**（仅开发用）：直连 Brevo —— host 填 `smtp-relay.brevo.com`，port 填 `587`。macOS Docker Desktop 不能走 socat 链；macOS 网络栈不同。
+Brevo → SMTP & API → IP Access → 开启：
 
-<a id="cn-2-4"></a>
-
-### 2.4 IP 白名单
-
-Brevo → SMTP & API → IP Access → **开启** → 添加 IP：
-
-| IP | 是什么 |
+| IP | 用途 |
 |---|---|
-| `206.81.24.229` | DO VPS（生产 —— socat 链在的时候 Brevo 只看到这个 IP） |
-| `93.215.79.1` | 本地 Mac 的出口 IP（仅本地测试用 —— 非固定，变了就重新加） |
+| `<vps-ip>` | DO VPS — 生产环境中 Brevo **唯一**看到的 IP |
+| `<当前家宽 IP>` | 仅开发测试 — 从 [whatismyip.com](https://whatismyip.com) 获取 |
 
-ISP 可能重新分配你的本地 / 家里 IP。如果 Brevo 突然返回 `5.7.1 Unauthorized IP address`，从对应机器访问 [whatismyip.com](https://whatismyip.com) 获取新 IP，添加并删掉过时的。
+邮件出现 `525` 说明绕过了中继或中继挂了 —— 不要把动态 IP 加白名单当永久方案。
 
-<a id="cn-3"></a>
+<a id="cn-4"></a>
 
-## 3. 收信 —— ImprovMX 转发
+## 4. 收信 — ImprovMX
 
-账号：[improvmx.com](https://improvmx.com)（免费 —— 25 个别名）。关联邮箱：`wangxuesong29@gmail.com`。
+账号：[improvmx.com](https://improvmx.com)。关联邮箱：`your-email@gmail.com`。
 
-### DNS 记录（阿里云）
+**DNS（阿里云）：**
 
 | 类型 | 主机记录 | 记录值 | 优先级 |
 |---|---|---|---|
 | MX | `@` | `mx1.improvmx.com` | 10 |
 | MX | `@` | `mx2.improvmx.com` | 20 |
 
-*（如果 ImprovMX 显示的 MX 服务器与此不同，以它的为准。以上为当前默认值。）*
+**别名：**
 
-### 转发别名
-
-| 别名 | 转发到 | 对外公开？ |
+| 别名 | → | 公开？ |
 |---|---|---|
-| `questions@pmet.online` | `wangxuesong29@gmail.com` | 是 —— 写在 footer / Impressum |
-| *（需要可继续加，免费版最多 25 个）* | | |
-
-添加别名：ImprovMX 控制台 → Aliases → Add。
-
-<a id="cn-4"></a>
-
-## 4. PMET 配置文件
-
-`deploy/configure/email_credential.txt` —— **gitignored，绝不 commit。** 5 行：
-
-```
-# 第 1 行：SMTP 登录名
-ab9e48001@smtp-brevo.com
-
-# 第 2 行：SMTP key（Brevo 生成，存密码管理器）
-xsmtpsib-...
-
-# 第 3 行：发件人 "From:" 地址
-noreply@pmet.online
-
-# 第 4 行：SMTP 服务器主机
-smtp-relay.brevo.com          # 本地开发
-206.81.24.229                 # 生产环境（DO VPS socat）
-
-# 第 5 行：SMTP 端口
-587                            # 两者相同
-```
-
-后端热重载：`cd deploy && make restart-api && make restart-worker`。
+| `questions@pmet.online` | `your-private@email.com` | 是（footer / Impressum） |
 
 <a id="cn-5"></a>
 
-## 5. 健康检查
+## 5. PMET 配置文件
 
-- **SMTP probe**：`/admin` → System health → Run checks → `smtp: ok`（连接 + STARTTLS + AUTH —— 不真发邮件）。
-- **实战测试**：`/submit` → 提交一个 demo 任务 → 去 Gmail 查收通知邮件。
-- **审计追踪**：`/admin` → Activity log → Mail tab —— 每封发送尝试都用 `send_ok` / `send_fail` 记录下来。
+`deploy/configure/email_credential.txt` — **gitignored，5 行：**
+
+```
+ab9e48001@smtp-brevo.com          # 第 1 行：SMTP 登录名
+xsmtpsib-...                      # 第 2 行：SMTP key
+noreply@pmet.online               # 第 3 行：发件人地址
+<vps-ip>:10587               # 第 4 行：SMTP 主机[:端口]（生产环境）
+# smtp-relay.brevo.com            # 第 4 行：（开发/直连用）
+587                               # 第 5 行：备用端口（若第 4 行含端口则被覆盖）
+```
+
+第 4 行支持 `host:port` 格式，解析器会自动提取端口。
+
+生效：`cd deploy && docker compose restart worker`
 
 <a id="cn-6"></a>
 
-## 6. 日常运维
+## 6. 验证
 
-| 做什么 | 频率 | 操作 |
-|---|---|---|
-| SMTP key 轮换 | ~90 天（推荐） | Brevo → Revoke → Generate → 更新 `email_credential.txt` → `make restart-api` |
-| Brevo IP 白名单 | ISP 换 IP 时 | 发信失败 → 查 Brevo 错误码 → [whatismyip.com](https://whatismyip.com) 取新 IP 添加 |
-| Brevo 发送额度 | 关注 `/admin` → Mail tab → `send_fail` 飙升 | 查看 Brevo 控制台 → Usage 本月消耗 |
-| ImprovMX | 不需要（设了就不用管） | 仅在邮件转发失效时重新核对 MX 记录 |
+### VPS 端
+
+```bash
+systemctl status socat-brevo      # Active: active (running)
+ss -tulpn | grep :10587           # 端口监听中
+curl -v telnet://smtp-relay.brevo.com:2525  # Brevo 可达 → 220 ESMTP banner
+journalctl -u socat-brevo -n 20   # 最近连接记录
+```
+
+### Berlin 端
+
+```bash
+nc -zv &lt;vps-ip&gt; 10587        # → succeeded!
+```
+
+### 端到端
+
+在 `/submit` 提交一个 demo 任务 → Gmail 查收通知。或查看 `/admin` → Activity log → Mail tab 的 `send_ok` 记录。
 
 <a id="cn-7"></a>
 
-## 7. 排错
+## 7. 日常运维
 
-| 现象 | 可能原因 | 怎么处理 |
+| 任务 | 频率 | 命令 / 操作 |
 |---|---|---|
-| `SEND FAILED` —— `5.7.1 Unauthorized IP address` | 出站 IP 变了，或没有列入 Brevo 白名单 | Brevo → IP Access 添加当前 IP |
-| `SEND FAILED` —— `Connection unexpectedly closed` | DO VPS 上 socat 没在跑，或 DO 防火墙挡了 10587 | SSH 到 DO VPS，重启 socat，检查防火墙 |
-| `SEND FAILED` —— `Authentication failed` | SMTP key 已作废 / 过期 / `email_credential.txt` 里写错 | Brevo → 重新生成 key → 更新第 2 行 |
-| 邮件已发但进 Gmail 垃圾箱 | DKIM 未配好，或新域名发信方信誉还在积累 | Brevo → Domains 检查 DNS 记录；多发几次信积累信誉 |
-| ImprovMX 显示红点 | DNS 里缺少 MX 记录 | 检查阿里云 DNS → 添加 / 确认 `mx1.improvmx.com` 和 `mx2.improvmx.com` |
+| 检查中继状态 | 每周 | `systemctl status socat-brevo`（VPS 上） |
+| 查看中继日志 | 按需 | `journalctl -u socat-brevo --since today` |
+| 实时监控日志 | 调试时 | `journalctl -u socat-brevo -f` |
+| 重启中继 | 卡住时 | `systemctl restart socat-brevo`（VPS 上） |
+| 轮换 SMTP key | ~90 天 | Brevo → Revoke → Generate → 更新第 2 行 → restart worker |
+| 检查发送额度 | 每月 | Brevo 控制台 → Usage |
+| 审计邮件事件 | 按需 | `/admin` → Activity log → Mail tab |
+
+<a id="cn-8"></a>
+
+## 8. 排错
+
+| 现象 | 可能原因 | 处理 |
+|---|---|---|
+| `525 Unauthorized IP` | 直连而非走中继 | 检查第 4 行是否指向 VPS；确认 socat 在运行 |
+| `Connection unexpectedly closed` / 超时 | socat 挂了或 ufw 挡了 10587 | `systemctl restart socat-brevo`；`ufw allow 10587/tcp` |
+| `535 Authentication failed` | SMTP key 作废或写错 | Brevo → 重新生成 key → 更新第 2 行 |
+| TCP 通但无 SMTP banner | VPS 上 Brevo 端口配错 | 检查 socat 用的是 `:2525` 不是 `:587` |
+| 邮件进 Gmail 垃圾箱 | DKIM/DMARC 缺失 | Brevo → Domains 确认全部绿勾 |
+| socat 启动即退出 | 10587 端口被占用 | `lsof -i :10587` → 杀掉占用进程 |
+
+<a id="cn-9"></a>
+
+## 9. 紧急恢复
+
+VPS 中继完全失效、必须立即发信时：
+
+1. Berlin 主机访问 [whatismyip.com](https://whatismyip.com) → 记下当前 IP
+2. Brevo → SMTP & API → IP Access → 添加该 IP
+3. 编辑 `email_credential.txt` 第 4 行 → `smtp-relay.brevo.com`（直连）
+4. `docker compose restart worker`
+5. 等 ~5 分钟让 Brevo 白名单生效
+
+**这是临时方案** —— 家宽 IP 还会变。尽快修复中继并切回 VPS。
+
+<a id="cn-10"></a>
+
+## 10. 已知问题
+
+| 问题 | 影响 | 缓解措施 |
+|---|---|---|
+| DO 封禁出站 587 | 必须用 2525 | socat 已配置 2525 上游 |
+| socat 无队列机制 | Brevo 不可达时邮件直接丢失 | 当前量小可接受（< 300/天）；[未来：Postfix](#cn-10-future) |
+| 10587 端口无认证 | 知道 IP 即可中继 | 勿公开 VPS IP；[未来：Postfix + SASL](#cn-10-future) |
+| 单 VPS = 单点故障 | 中继挂 → 邮件停 | 紧急恢复流程见 [§9](#cn-9) |
+
+<a id="cn-10-future"></a>
+
+**未来改进：**
+- **Postfix 中继** 替代 socat — 邮件队列 + 自动重试 + SMTP 认证 + 多上游故障转移
+- **监控告警** — Prometheus + Grafana 监控端口状态
+- **高可用** — 第二个 VPS 中继节点 + DNS 轮询
+
+<a id="cn-11"></a>
+
+## 11. 事件日志
+
+### 2026-05-24 — 全部邮件静默失败：525 Unauthorized IP
+
+**现象：** 所有邮件返回 `525 5.7.1 Unauthorized IP address`。
+
+**根因：** 家宽 IP 被 ISP 更换。`email_credential.txt` 配置为 `smtp-relay.brevo.com`（直连）而非 VPS 中继，导致 Brevo 看到新的（不在白名单的）家宽 IP。同时 VPS 上 socat 未运行 —— 此前从未创建 systemd 服务。
+
+**时间线（UTC）：**
+
+| 时间 | 事件 |
+|---|---|
+| 5 月 17–20 日 | `send_ok` — 正常 |
+| 5 月 24 日 06:55 | 首次 `525` — ISP 更换 IP |
+| 5 月 24 日 14:51 | `535` — credential 文件短暂配错 |
+| 5 月 25 日 09:49 | VPS socat systemd 单元创建，credential 改为 `<vps-ip>:10587` |
+| 5 月 25 日 ~10:00 | 端到端测试通过 — 中继链恢复 |
+
+**预防措施：**
+- `tests/unit/test_mail_dispatch.py` → `SmtpErrorHandlingTests` 验证 Brevo 错误码（525, 535）产生可区分的 `send_fail` 审计记录
+- socat 现作为 systemd 服务运行，`Restart=always`，VPS 重启后自动恢复
+- `config.py` 第 4 行支持 `host:port` 格式

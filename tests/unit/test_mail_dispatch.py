@@ -214,6 +214,94 @@ class BuildPartialLinkTests(unittest.TestCase):
 # dependency bump that loosens validation doesn't quietly open the
 # attack surface.
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# S3 — SMTP error handling.
+#
+# _send_email must surface Brevo-specific error codes into the audit
+# log so the operator can distinguish "IP changed → update whitelist"
+# (525) from "key rotated → update credential file" (535) from
+# transient network blips.  A silent False return with a swallowed
+# exception is not enough — the audit record must carry the SMTP
+# status code and the server message.
+# ----------------------------------------------------------------------
+class SmtpErrorHandlingTests(unittest.TestCase):
+    """Verify _send_email catches SMTP errors and writes an actionable
+    audit record (category=mail, action=send_fail) that includes the
+    SMTP status code and server message.  Brevo's per-error
+    remediation is documented in docs/email-setup.md §7.
+    """
+
+    def setUp(self):
+        self.mail = MailService()
+        # audit is imported inside _send_email via `from . import audit`,
+        # which resolves to pmet_backend.services.audit at runtime.
+        self.audit_patcher = patch("pmet_backend.services.audit.emit")
+        self.mock_audit = self.audit_patcher.start()
+
+    def tearDown(self):
+        self.audit_patcher.stop()
+
+    # -- helpers ---------------------------------------------------------
+    def _assert_audit_fail(self, expected_in_error: str):
+        """Verify the last audit.emit call was a mail send_fail whose
+        detail.error contains *expected_in_error*."""
+        self.mock_audit.assert_called()
+        # Find the send_fail call
+        fail_calls = [
+            c for c in self.mock_audit.call_args_list
+            if c.kwargs.get("action") == "send_fail"
+        ]
+        self.assertTrue(fail_calls, "Expected audit.emit with action=send_fail")
+        kwargs = fail_calls[-1].kwargs
+        self.assertEqual(kwargs["category"], "mail")
+        self.assertFalse(kwargs["ok"])
+        error_detail = kwargs.get("detail", {}).get("error", "")
+        self.assertIn(expected_in_error, error_detail)
+
+    # -- tests -----------------------------------------------------------
+    def test_unauthorized_ip_525(self):
+        """Brevo error 525: the connecting IP is not in Brevo's allowlist."""
+        from smtplib import SMTPResponseException
+        exc = SMTPResponseException(525, b"5.7.1 Unauthorized IP address")
+        with patch("smtplib.SMTP") as mock_smtp:
+            mock_smtp.return_value.__enter__.return_value.starttls.side_effect = exc
+            ok = self.mail._send_email("u@x.test", "subj", "body")
+        self.assertFalse(ok)
+        self._assert_audit_fail("525")
+
+    def test_authentication_failed_535(self):
+        """Brevo error 535: SMTP key revoked / expired / wrong."""
+        from smtplib import SMTPAuthenticationError
+        exc = SMTPAuthenticationError(535, b"5.7.8 Authentication failed")
+        with patch("smtplib.SMTP") as mock_smtp:
+            mock_smtp.return_value.__enter__.return_value.login.side_effect = exc
+            ok = self.mail._send_email("u@x.test", "subj", "body")
+        self.assertFalse(ok)
+        self._assert_audit_fail("535")
+
+    def test_connection_refused(self):
+        """socat relay down or Brevo unreachable."""
+        with patch("smtplib.SMTP") as mock_smtp:
+            mock_smtp.side_effect = ConnectionRefusedError("Connection refused")
+            ok = self.mail._send_email("u@x.test", "subj", "body")
+        self.assertFalse(ok)
+        self._assert_audit_fail("Connection refused")
+
+    def test_smtp_not_configured_skips(self):
+        """When SMTP creds are missing, audit send_skip — not send_fail."""
+        self.mail.server = ""
+        ok = self.mail._send_email("u@x.test", "subj", "body")
+        self.assertFalse(ok)
+        skip_calls = [
+            c for c in self.mock_audit.call_args_list
+            if c.kwargs.get("action") == "send_skip"
+        ]
+        self.assertTrue(skip_calls)
+        kwargs = skip_calls[-1].kwargs
+        self.assertEqual(kwargs["category"], "mail")
+        self.assertIn("not configured", kwargs["detail"]["reason"])
+
+
 class EmailHeaderInjectionTests(unittest.TestCase):
     """Verify Pydantic's EmailStr rejects the CRLF shapes that would
     allow SMTP header injection. The TaskCreate model is the gate
@@ -275,6 +363,7 @@ if __name__ == "__main__":
     suite = unittest.TestSuite([
         loader.loadTestsFromTestCase(MailDispatchTests),
         loader.loadTestsFromTestCase(BuildPartialLinkTests),
+        loader.loadTestsFromTestCase(SmtpErrorHandlingTests),
         loader.loadTestsFromTestCase(EmailHeaderInjectionTests),
     ])
     runner = unittest.TextTestRunner(verbosity=2)

@@ -30,7 +30,7 @@ Co-occurrence suggests two TFs may physically cooperate to regulate the same gen
 
 > browser submits → API drops a job on redis → worker pulls it, runs the workflow under [`scripts/workflows/`](scripts/workflows/), writes outputs to `results/app/<task_id>/` → email goes out with a download link
 
-— see [§9](#en-9) for the deployment.
+— see [§9](#en-9) for the deployment details.
 
 > **New to motif analysis?** [`docs/glossary.md`](docs/glossary.md) has one-paragraph definitions for the domain words this README throws around (motif vs hit, homotypic vs heterotypic, IC threshold, raw p vs adj_p_BH, …).
 
@@ -295,6 +295,7 @@ apps/
 deploy/        docker-compose, nginx, Dockerfiles
 data/          demo / fixture data (large data is gitignored)
 tests/
+  unit/          Python/R/bash/TS unit tests (one file per fixed bug)
   audit/         workflow audit + auto-rendered docs/workflows/*.md
   baseline/      regression fingerprints
   integration/   end-to-end tests
@@ -322,6 +323,7 @@ Anything too detailed for this README lives under [`docs/`](docs/). One-line tou
 - [`docs/perf/`](docs/perf/) — performance investigations: why MinHash ships off ([`minhash_calibration.md`](docs/perf/minhash_calibration.md)) and wall-clock for canonical inputs ([`runtime_reference.md`](docs/perf/runtime_reference.md)).
 - [`docs/tests/coverage.md`](docs/tests/coverage.md) — per-track case enumeration for [§10](#en-10).
 - [`docs/deployment.md`](docs/deployment.md) — deep-dive web stack ops (SSL, scaling, backup, operational troubleshooting); companion to [§9](#en-9) below.
+- [`docs/email-setup.md`](docs/email-setup.md) — outbound SMTP relay (Brevo + DO VPS socat), inbound MX forwarding (ImprovMX), maintenance, and troubleshooting.
 - [`docs/archive/`](docs/archive/) — pre-monorepo material kept for historical reference (verification log, the old 03..07 audit docs, etc.).
 
 [`docs/README.md`](docs/README.md) is the topic-to-document index — start there if you came with a specific question.
@@ -342,7 +344,7 @@ You need on the host (only `docker` is hard-required to bring the stack up; the 
 | Free TCP port `5960` on the host | nginx publishes here; the only port `make up` exposes outwards | `lsof -nP -iTCP:5960 -sTCP:LISTEN` should return nothing |
 | `data/reference/TAIR10.{fasta,gff3}` (~250 MB) | needed by the `promoters` workflow | `make fetch-data` (also pulls Tier 2; see [§2](#en-2)) |
 | `data/precomputed_indexes/<species>/...` (~16 GB) | needed by the `promoters_pre` mode | `make fetch-data` (run **once**) |
-| `deploy/configure/email_credential.txt` | so users get a result-link email when their task finishes; without it task completion still works, just no notification | 5 lines: `username` / `password` (Gmail app-password recommended) / `from_address` / `smtp_server` / `port`. Gitignored — **never commit it**. |
+| `deploy/configure/email_credential.txt` | so users get a result-link email when their task finishes; without it task completion still works, just no notification | 5 lines: `username` / `password` (Brevo SMTP key) / `from_address` / `smtp_server` / `port`. Gitignored — **never commit it**. See [`docs/email-setup.md`](docs/email-setup.md) for full relay architecture, Brevo/DNS/ImprovMX setup, and troubleshooting. |
 | `deploy/configure/admin_token.txt` | enables admin features (see [§9.6](#en-9)); without it `/admin/*` returns `503` | `openssl rand -hex 32 > deploy/configure/admin_token.txt`. Gitignored — **never commit it**. |
 | `deploy/configure/public_base_url.txt` | needed for emails to contain a clickable link back to your deployment; without it the task still completes and the in-browser flow still works, only the email loses its button | one line, **bare domain only**: `https://pmet.example.org` (no path). The backend appends `/tasks/<id>` and `/api/...` itself. Static-file path of the result zip is owned by the docker nginx, not by this file — for `localhost` you can leave this empty and use the in-browser path in [§9.3](#en-9). |
 
@@ -427,7 +429,7 @@ Finer deploy targets: `cd deploy && make help`.
 
 ## 10. Tests & regression baseline
 
-Six tracks, each catching a **different class of regression**. Fastest first; each has a `make` target. **`make test`** chains the three fast hermetic tracks (core + unit + integration, ~10 s) as the default pre-commit gate. **`make test-all`** layers on the backend API smoke + the CLI baseline for ~30 s of "everything that runs without an external service." The audit + E2E tracks each need a heavier setup and stay opt-in.
+Seven tracks, each catching a **different class of regression**. Fastest first; each has a `make` target. **`make test`** chains the three fast hermetic tracks (core + unit + integration, ~10 s) as the default pre-commit gate. **`make test-all`** layers on the backend API smoke + the CLI baseline for ~30 s of "everything that runs without an external service." The audit + E2E tracks each need a heavier setup and stay opt-in.
 
 | Track | Command | Why & runtime |
 |---|---|---|
@@ -478,7 +480,7 @@ If none of these match, the next places to look are [`tests/integration/smoke/ru
 
 ## 12. Migration history
 
-This repo is the union of three previously-separate directories (`PMET_project`, `pmet_analysis_pipeline`, `pmet_shiny_app`), unified at tag `v0.1.0-monorepo`. See [`tests/baseline/README.md`](tests/baseline/README.md) for the fingerprints used to verify no regressions across the move.
+This repo is the union of three previously separate directories (`PMET_project`, `pmet_analysis_pipeline`, `pmet_shiny_app`), unified at tag `v0.1.0-monorepo`. See [`tests/baseline/README.md`](tests/baseline/README.md) for the fingerprints used to verify no regressions across the move.
 
 ---
 
@@ -804,8 +806,9 @@ results/       运行输出（gitignored）：app/ 给 web 任务，cli/ 给 pip
 - [`docs/methods/`](docs/methods/) —— 算法深度：PMET 到底算什么（[`pmet.md`](docs/methods/pmet.md)）、怎么从基因组 + GFF3 派生启动子（[`promoter-extraction.md`](docs/methods/promoter-extraction.md)）、indexing 必须产出的盘上 schema（[`homotypic-contract.md`](docs/methods/homotypic-contract.md)）、命名规范（[`naming-conventions.md`](docs/methods/naming-conventions.md)）。
 - [`docs/workflows/`](docs/workflows/) —— per-workflow 审计文档，[§4](#cn-4) 那四个 workflow 各一份。由 `make test-audit` 从真实运行自动重生成；底部 OVERALL PASS / WARN / FAIL 行是"这条 workflow 的文档行为是不是还跟代码一致"的真相来源。
 - [`docs/perf/`](docs/perf/) —— 性能调研：MinHash 为什么默认关（[`minhash_calibration.md`](docs/perf/minhash_calibration.md)）、canonical 输入的耗时参考（[`runtime_reference.md`](docs/perf/runtime_reference.md)）。
-- [`docs/tests/coverage.md`](docs/tests/coverage.md) —— [§10](#cn-10) 五条 track 各自覆盖了什么 case 的详细枚举。
+- [`docs/tests/coverage.md`](docs/tests/coverage.md) —— [§10](#cn-10) 七条 track 各自覆盖了什么 case 的详细枚举。
 - [`docs/deployment.md`](docs/deployment.md) —— web 栈深入运维（SSL、scaling、备份、运行期排错），是下方 [§9](#cn-9) 的伴生。
+- [`docs/email-setup.md`](docs/email-setup.md) —— 发信中继（Brevo + DO VPS socat）、收信转发（ImprovMX）、日常维护及排错。
 - [`docs/archive/`](docs/archive/) —— 迁 monorepo 之前的材料，留作参考（verification 日志、旧的 03..07 审计文档等）。
 
 [`docs/README.md`](docs/README.md) 是按"我有什么问题"做的索引 —— 带着具体问题来就从那里开始。
@@ -826,7 +829,7 @@ host 上要准备好下面这些（只有 `docker` 是硬要求，其它对应�
 | host 上 TCP `5960` 端口空闲 | nginx 暴露在这里；这是 `make up` 唯一对外开的端口 | `lsof -nP -iTCP:5960 -sTCP:LISTEN` 应无输出 |
 | `data/reference/TAIR10.{fasta,gff3}`（~250 MB） | `promoters` workflow 要 | `make fetch-data`（同时拉 Tier 2，见 [§2](#cn-2)） |
 | `data/precomputed_indexes/<species>/...`（~16 GB） | `promoters_pre` 模式要 | `make fetch-data` 跑**一次** |
-| `deploy/configure/email_credential.txt` | 任务跑完给用户发结果链接邮件；缺它任务还能跑，只是没通知 | 5 行：`username` / `password`（推荐 Gmail app password）/ `from_address` / `smtp_server` / `port`。Gitignored —— **不要提交**。 |
+| `deploy/configure/email_credential.txt` | 任务跑完给用户发结果链接邮件；缺它任务还能跑，只是没通知 | 5 行：`username` / `password`（Brevo SMTP key）/ `from_address` / `smtp_server` / `port`。Gitignored —— **不要提交**。详见 [`docs/email-setup.md`](docs/email-setup.md) 了解完整中继架构、Brevo/DNS/ImprovMX 配置及排错。 |
 | `deploy/configure/admin_token.txt` | 启用管理员功能（见 [§9.6](#cn-9)）；缺它 `/admin/*` 返回 `503` | `openssl rand -hex 32 > deploy/configure/admin_token.txt`。Gitignored —— **不要提交**。 |
 | `deploy/configure/public_base_url.txt` | 让邮件里出现一个能点回你这个部署的链接；缺它任务照样完成、浏览器流程也能用，只是邮件按钮没了 | 一行，**只写裸域名**：`https://pmet.example.org`（不带 path）。`/tasks/<id>` 和 `/api/...` 由 backend 自己拼。结果 zip 的静态路径属于 docker 内的 nginx，不归这个文件管 —— 本机调试可以留空，直接用 [§9.3](#cn-9) 的浏览器路径拿结果。 |
 
@@ -911,7 +914,7 @@ make rebuild
 
 ## 10. 测试与回归基线
 
-六条轨道，每条防的是**一类不同的回归**。按快慢排。**`make test`** 串起三条快 hermetic 轨道（core + unit + integration，~10 秒），是 commit 前的默认 gate。**`make test-all`** 再叠加后端 API smoke + CLI baseline，~30 秒把"无外部依赖能跑的全跑了"。audit / E2E 各需要重型环境，留 opt-in。
+七条轨道，每条防的是**一类不同的回归**。按快慢排。**`make test`** 串起三条快 hermetic 轨道（core + unit + integration，~10 秒），是 commit 前的默认 gate。**`make test-all`** 再叠加后端 API smoke + CLI baseline，~30 秒把"无外部依赖能跑的全跑了"。audit / E2E 各需要重型环境，留 opt-in。
 
 | 轨道 | 命令 | 为什么 + 时长 |
 |---|---|---|
