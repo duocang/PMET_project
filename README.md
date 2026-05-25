@@ -431,7 +431,7 @@ PMET sends result notifications to users and receives enquiries at `@pmet.online
 
 | Direction | Service | Mechanism |
 |---|---|---|
-| **Outbound** — task notifications | [Brevo](https://www.brevo.com) (France) | Docker container → [DO VPS `socat` :10587](docs/email-setup.md#en-3-3) → `smtp-relay.brevo.com:2525`. The relay chain masks the Berlin server's dynamic home IP behind the fixed DO VPS IP, so Brevo's IP allowlist sees only one entry. SMTP credentials live in `deploy/configure/email_credential.txt`. |
+| **Outbound** — task notifications | [Brevo](https://www.brevo.com) (France) | Docker container → [DO VPS `socat` :10587](docs/email-setup.md#en-3-3) → `smtp-relay.brevo.com:2525`. The relay chain masks the Berlin server's dynamic IP behind the fixed DO VPS IP, so Brevo's IP allowlist sees only one entry. SMTP credentials live in `deploy/configure/email_credential.txt`. |
 | **Inbound** — `questions@pmet.online` | [ImprovMX](https://improvmx.com) (France) | Two MX records at the DNS provider (Aliyun) point at ImprovMX's servers; from there mail forwards to the maintainer's inbox. No server-side config — just DNS. |
 
 Quick health: visit `/admin` → System health → Run checks → the `smtp` probe connects to Brevo without sending a mail. For a live test, submit a demo task.
@@ -927,7 +927,7 @@ PMET 给用户发结果通知邮件，并通过 `@pmet.online` 收信。两项�
 
 | 方向 | 服务 | 机制 |
 |---|---|---|
-| **发信** —— 任务通知 | [Brevo](https://www.brevo.com)（法国） | Docker 容器 → [DO VPS `socat` :10587](docs/email-setup.md#cn-3-3) → `smtp-relay.brevo.com:2525`。这个中继链把 Berlin 服务器的动态家宽 IP 藏在固定的 DO VPS IP 后面，Brevo 白名单只需一条。SMTP 凭据在 `deploy/configure/email_credential.txt`。 |
+| **发信** —— 任务通知 | [Brevo](https://www.brevo.com)（法国） | Docker 容器 → [DO VPS `socat` :10587](docs/email-setup.md#cn-3-3) → `smtp-relay.brevo.com:2525`。这个中继链把 Berlin 服务器的动态 IP 藏在固定的 DO VPS IP 后面，Brevo 白名单只需一条。SMTP 凭据在 `deploy/configure/email_credential.txt`。 |
 | **收信** —— `questions@pmet.online` | [ImprovMX](https://improvmx.com)（法国） | DNS 商（阿里云）上两条 MX 记录指向 ImprovMX 的服务器，收到后转发到运维者的真实收件箱。服务器端零配置，纯 DNS。 |
 
 快速检查：访问 `/admin` → System health → Run checks → `smtp` probe 会连接 Brevo（不真发邮件）。想实战验证，提交一个 demo 任务即可。

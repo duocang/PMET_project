@@ -46,7 +46,7 @@ How PMET sends and receives mail on `@pmet.online` — SMTP relay, MX forwarding
 | Direction | Service | Cost | Role |
 |---|---|---|---|
 | Outbound | **Brevo** (France, EEA) | Free — 300/day | Transactional email to users |
-| Outbound relay | **socat** on DO VPS | $0 (existing VPS) | Hides dynamic home IP behind fixed DO IP |
+| Outbound relay | **socat** on DO VPS | $0 (existing VPS) | Hides dynamic IP address behind fixed DO IP |
 | Inbound | **ImprovMX** | Free — 25 aliases | `questions@pmet.online` → Gmail |
 
 <a id="en-2"></a>
@@ -57,7 +57,7 @@ Two problems made direct Brevo connections impossible:
 
 | Problem | Detail |
 |---|---|
-| **Dynamic home IP** | Berlin ISP rotates the public IP periodically. Brevo's anti-spam marks residential IP blocks as low-reputation → `525 Unauthorized IP` on every rotation. |
+| **Dynamic IP address** | Berlin ISP rotates the public IP periodically. Brevo's anti-spam marks dynamic IP ranges as low-reputation → `525 Unauthorized IP` on every rotation. |
 | **DO blocks port 587** | DigitalOcean blocks outbound 587 on all VPS to prevent spam abuse. This cannot be lifted. Brevo provides **port 2525** as an alternative for cloud-hosted relays. |
 
 **Solution**: socat on the DO VPS listens on `:10587` and forwards to `smtp-relay.brevo.com:2525`. Brevo only sees the VPS static IP (`<vps-ip>`), and the 2525 port bypasses DO's 587 block.
@@ -149,7 +149,7 @@ Brevo → SMTP & API → IP Access → toggle ON:
 | IP | Role |
 |---|---|
 | `<vps-ip>` | DO VPS — the **only** IP Brevo sees in production |
-| `<current home IP>` | Dev only — add from [whatismyip.com](https://whatismyip.com) when testing direct |
+| `<current dynamic IP>` | Dev only — add from [whatismyip.com](https://whatismyip.com) when testing direct |
 
 When mail stops with `525`, the relay chain is bypassed or broken — never add a dynamic IP as a permanent fix.
 
@@ -253,7 +253,7 @@ If the VPS relay is completely down and mail must go out **now**:
 4. `docker compose restart worker`
 5. Wait ~5 min for Brevo to apply the whitelist change
 
-This is **temporary** — the home IP will rotate again. Fix the relay and revert to VPS as soon as possible.
+This is **temporary** — the IP will rotate again. Fix the relay and revert to VPS as soon as possible.
 
 <a id="en-10"></a>
 
@@ -281,7 +281,7 @@ This is **temporary** — the home IP will rotate again. Fix the relay and rever
 
 **Symptom:** Every email returned `525 5.7.1 Unauthorized IP address`.
 
-**Root cause:** Home IP rotated. `email_credential.txt` was set to `smtp-relay.brevo.com` (direct) instead of the VPS relay, so Brevo saw the new (unlisted) home IP. Additionally, the VPS socat was not running — no systemd unit had been created yet.
+**Root cause:** IP rotated. `email_credential.txt` was set to `smtp-relay.brevo.com` (direct) instead of the VPS relay, so Brevo saw the new (unlisted) IP. Additionally, the VPS socat was not running — no systemd unit had been created yet.
 
 **Timeline (UTC):**
 
@@ -340,7 +340,7 @@ This is **temporary** — the home IP will rotate again. Fix the relay and rever
 | 方向 | 服务 | 费用 | 作用 |
 |---|---|---|---|
 | 发信 | **Brevo**（法国，EEA） | 免费 300 封/天 | 事务性邮件通知用户 |
-| 发信中继 | **socat** 在 DO VPS | $0（现有 VPS） | 动态家宽 IP 隐藏在 VPS 固定 IP 之后 |
+| 发信中继 | **socat** 在 DO VPS | $0（现有 VPS） | 动态 IP 隐藏在 VPS 固定 IP 之后 |
 | 收信 | **ImprovMX** | 免费 25 别名 | `questions@pmet.online` → Gmail |
 
 <a id="cn-2"></a>
@@ -351,7 +351,7 @@ This is **temporary** — the home IP will rotate again. Fix the relay and rever
 
 | 问题 | 详情 |
 |---|---|
-| **家宽动态 IP** | Berlin ISP 定期更换公网 IP。Brevo 反垃圾系统将住宅 IP 段标记为低信誉，每次 IP 变动返回 `525 Unauthorized IP`。 |
+| **动态 IP** | Berlin ISP 定期更换公网 IP。Brevo 反垃圾系统将动态 IP 段标记为低信誉，每次 IP 变动返回 `525 Unauthorized IP`。 |
 | **DO 封禁 587 端口** | DigitalOcean 为防止垃圾邮件滥用，默认封禁所有 VPS 的出站 587 端口，无法解除。Brevo 提供 **2525 端口** 作为云服务商环境的替代。 |
 
 **方案**：VPS 上 socat 监听 `:10587`，转发到 `smtp-relay.brevo.com:2525`。Brevo 只看到 VPS 的固定 IP（`<vps-ip>`），2525 端口绕过 DO 的 587 封锁。
@@ -443,7 +443,7 @@ Brevo → SMTP & API → IP Access → 开启：
 | IP | 用途 |
 |---|---|
 | `<vps-ip>` | DO VPS — 生产环境中 Brevo **唯一**看到的 IP |
-| `<当前家宽 IP>` | 仅开发测试 — 从 [whatismyip.com](https://whatismyip.com) 获取 |
+| `<当前动态 IP>` | 仅开发测试 — 从 [whatismyip.com](https://whatismyip.com) 获取 |
 
 邮件出现 `525` 说明绕过了中继或中继挂了 —— 不要把动态 IP 加白名单当永久方案。
 
@@ -547,7 +547,7 @@ VPS 中继完全失效、必须立即发信时：
 4. `docker compose restart worker`
 5. 等 ~5 分钟让 Brevo 白名单生效
 
-**这是临时方案** —— 家宽 IP 还会变。尽快修复中继并切回 VPS。
+**这是临时方案** —— 动态 IP 还会变。尽快修复中继并切回 VPS。
 
 <a id="cn-10"></a>
 
@@ -575,7 +575,7 @@ VPS 中继完全失效、必须立即发信时：
 
 **现象：** 所有邮件返回 `525 5.7.1 Unauthorized IP address`。
 
-**根因：** 家宽 IP 被 ISP 更换。`email_credential.txt` 配置为 `smtp-relay.brevo.com`（直连）而非 VPS 中继，导致 Brevo 看到新的（不在白名单的）家宽 IP。同时 VPS 上 socat 未运行 —— 此前从未创建 systemd 服务。
+**根因：** IP 被 ISP 更换。`email_credential.txt` 配置为 `smtp-relay.brevo.com`（直连）而非 VPS 中继，导致 Brevo 看到新的（不在白名单的）IP。同时 VPS 上 socat 未运行 —— 此前从未创建 systemd 服务。
 
 **时间线（UTC）：**
 
