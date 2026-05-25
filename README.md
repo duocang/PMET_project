@@ -344,7 +344,7 @@ You need on the host (only `docker` is hard-required to bring the stack up; the 
 | Free TCP port `5960` on the host | nginx publishes here; the only port `make up` exposes outwards | `lsof -nP -iTCP:5960 -sTCP:LISTEN` should return nothing |
 | `data/reference/TAIR10.{fasta,gff3}` (~250 MB) | needed by the `promoters` workflow | `make fetch-data` (also pulls Tier 2; see [§2](#en-2)) |
 | `data/precomputed_indexes/<species>/...` (~16 GB) | needed by the `promoters_pre` mode | `make fetch-data` (run **once**) |
-| `deploy/configure/email_credential.txt` | so users get a result-link email when their task finishes; without it task completion still works, just no notification | 5 lines: `username` / `password` (Brevo SMTP key) / `from_address` / `smtp_server` / `port`. Gitignored — **never commit it**. See [`docs/email-setup.md`](docs/email-setup.md) for full relay architecture, Brevo/DNS/ImprovMX setup, and troubleshooting. |
+| `deploy/configure/email_credential.txt` | so users get a result-link email when their task finishes; without it task completion still works, just no notification | 5 lines: `smtp_login` / `smtp_key` (Brevo SMTP key) / `from_address` / `smtp_server` / `port`. Gitignored — **never commit it**. See [§9.7](#en-9) and [`docs/email-setup.md`](docs/email-setup.md). |
 | `deploy/configure/admin_token.txt` | enables admin features (see [§9.6](#en-9)); without it `/admin/*` returns `503` | `openssl rand -hex 32 > deploy/configure/admin_token.txt`. Gitignored — **never commit it**. |
 | `deploy/configure/public_base_url.txt` | needed for emails to contain a clickable link back to your deployment; without it the task still completes and the in-browser flow still works, only the email loses its button | one line, **bare domain only**: `https://pmet.example.org` (no path). The backend appends `/tasks/<id>` and `/api/...` itself. Static-file path of the result zip is owned by the docker nginx, not by this file — for `localhost` you can leave this empty and use the in-browser path in [§9.3](#en-9). |
 
@@ -424,6 +424,17 @@ Single shared token grants "see all tasks + terminate any task". Regular users o
 **Rotate / sign out** — overwrite `admin_token.txt` (bind-mounted, hot-read on the next admin API call; existing cookies invalidate immediately). `Sign out` on the settings page deletes the cookie.
 
 Finer deploy targets: `cd deploy && make help`.
+
+### 9.7 Email infrastructure
+
+PMET sends result notifications to users and receives enquiries at `@pmet.online`. Both run on free services from the EEA; the full operational reference is at [`docs/email-setup.md`](docs/email-setup.md).
+
+| Direction | Service | Mechanism |
+|---|---|---|
+| **Outbound** — task notifications | [Brevo](https://www.brevo.com) (France) | Docker container → [DO VPS `socat` :10587](docs/email-setup.md#en-3-3) → `smtp-relay.brevo.com:2525`. The relay chain masks the Berlin server's dynamic home IP behind the fixed DO VPS IP, so Brevo's IP allowlist sees only one entry. SMTP credentials live in `deploy/configure/email_credential.txt`. |
+| **Inbound** — `questions@pmet.online` | [ImprovMX](https://improvmx.com) (France) | Two MX records at the DNS provider (Aliyun) point at ImprovMX's servers; from there mail forwards to the maintainer's inbox. No server-side config — just DNS. |
+
+Quick health: visit `/admin` → System health → Run checks → the `smtp` probe connects to Brevo without sending a mail. For a live test, submit a demo task.
 
 <a id="en-10"></a>
 
@@ -829,7 +840,7 @@ host 上要准备好下面这些（只有 `docker` 是硬要求，其它对应�
 | host 上 TCP `5960` 端口空闲 | nginx 暴露在这里；这是 `make up` 唯一对外开的端口 | `lsof -nP -iTCP:5960 -sTCP:LISTEN` 应无输出 |
 | `data/reference/TAIR10.{fasta,gff3}`（~250 MB） | `promoters` workflow 要 | `make fetch-data`（同时拉 Tier 2，见 [§2](#cn-2)） |
 | `data/precomputed_indexes/<species>/...`（~16 GB） | `promoters_pre` 模式要 | `make fetch-data` 跑**一次** |
-| `deploy/configure/email_credential.txt` | 任务跑完给用户发结果链接邮件；缺它任务还能跑，只是没通知 | 5 行：`username` / `password`（Brevo SMTP key）/ `from_address` / `smtp_server` / `port`。Gitignored —— **不要提交**。详见 [`docs/email-setup.md`](docs/email-setup.md) 了解完整中继架构、Brevo/DNS/ImprovMX 配置及排错。 |
+| `deploy/configure/email_credential.txt` | 任务跑完给用户发结果链接邮件；缺它任务还能跑，只是没通知 | 5 行：`smtp_login` / `smtp_key`（Brevo SMTP key）/ `from_address` / `smtp_server` / `port`。Gitignored —— **不要提交**。详见 [§9.7](#cn-9) 和 [`docs/email-setup.md`](docs/email-setup.md)。 |
 | `deploy/configure/admin_token.txt` | 启用管理员功能（见 [§9.6](#cn-9)）；缺它 `/admin/*` 返回 `503` | `openssl rand -hex 32 > deploy/configure/admin_token.txt`。Gitignored —— **不要提交**。 |
 | `deploy/configure/public_base_url.txt` | 让邮件里出现一个能点回你这个部署的链接；缺它任务照样完成、浏览器流程也能用，只是邮件按钮没了 | 一行，**只写裸域名**：`https://pmet.example.org`（不带 path）。`/tasks/<id>` 和 `/api/...` 由 backend 自己拼。结果 zip 的静态路径属于 docker 内的 nginx，不归这个文件管 —— 本机调试可以留空，直接用 [§9.3](#cn-9) 的浏览器路径拿结果。 |
 
@@ -909,6 +920,17 @@ make rebuild
 **轮换 / 登出** —— 覆盖 `admin_token.txt` 即可（bind-mount，下一次 admin API 调用就用新值；旧 cookie 立即失效）。设置页 `Sign out` 删 cookie。
 
 更细的 deploy target：`cd deploy && make help`。
+
+### 9.7 邮件基础设施
+
+PMET 给用户发结果通知邮件，并通过 `@pmet.online` 收信。两项都走 EEA 内的免费服务；完整运维参考见 [`docs/email-setup.md`](docs/email-setup.md)。
+
+| 方向 | 服务 | 机制 |
+|---|---|---|
+| **发信** —— 任务通知 | [Brevo](https://www.brevo.com)（法国） | Docker 容器 → [DO VPS `socat` :10587](docs/email-setup.md#cn-3-3) → `smtp-relay.brevo.com:2525`。这个中继链把 Berlin 服务器的动态家宽 IP 藏在固定的 DO VPS IP 后面，Brevo 白名单只需一条。SMTP 凭据在 `deploy/configure/email_credential.txt`。 |
+| **收信** —— `questions@pmet.online` | [ImprovMX](https://improvmx.com)（法国） | DNS 商（阿里云）上两条 MX 记录指向 ImprovMX 的服务器，收到后转发到运维者的真实收件箱。服务器端零配置，纯 DNS。 |
+
+快速检查：访问 `/admin` → System health → Run checks → `smtp` probe 会连接 Brevo（不真发邮件）。想实战验证，提交一个 demo 任务即可。
 
 <a id="cn-10"></a>
 

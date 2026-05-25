@@ -78,6 +78,7 @@ Add at your DNS provider (Aliyun):
 
 | Type | Host | Value (example only) | TTL |
 |---|---|---|---|
+| TXT | `@` | `v=spf1 include:spf.brevo.com include:spf.improvmx.com ~all` | 600 |
 | TXT | `@` | `brevo-code:<your-code>` | 600 |
 | CNAME | `brevo1._domainkey` | `<dkim1>`.dkim.brevo.com | 600 |
 | CNAME | `brevo2._domainkey` | `<dkim2>`.dkim.brevo.com | 600 |
@@ -371,6 +372,7 @@ Brevo 账号：`your-email@gmail.com`（登录占位）。控制台：[app.brevo
 
 | 类型 | 主机记录 | 记录值（仅示例） | TTL |
 |---|---|---|---|
+| TXT | `@` | `v=spf1 include:spf.brevo.com include:spf.improvmx.com ~all` | 600 |
 | TXT | `@` | `brevo-code:<your-code>` | 600 |
 | CNAME | `brevo1._domainkey` | `<dkim1>`.dkim.brevo.com | 600 |
 | CNAME | `brevo2._domainkey` | `<dkim2>`.dkim.brevo.com | 600 |
