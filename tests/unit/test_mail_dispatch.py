@@ -237,6 +237,20 @@ class SmtpErrorHandlingTests(unittest.TestCase):
         # which resolves to pmet_backend.services.audit at runtime.
         self.audit_patcher = patch("pmet_backend.services.audit.emit")
         self.mock_audit = self.audit_patcher.start()
+        # mail.py does `import smtplib` at module level, so we patch the
+        # smtplib reference in the mail module's own namespace.  A plain
+        # patch("smtplib.SMTP") does not reach because import creates a
+        # local binding that mock cannot resolve through string paths.
+        import pmet_backend.services.mail as mail_mod
+        self._mail_mod = mail_mod
+        # CI (act) runs without email_credential.txt (gitignored), so
+        # MailService.__init__ leaves server / username / password empty.
+        # Set dummy values so _send_email doesn't short-circuit at the
+        # "smtp not configured" guard and we can exercise the except path.
+        self.mail.server = "smtp.test"
+        self.mail.username = "user"
+        self.mail.password = "pass"
+        self.mail.port = 587
 
     def tearDown(self):
         self.audit_patcher.stop()
@@ -263,7 +277,7 @@ class SmtpErrorHandlingTests(unittest.TestCase):
         """Brevo error 525: the connecting IP is not in Brevo's allowlist."""
         from smtplib import SMTPResponseException
         exc = SMTPResponseException(525, b"5.7.1 Unauthorized IP address")
-        with patch("smtplib.SMTP") as mock_smtp:
+        with patch.object(self._mail_mod.smtplib, "SMTP") as mock_smtp:
             mock_smtp.return_value.__enter__.return_value.starttls.side_effect = exc
             ok = self.mail._send_email("u@x.test", "subj", "body")
         self.assertFalse(ok)
@@ -273,7 +287,7 @@ class SmtpErrorHandlingTests(unittest.TestCase):
         """Brevo error 535: SMTP key revoked / expired / wrong."""
         from smtplib import SMTPAuthenticationError
         exc = SMTPAuthenticationError(535, b"5.7.8 Authentication failed")
-        with patch("smtplib.SMTP") as mock_smtp:
+        with patch.object(self._mail_mod.smtplib, "SMTP") as mock_smtp:
             mock_smtp.return_value.__enter__.return_value.login.side_effect = exc
             ok = self.mail._send_email("u@x.test", "subj", "body")
         self.assertFalse(ok)
@@ -281,7 +295,7 @@ class SmtpErrorHandlingTests(unittest.TestCase):
 
     def test_connection_refused(self):
         """socat relay down or Brevo unreachable."""
-        with patch("smtplib.SMTP") as mock_smtp:
+        with patch.object(self._mail_mod.smtplib, "SMTP") as mock_smtp:
             mock_smtp.side_effect = ConnectionRefusedError("Connection refused")
             ok = self.mail._send_email("u@x.test", "subj", "body")
         self.assertFalse(ok)
